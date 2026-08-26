@@ -143,3 +143,31 @@ Make sure your `Trusted Proxies` are set to the correct ips, both in the panel s
 Also make sure your webserver and/ or proxy have a high enough upload limit. (e.g. `client_max_body_size`, `upload_max_filesize` and `post_max_size`)
 
 In some cases the issue can also be caused by incorrect file permissions. See [above](#wrong-file-permissions) on how to fix your file permissions.
+
+## Plugin uninstalling issues
+If you can't uninstall a plugin via the admin panel, you may have to do it via ssh.
+Navigate to the root application directory: `/var/www/pelican/` and run this command:
+```sh
+php artisan p:plugin:uninstall
+```
+It will ask for which plugin you want to remove and if you want to delete its data.
+Uninstalling may take a few seconds
+
+After all this, try visiting the plugins page on the admin dashboard. If you see any 500 error, setup permissions back running this command on the root directory (`/var/www/pelican/`):
+<Tabs groupId="webserver">
+    <TabItem value='NGINX/Apache/Caddy'>
+        ```sh
+        sudo chown -R www-data:www-data /var/www/pelican
+        ```
+    </TabItem>
+    <TabItem value='Rocky Linux NGINX'>
+        ```sh
+        sudo chown -R nginx:nginx /var/www/pelican
+        ```
+    </TabItem>
+    <TabItem value='Rocky Linux Apache'>
+        ```sh
+        sudo chown -R apache:apache /var/www/pelican
+        ```
+    </TabItem>
+</Tabs>
