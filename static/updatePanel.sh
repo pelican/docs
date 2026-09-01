@@ -36,11 +36,9 @@ upload_log() {
     echo "curl not found – cannot upload log." >&2
     return 1
   fi
-  local content
-  content=$(cat "$LOG_FILE")
   local response
   response=$(curl -s -w "\n%{http_code}" \
-    -F "c=$content" \
+    -F "c=<$LOG_FILE" \
     -F "e=14d" \
     "https://logs.pelican.dev")
   local http_code
