@@ -30,7 +30,7 @@ const SponsorList: SponsorItem[] = [
   sponsor: 'DreamHost',
   logo: '/img/homepage/sponsor/dreamhost-logo.png',
   logoDM: '/img/homepage/sponsor/dreamhost-logo-darkmode.png',
-  url: 'https://www.dreamhost.com',
+  url: 'https://www.dreamhost.com/hosting/vps/pelican/',
   desc: '',
 },
 ];
