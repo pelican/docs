@@ -90,7 +90,7 @@ cleanup_temp_artifacts() {
 # Trap failed exits so we always clean up and offer the upload on failure.
 _exit_handler() {
   local exit_code=$?
-  local version_to_stamp="${prev_tag:-${latest_version:-}}"
+  local version_to_stamp="${current_version:-}"
 
   cleanup_temp_artifacts
   [ "$exit_code" -eq 0 ] && return
