@@ -134,7 +134,7 @@ restore_git_entry() {
     100*)
       tmp_dest="$(mktemp "$(dirname "$dest")/.tmp_XXXXXX")"
       if git show "${tag}:${file}" > "$tmp_dest" 2>/dev/null; then
-        chmod "${git_mode#100}" "$tmp_dest"
+        chmod 644 "$tmp_dest"
         mv -f "$tmp_dest" "$dest"
       else
         rm -f "$tmp_dest"
@@ -143,7 +143,8 @@ restore_git_entry() {
       ;;
     120000)
       tmp_dir="$(mktemp -d "$(dirname "$dest")/.tmpdir_XXXXXX")"
-      if link_target=$(git show "${tag}:${file}" 2>/dev/null); then
+      link_target=""
+      if link_target="$(git show "${tag}:${file}" 2>/dev/null)"; then
         ln -s "$link_target" "$tmp_dir/entry"
         mv -Tf "$tmp_dir/entry" "$dest"
         rmdir "$tmp_dir"
