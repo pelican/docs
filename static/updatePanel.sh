@@ -30,6 +30,11 @@ LOG_FILE="/tmp/pelican_update_${TIMESTAMP}.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 echo "Update log: $LOG_FILE"
 
+panel_in_maintenance=false
+tmp_repo=""
+release_tarball=""
+assets_tmp_dir=""
+
 # Upload log to logs.pelican.dev and print the URL.
 upload_log() {
   if ! command -v curl &>/dev/null; then
@@ -71,29 +76,135 @@ offer_log_upload() {
   read -rp "Upload log to logs.pelican.dev to share? (y/n) [n]: " upload_confirm </dev/tty || true
   upload_confirm="${upload_confirm:-n}"
   if [[ "${upload_confirm,,}" == "y" ]]; then
-    upload_log
+    upload_log || true
   fi
 }
 
-# Trap unexpected exits so we always offer the upload on failure.
-_error_handler() {
+# Clean up temp files/directories on every exit.
+cleanup_temp_artifacts() {
+  rm -rf "${assets_tmp_dir:-}" "${tmp_repo:-}"
+  rm -f "${release_tarball:-}"
+  unset GIT_DIR || true
+}
+
+# Trap failed exits so we always clean up and offer the upload on failure.
+_exit_handler() {
   local exit_code=$?
+  local version_to_stamp="${prev_tag:-${latest_version:-}}"
+
+  cleanup_temp_artifacts
+  [ "$exit_code" -eq 0 ] && return
+
+  if [ -n "$version_to_stamp" ] && [ -n "${install_dir:-}" ] && [ -f "${install_dir}/config/app.php" ]; then
+    stamp_panel_version "$version_to_stamp"
+  fi
+
   echo ""
   echo "Script exited unexpectedly (exit code $exit_code)."
   # Attempt to bring the panel back online if artisan down was already run
-  if [ -n "${install_dir:-}" ] && [ -f "${install_dir}/artisan" ]; then
+  if $panel_in_maintenance && [ -n "${install_dir:-}" ] && [ -f "${install_dir}/artisan" ]; then
     echo "Attempting to bring the panel back online..."
     (cd "$install_dir" && php artisan up) || echo "WARNING: php artisan up failed — run manually: cd $install_dir && php artisan up"
   fi
   offer_log_upload
-  exit "$exit_code"
 }
-trap '_error_handler' ERR
+trap '_exit_handler' EXIT
+
+restore_git_entry() {
+  local tag="$1"
+  local file="$2"
+  local dest="$3"
+  local git_mode tmp_dest tmp_dir link_target
+
+  git_mode=$(git ls-tree "$tag" -- "$file" | awk 'NR==1 {print $1}')
+  if [ -z "$git_mode" ]; then
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$dest")"
+
+  if [ -L "$dest" ] || [ -f "$dest" ]; then
+    rm -f "$dest"
+  elif [ -e "$dest" ]; then
+    echo "  [WARN ]  Could not replace non-file path at $file"
+    return 1
+  fi
+
+  case "$git_mode" in
+    100*)
+      tmp_dest="$(mktemp "$(dirname "$dest")/.tmp_XXXXXX")"
+      if git show "${tag}:${file}" > "$tmp_dest" 2>/dev/null; then
+        chmod "${git_mode#100}" "$tmp_dest"
+        mv -f "$tmp_dest" "$dest"
+      else
+        rm -f "$tmp_dest"
+        return 1
+      fi
+      ;;
+    120000)
+      tmp_dir="$(mktemp -d "$(dirname "$dest")/.tmpdir_XXXXXX")"
+      if link_target=$(git show "${tag}:${file}" 2>/dev/null); then
+        ln -s "$link_target" "$tmp_dir/entry"
+        mv -Tf "$tmp_dir/entry" "$dest"
+        rmdir "$tmp_dir"
+      else
+        rm -rf "$tmp_dir"
+        return 1
+      fi
+      ;;
+    *)
+      echo "  [WARN ]  Unsupported git mode $git_mode for $file"
+      return 1
+      ;;
+  esac
+}
+
+build_assets_with_yarn() {
+  local yarn_status=0
+
+  echo "           Attempting to build assets locally with yarn (yarn install && yarn build)..."
+  if (
+    cd "$install_dir" || exit 10
+    yarn install 2>&1 || exit 11
+    yarn build 2>&1 || exit 12
+  ); then
+    $VERBOSE && echo "  [OK   ]  Assets built successfully via yarn build."
+    return 0
+  else
+    yarn_status=$?
+  fi
+
+  case "$yarn_status" in
+    11)
+      echo "  [ERROR]  yarn install failed. Frontend assets will be outdated and/or broken :/"
+      ;;
+    12)
+      echo "  [ERROR]  yarn build failed. Frontend assets will be outdated and/or broken :/"
+      ;;
+    *)
+      echo "  [ERROR]  Could not run the local asset build fallback. Frontend assets will be outdated and/or broken :/"
+      ;;
+  esac
+  echo "           Try to run manually: cd $install_dir && yarn install && yarn build"
+
+  return 1
+}
+
+stamp_panel_version() {
+  local version_tag="${1:-$latest_version}"
+  local tag_version="${version_tag#v}"
+
+  if [ -f "${install_dir}/config/app.php" ]; then
+    sed -i "s/'version'[[:space:]]*=>[[:space:]]*'[^']*'/'version' => '${tag_version}'/" \
+      "${install_dir}/config/app.php"
+    echo "  [MOD  ]  config/app.php (version -> ${tag_version})"
+  fi
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1.  Installation directory
 # ─────────────────────────────────────────────────────────────────────────────
-read -rp "Enter the directory for the panel location [/var/www/pelican]: " install_dir
+read -rp "Enter the directory for the panel location [/var/www/pelican]: " install_dir </dev/tty || true
 install_dir="${install_dir:-/var/www/pelican}"
 
 if [ ! -d "$install_dir" ]; then
@@ -111,11 +222,11 @@ fi
 # 2.  Owner / group (auto-detect with fallback)
 # ─────────────────────────────────────────────────────────────────────────────
 owner=$(stat -c '%U' "$install_dir" 2>/dev/null || echo "www-data")
-read -rp "Enter the owner of the files [$owner]: " owner_input
+read -rp "Enter the owner of the files [$owner]: " owner_input </dev/tty || true
 owner="${owner_input:-$owner}"
 
 group=$(stat -c '%G' "$install_dir" 2>/dev/null || echo "www-data")
-read -rp "Enter the group of the files [$group]: " group_input
+read -rp "Enter the group of the files [$group]: " group_input </dev/tty || true
 group="${group_input:-$group}"
 
 read -rp "Show detailed file change list during update? (y/n) [n]: " verbose_confirm </dev/tty || true
@@ -134,7 +245,12 @@ if [ -f "$config_app" ]; then
 fi
 
 if [ -z "$current_version" ]; then
-  read -rp "Could not detect current version from config/app.php. Enter it manually (e.g. v1.0.0-beta34): " current_version
+  read -rp "Could not detect current version from config/app.php. Enter it manually (e.g. v1.0.0-beta34): " current_version </dev/tty || true
+fi
+
+if [ -z "$current_version" ]; then
+  echo "Could not determine the current version. Exiting..."
+  exit 1
 fi
 
 # Normalise: ensure leading 'v'
@@ -173,8 +289,6 @@ echo "Latest available version: $latest_version"
 
 if [ "$current_version" = "$latest_version" ]; then
   echo "Panel is already up to date ($current_version). Nothing to do."
-  rm -rf "$tmp_repo"
-  trap - ERR
   offer_log_upload
   exit 0
 fi
@@ -199,7 +313,6 @@ if [ ${#upgrade_path[@]} -eq 0 ]; then
   else
     echo "Panel is already at the latest known tag ($current_version). Nothing to do."
   fi
-  rm -rf "$tmp_repo"
   exit 1
 fi
 
@@ -237,11 +350,10 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # 7.  Backup
 # ─────────────────────────────────────────────────────────────────────────────
-read -rp "Do you want to create a backup before updating? (y/n) [y]: " backup_confirm
+read -rp "Do you want to create a backup before updating? (y/n) [y]: " backup_confirm </dev/tty || true
 backup_confirm="${backup_confirm:-y}"
 if [[ "${backup_confirm,,}" != "y" ]]; then
   echo "Backup canceled. Aborting."
-  rm -rf "$tmp_repo"
   exit 1
 fi
 
@@ -260,12 +372,10 @@ fi
 if [ "$db_connection" = "sqlite" ]; then
   if ! command -v sqlite3 &>/dev/null; then
     echo "ERROR: sqlite3 is required to back up the SQLite database but is not installed. Install sqlite3 and re-run." >&2
-    rm -rf "$tmp_repo"
     exit 1
   fi
   if [ ! -f "$db_database" ]; then
     echo "ERROR: SQLite database not found at '$db_database'. Aborting."
-    rm -rf "$tmp_repo"
     exit 1
   fi
   db_backup_file="$backup_dir/$(basename "$db_database").backup"
@@ -274,11 +384,10 @@ if [ "$db_connection" = "sqlite" ]; then
 else
   echo ""
   echo "WARNING: MySQL/MariaDB databases are NOT backed up by this script."
-  read -rp "Pause now and make your own DB backup, then continue? (y/n) [y]: " db_warn
+  read -rp "Pause now and make your own DB backup, then continue? (y/n) [y]: " db_warn </dev/tty || true
   db_warn="${db_warn:-y}"
   if [[ "${db_warn,,}" != "y" ]]; then
     echo "Update canceled."
-    rm -rf "$tmp_repo"
     exit 1
   fi
 fi
@@ -315,7 +424,12 @@ is_protected() {
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "Putting panel into maintenance mode..."
-(cd "$install_dir" && php artisan down) || echo "WARNING: php artisan down failed — continuing anyway."
+if (cd "$install_dir" && php artisan down); then
+  panel_in_maintenance=true
+else
+  echo "ERROR: php artisan down failed — aborting update." >&2
+  exit 1
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 10.  Apply each version hop
@@ -338,7 +452,7 @@ for next_tag in "${upgrade_path[@]}"; do
   diff_file=$(mktemp)
   diff_err_file=$(mktemp)
   diff_exit=0
-  git diff --name-status "${prev_tag}" "${next_tag}" > "$diff_file" 2>"$diff_err_file" || diff_exit=$?
+  git -c core.quotepath=false diff --name-status "${prev_tag}" "${next_tag}" > "$diff_file" 2>"$diff_err_file" || diff_exit=$?
 
   added=0; modified=0; deleted=0; renamed=0; skipped=0; diff_lines=0
 
@@ -365,9 +479,7 @@ for next_tag in "${upgrade_path[@]}"; do
           continue
         fi
         dest="$install_dir/$file"
-        mkdir -p "$(dirname "$dest")"
-        tmp_dest="$(mktemp "$(dirname "$dest")/.tmp_XXXXXX")"
-        if git show "${next_tag}:${file}" > "$tmp_dest" 2>/dev/null && mv -f "$tmp_dest" "$dest"; then
+        if restore_git_entry "$next_tag" "$file" "$dest"; then
           if [ "$status" = "A" ]; then
             $VERBOSE && echo "  [ADD  ]  $file"
             ((added++)) || true
@@ -378,9 +490,28 @@ for next_tag in "${upgrade_path[@]}"; do
           [[ "$file" == composer.json || "$file" == composer.lock ]] && needs_composer=true
           [[ "$file" == database/migrations/* || "$file" == database/Seeders/* ]] && needs_migrations=true
         else
-          rm -f "$tmp_dest"
           echo "  [WARN ]  Could not extract $file from $next_tag"
           ((skipped++)) || true
+        fi
+        ;;
+
+      T)
+        # Type-changed -> restore the new entry or abort rather than leave a stale path in place
+        if is_protected "$file"; then
+          echo "  [SKIP ]  $file  (protected)"
+          ((skipped++)) || true
+          continue
+        fi
+        dest="$install_dir/$file"
+        if restore_git_entry "$next_tag" "$file" "$dest"; then
+          $VERBOSE && echo "  [MOD  ]  $file  (type changed)"
+          ((modified++)) || true
+          [[ "$file" == composer.json || "$file" == composer.lock ]] && needs_composer=true
+          [[ "$file" == database/migrations/* || "$file" == database/Seeders/* ]] && needs_migrations=true
+        else
+          echo "  [ERROR]  Could not apply type-changed path $file from $next_tag"
+          rm -f "$diff_file"
+          exit 1
         fi
         ;;
 
@@ -392,21 +523,17 @@ for next_tag in "${upgrade_path[@]}"; do
           continue
         fi
         dest="$install_dir/$file"
-        mkdir -p "$(dirname "$dest")"
-        tmp_dest="$(mktemp "$(dirname "$dest")/.tmp_XXXXXX")"
-        if git show "${next_tag}:${file}" > "$tmp_dest" 2>/dev/null; then
-          mv "$tmp_dest" "$dest"
-          if ! is_protected "$old_path" && [ -f "$install_dir/$old_path" ]; then
-            rm -f "$install_dir/$old_path"
+        if restore_git_entry "$next_tag" "$file" "$dest"; then
+          if ! is_protected "$old_path" && { [ -e "$install_dir/$old_path" ] || [ -L "$install_dir/$old_path" ]; }; then
+            rm -rf "$install_dir/$old_path"
             $VERBOSE && echo "  [DEL  ]  $old_path  (renamed)"
             ((deleted++)) || true
           fi
           $VERBOSE && echo "  [ADD  ]  $file  (renamed from $old_path)"
           ((renamed++)) || true
           [[ "$file" == composer.json || "$file" == composer.lock ]] && needs_composer=true
-          [[ "$file" == database/migrations/* ]] && needs_migrations=true
+          [[ "$file" == database/migrations/* || "$file" == database/Seeders/* ]] && needs_migrations=true
         else
-          rm -f "$tmp_dest"
           echo "  [WARN ]  Could not extract $file from $next_tag"
           ((skipped++)) || true
         fi
@@ -419,8 +546,8 @@ for next_tag in "${upgrade_path[@]}"; do
           ((skipped++)) || true
           continue
         fi
-        if [ -f "$install_dir/$file" ]; then
-          rm -f "$install_dir/$file"
+        if [ -e "$install_dir/$file" ] || [ -L "$install_dir/$file" ]; then
+          rm -rf "$install_dir/$file"
           $VERBOSE && echo "  [DEL  ]  $file"
           ((deleted++)) || true
         fi
@@ -450,8 +577,6 @@ for next_tag in "${upgrade_path[@]}"; do
   prev_tag="$next_tag"
 done
 
-# Delete temp repo
-rm -rf "$tmp_repo"
 unset GIT_DIR
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -463,51 +588,42 @@ echo "Fetching release tarball for $latest_version to update public/build..."
 release_tarball=$(mktemp --suffix=.tar.gz)
 tarball_url="https://github.com/pelican/panel/releases/download/${latest_version}/panel.tar.gz"
 if curl -fsSL "$tarball_url" -o "$release_tarball"; then
-  # Wipe old compiled assets to prevent stale files
-  rm -rf "${install_dir}/public/build"
-  mkdir -p "${install_dir}/public/build"
+  assets_tmp_dir=$(mktemp -d)
 
   # Extract public/build (tarball root may be bare or wrapped in a subdirectory)
-  tarball_listing=$(tar -tzf "$release_tarball" 2>/dev/null)
+  tarball_listing=$(tar -tzf "$release_tarball" 2>/dev/null || true)
+  extraction_ok=false
   if echo "$tarball_listing" | grep -q '^public/build/'; then
-    tar -xzf "$release_tarball" -C "$install_dir" --strip-components=0 \
-        --wildcards 'public/build/*' 2>/dev/null || true
+    if tar -xzf "$release_tarball" -C "$assets_tmp_dir" --strip-components=0 \
+        --wildcards 'public/build/*' 2>/dev/null; then
+      extraction_ok=true
+    fi
   elif echo "$tarball_listing" | grep -q '/public/build/'; then
     # Wrapped in a top-level directory — strip one component
-    tar -xzf "$release_tarball" -C "$install_dir" --strip-components=1 \
-        --wildcards '*/public/build/*' 2>/dev/null || true
+    if tar -xzf "$release_tarball" -C "$assets_tmp_dir" --strip-components=1 \
+        --wildcards '*/public/build/*' 2>/dev/null; then
+      extraction_ok=true
+    fi
   else
     echo "  [WARN ]  public/build not found in release tarball for $latest_version"
   fi
 
-  # Update config/app.php version to match the latest release tag (strip leading 'v')
-  tag_version="${latest_version#v}"
-  if [ -f "${install_dir}/config/app.php" ]; then
-    sed -i "s/'version'[[:space:]]*=>[[:space:]]*'[^']*'/'version' => '${tag_version}'/" \
-        "${install_dir}/config/app.php"
-    echo "  [MOD  ]  config/app.php (version -> ${tag_version})"
+  if $extraction_ok && [ -d "$assets_tmp_dir/public/build" ] \
+    && find "$assets_tmp_dir/public/build" -mindepth 1 -print -quit | grep -q .; then
+    rm -rf "${install_dir}/public/build"
+    mkdir -p "${install_dir}/public"
+    mv "$assets_tmp_dir/public/build" "${install_dir}/public/build"
+    $VERBOSE && echo "  [OK   ]  public/build updated from release tarball."
+  else
+    echo "  [WARN ]  Failed to extract a valid public/build from the release tarball."
+    build_assets_with_yarn || true
   fi
-
-  $VERBOSE && echo "  [OK   ]  public/build updated from release tarball."
 else
   echo "  [WARN ]  Could not download release from $tarball_url — public/build not updated."
-  echo "           Attempting to build assets locally with yarn (yarn install && yarn build)..."
-  (
-    cd "$install_dir"
-    if yarn install 2>&1; then
-      if yarn build 2>&1; then
-        $VERBOSE && echo "  [OK   ]  Assets built successfully via yarn build."
-      else
-        echo "  [ERROR]  yarn build failed. Frontend assets will be outdated and/or broken :/"
-        echo "           Try to run manually: cd $install_dir && yarn install && yarn build"
-      fi
-    else
-      echo "  [ERROR]  yarn install failed. Frontend assets will be outdated and/or broken :/"
-      echo "           Try to run manually: cd $install_dir && yarn install && yarn build"
-    fi
-  ) || true
+  build_assets_with_yarn || true
 fi
-rm -f "$release_tarball"
+
+stamp_panel_version "$latest_version"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -519,7 +635,7 @@ if ! $any_changes; then
   echo ""
   echo "Bringing panel back online..."
   (cd "$install_dir" && php artisan up) || echo "WARNING: php artisan up failed — run manually: cd $install_dir && php artisan up"
-  trap - ERR
+  panel_in_maintenance=false
   offer_log_upload
   exit 0
 fi
@@ -576,6 +692,7 @@ chown -R "$owner:$group" "$install_dir" \
 echo ""
 echo "Bringing panel back online..."
 (cd "$install_dir" && php artisan up) || echo "WARNING: php artisan up failed — run manually: cd $install_dir && php artisan up"
+panel_in_maintenance=false
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 15.  Done
@@ -594,8 +711,6 @@ echo "To verify permissions:"
 echo "  sudo $chmod_cmd"
 echo "  sudo $chown_cmd"
 
-# Disable the ERR trap so a clean exit doesn't trigger the error handler.
-trap - ERR
 offer_log_upload
 
 exit 0
