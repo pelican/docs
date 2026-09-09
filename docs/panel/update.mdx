@@ -21,6 +21,16 @@ Please see the chart below for how these versions line up.
 You have two options for updating: use the automatic update script (recommended) or do the update steps manually.
 
 <Tabs>
+    <TabItem value="Docker">
+        A [Docker install](./advanced/docker) updates by pulling the new image. From the directory containing your `compose.yml`, run:
+
+        ```sh
+        docker compose pull
+        docker compose up -d
+        ```
+
+        Database migrations run automatically when the new container starts.
+    </TabItem>
     <TabItem value="Update script (recommended)">
         Simply run the command below and the update script will guide you through the process:
 
@@ -47,6 +57,14 @@ You have two options for updating: use the automatic update script (recommended)
 
         ```sh
         curl -L https://github.com/pelican/panel/releases/latest/download/panel.tar.gz | sudo tar -xzv
+        ```
+
+        To verify the archive before extracting it, download it together with its `checksum.txt` release asset instead:
+
+        ```sh
+        curl -LO https://github.com/pelican/panel/releases/latest/download/panel.tar.gz
+        curl -LO https://github.com/pelican/panel/releases/latest/download/checksum.txt
+        sha256sum -c checksum.txt && sudo tar -xzvf panel.tar.gz && rm panel.tar.gz checksum.txt
         ```
 
         Once the archive is downloaded and extracted we need to set the correct permissions on the cache and storage directories to avoid
