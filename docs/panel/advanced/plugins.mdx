@@ -172,7 +172,7 @@ Example:
 In your `plugin.json` you can specify a `panel_version` that is used for compatibility checks.   
 When not set, the plugin will be loaded regardless of the panel version.
 
-You can add a `^` in front of the version to turn the strict constraint into a range with the same semantics as composer's caret, e.g. `1.2.0` means "_only_ version 1.2.0" while `^1.2.0` means "version 1.2.0 or higher, but below 2.0.0". For `0.x` constraints the range caps at the next minor instead, e.g. `^0.3` allows 0.3.0 up to (but not including) 0.4.0.
+You can add a `^` in front of the version to turn the strict constraint into a range with the same semantics as composer's caret, e.g. `1.2.0` means "_only_ version 1.2.0" while `^1.2.0` means "version 1.2.0 or higher, but below 2.0.0". For `0.x` constraints the range caps at the next minor instead, e.g. `^0.3` allows 0.3.0 up to (but not including) 0.4.0, and `0.0.x` constraints cap at the next patch, e.g. `^0.0.3` only allows 0.0.3.
 
 #### Api version
 
