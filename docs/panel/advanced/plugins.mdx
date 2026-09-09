@@ -99,6 +99,7 @@ Most of the fields inside the `plugin.json` are generated when running the [arti
 | class             | Yes      | The name of the plugin main class.                                                                                                                            |
 | panels            | No       | Array of [FilamentPHP panel](#filament-panels) ids the plugin should be loaded on. When not set the plugin will be loaded on all panels.                      |
 | panel_version     | No       | The panel version required for the plugin. See [below](#panel-version) for more information.                                                                  |
+| api_version       | No       | The plugin api version the plugin targets. When not set, version 1 is assumed. See [below](#api-version) for more information.                                |
 | composer_packages | No       | Array of additional composer packages. Key is the package name and value is the version. See [below](#additional-composer-dependencies) for more information. |
 
 <Admonition type="info">
@@ -171,7 +172,13 @@ Example:
 In your `plugin.json` you can specify a `panel_version` that is used for compatibility checks.   
 When not set, the plugin will be loaded regardless of the panel version.
 
-You can add a `^` in front of the version to make it a minimum constraint instead of a strict one, e.g. `1.2.0` means "_only_ version 1.2.0" while `^1.2.0` means "version 1.2.0 _or higher_".
+You can add a `^` in front of the version to turn the strict constraint into a range with the same semantics as composer's caret, e.g. `1.2.0` means "_only_ version 1.2.0" while `^1.2.0` means "version 1.2.0 or higher, but below 2.0.0". For `0.x` constraints the range caps at the next minor instead, e.g. `^0.3` allows 0.3.0 up to (but not including) 0.4.0, and `0.0.x` constraints cap at the next patch, e.g. `^0.0.3` only allows 0.0.3.
+
+#### Api version
+
+In your `plugin.json` you can specify an `api_version` that declares which version of the plugin api your plugin targets. The current plugin api version is **1**.
+
+When not set, version 1 is assumed and the plugin list shows a small warning under the plugin status. If a plugin declares a newer api version than the panel supports, the panel refuses to load it and marks it as incompatible. This way a future breaking change to the plugin api can't take down a panel that still runs older plugins.
 
 ### Filament Resources
 
@@ -380,6 +387,20 @@ public function register(): void
     Subuser::registerCustomPermissions('console', ['custom']);
 }
 ```
+
+## Compatibility Policy
+
+The plugin api follows the panel's [semantic versioning](https://semver.org/). The stable surface plugins can rely on consists of:
+
+- The `plugin.json` schema documented on this page
+- The `HasPluginSettings` interface
+- Automatic discovery and registration of service providers, artisan commands, migrations, views, translations and seeders as described above
+- The `panel_version` compatibility semantics (strict and `^` range constraints)
+- The handling of `composer_packages`
+
+Breaking changes to this surface only happen with a new panel major version, and deprecations are announced at least one minor version ahead. The `api_version` field exists so the panel can detect plugins that target a newer, incompatible plugin api.
+
+Anything not listed above, in particular the panel's internal services, models, and Filament internals, can change in any release. The static registration hooks documented on this page (custom permissions, resource modification, etc.) are kept working on a best-effort basis.
 
 ## Publish a Plugin
 
