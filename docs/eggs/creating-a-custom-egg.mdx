@@ -90,6 +90,7 @@ In this example, we are telling Wings to read `server.properties` in `/home/cont
 - `ini`
 - `json` (supports `*` notation)
 - `xml`  (supports `*` notation)
+- `toml`
 
 Once you have defined a parser, we then define a `find` block which tells Wings what specific elements to find and replace. In this example, we have provided four separate items within the `server.properties` file that we want to find and replace to the assigned values. You can use either an exact value, or define a specific server setting from the server configuration. In this case, we're assigning the default server port to be used as the `server.port` and `query.port`. **These placeholders are case sensitive, and should have no spaces in them.**
 
