@@ -20,13 +20,13 @@ if [ ! -f "$env_file" ]; then
   exit 1
 fi
 
-owner=$(stat -c '%U' "$install_dir" || echo "www-data")
-read -p "Enter the owner of the files (www-data, apache, nginx) [$owner]: " owner
-owner=${owner:-www-data}
+current_owner=$(stat -c '%U' "$install_dir" || echo "www-data")
+read -p "Enter the owner of the files (www-data, apache, nginx) [$current_owner]: " owner
+owner=${owner:-$current_owner}
 
-group=$(stat -c '%G' "$install_dir" || echo "www-data")
-read -p "Enter the group of the files (www-data, apache, nginx) [$group]: " group
-group=${group:-www-data}
+current_group=$(stat -c '%G' "$install_dir" || echo "www-data")
+read -p "Enter the group of the files (www-data, apache, nginx) [$current_group]: " group
+group=${group:-$current_group}
 
 db_connection=$(grep "^DB_CONNECTION=" "$env_file" | cut -d '=' -f 2 | tr -d "\"'")
 
