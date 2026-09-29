@@ -144,6 +144,7 @@ networks:
         - subnet: 172.20.0.0/16
 ```
 
+#### Installing behind a reverse proxy
 An example Caddyfile for hosting the panel behind a reverse proxy is shown below. It exposes the panel on port 80 regardless of the Host header, and will not attempt to obtain a TLS certificate. `[UPSTREAM IP]` must be replaced with the IP address of the reverse proxy.
 
 ```caddyfile title="Caddyfile"
@@ -183,4 +184,48 @@ The default file upload limit is 2MB. To raise this limit, modify the `Caddyfile
     }
     file_server
 }
+```
+
+### Reverse Proxy Configuration
+When running the panel on with an `APP_URL` starting with `https://` behind a reverse proxy that handles TLS (SSL), the following configuration should be set:
+
+1. Set the `BEHIND_PROXY` environment variable to `true`. This does 2 things:
+    1. The panel listens internally to port `80` within the container. You may want to map a different host port to the container port 80 depending on your configuration.
+    2. The panel will not attempt to generate a certificate from Let's Encrypt using the `LE_EMAIL` variable. If `BEHIND_PROXY` is not set to true, the panel will shut down and fail if it does not receive the `LE_EMAIL` environment variable.
+2. Set the `TRUSTED_PROXIES` environment variable to the IP of the upstream server.
+3. Use a custom Caddyfile as [described above](#installing-behind-a-reverse-proxy).
+<br />
+An example `compose.yml` for hosting the panel behind a reverse proxy is shown below.
+
+```yml {8,14,19,20} title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican-dev/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "81:80" # Change 81 to whatever host port you want the docker container to listen on
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "http://localhost"
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+      REVERSE_PROXY: true
+      TRUSTED_PROXIES: 127.0.0.1,172.17.0.1,172.20.0.1 # change this to the ip(s) of the proxy. Defaults are for local proxies
+
+volumes:
+  pelican-data:
+  pelican-logs:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 ```
