@@ -1,0 +1,64 @@
+import Admonition from '@theme/Admonition';
+
+# Translating Pelican
+
+The Panel is translated by the community on [Crowdin](https://crowdin.com/project/pelican-dev). Anyone can help, no coding needed.
+There is no minimum a language has to reach: whatever is translated ships, and missing strings fall back to English.
+
+<Admonition type="info">
+    This covers translating the Panel itself. The documentation site is only available in English.
+</Admonition>
+
+## Getting started
+
+1. Create a Crowdin account and join the [pelican-dev project](https://crowdin.com/project/pelican-dev).
+2. Pick your language and start translating strings in the Crowdin editor.
+
+Please do **not** open pull requests that change files in `lang/` by hand. Translations are synced from Crowdin automatically and manual changes get overwritten.
+The English source strings live in `lang/en/**/*.php` in the [panel repository](https://github.com/pelican/panel). If you add new strings in a code contribution, add them to `lang/en` only.
+
+## Approval
+
+Only **approved** translations are shipped. Proofreaders review suggested translations for their language and approve them.
+
+If your language has no proofreader, or you want to become one, ask in the Crowdin project discussions or on our [Discord](https://discord.gg/pelican-panel).
+
+## Placeholders and plurals
+
+Keep placeholders and plural separators exactly as they are in the English string.
+
+- **Placeholders** start with a `:` and get replaced with a value. Don't translate or remove them, but you can move them around in the sentence.
+
+    ```php
+    'greeting' => 'Hello :name!',
+    ```
+
+- **Plurals** are separated by `|`. The first part is the singular, the second the plural. Keep the `|` and translate both parts.
+
+    ```php
+    'model_label' => 'Backup Host|Backup Hosts',
+    'create' => 'Created <b>:files</b>|Created <b>:count</b> new files',
+    ```
+
+- Keep HTML tags like `<b>` as they are, only translate the text between them.
+
+## Requesting a new language
+
+Ask for the language to be added in the Crowdin project. Once it has approved strings it shows up in the Panel with the next sync.
+
+Most languages need no code changes. Only languages with a regional code need a mapping in [`crowdin.yml`](https://github.com/pelican/panel/blob/main/crowdin.yml) (`languages_mapping`), for example `zh-CN` → `zh_CN` and `pt-BR` → `pt_BR`.
+
+## How translations reach the Panel
+
+Two GitHub workflows in the panel repository keep Crowdin and the code in sync:
+
+- **Upload Crowdin Sources** (`upload-sources.yml`) runs on every push to `main` that changes `lang/en/**` or `crowdin.yml`, and uploads the English strings to Crowdin.
+- **Download Crowdin Translations** (`download-translations.yml`) runs every Sunday at 00:00 UTC (and can be started manually). It downloads all approved translations, formats them with Pint and opens a "New Crowdin Translations" pull request from the `i18n_crowdin_translations` branch.
+
+After that pull request is merged, the translations are part of the next release.
+
+## Languages in the Panel
+
+Every language folder in `lang/` can be selected on the user's profile page, plus languages provided by plugins.
+Languages other than English show a note that they may not be fully translated, with an "Update On Crowdin" link back to the project.
+Any string that isn't translated yet is shown in English.

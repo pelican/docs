@@ -14,9 +14,11 @@ so please take some time to read through them before asking for help on the foru
     **You should have some basic familiarity with Linux before you proceed!**
 </Admonition>
 
-<Admonition type="warning">
-    Pelican is currently in **Beta**! Some things might change / break between beta versions!
+<Admonition type="tip" title="Coming from Pterodactyl?">
+    You don't need a fresh install. Follow [Migrating from Pterodactyl](../guides/migrating-from-pterodactyl) to upgrade your existing Panel and keep all your data.
 </Admonition>
+
+Pelican can be installed directly on your server (this guide) or with [Docker](./advanced/docker). Both are fully supported.
 
 ### Picking an Operating System (OS)
 
@@ -49,12 +51,12 @@ SQLite support depends on [libsqlite3-0_3.35+](https://pkgs.org/download/libsqli
 
 ### Dependencies
 
-For the Panel you need to install **PHP `8.5` (recommended), `8.4` or `8.3`**, with the following **extensions**:  
+For the Panel you need to install **PHP `8.5` (recommended) or `8.4`**, with the following **extensions**:  
 `gd`, `mysql`, `mbstring`, `bcmath`, `xml`, `curl`, `zip`, `intl`, `sqlite3` and `fpm`.
 
 You will also need a Webserver. Currently, **Apache, NGINX or Caddy** are supported.
 
-If you want to use MySQL, MariaDB or PostgreSQL for the panel database make sure to install either **MySQL 8+, MariaDB 10.6+ or PostgreSQL 14+**. (both client and server!)
+If you want to use MySQL, MariaDB or PostgreSQL for the panel database make sure to install either **MySQL 8.4+, MariaDB 10.11+ or PostgreSQL 17+**. (both client and server!)
 
 Finally, for some commands during the installation you need `curl`, `tar` and `unzip`.
 
