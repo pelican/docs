@@ -34,7 +34,10 @@ Egg features can do different things when specified. Example below:
 | steam_disk_space          | Sets a limit to enable an "out of disk space" Popup if the host system is out of disk space |
 
 ### Tags
-The tag system allows you to group eggs together by type. This is the successor to nests. 
+The tag system allows you to group eggs together by type. This is the successor to nests.
+
+Pterodactyl grouped eggs into nests, and each egg belonged to exactly one nest. Pelican replaces nests with tags: an egg can have any number of tags, and tags don't need to be created first.
+When [migrating from Pterodactyl](../guides/migrating-from-pterodactyl), each egg gets a tag with the name of its old nest. Locations work the same way for nodes.
 
 ### Update URL
 This can be specified so that users who use your egg can update the egg without having to look around for where the egg is hosted. 

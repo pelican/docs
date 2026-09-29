@@ -65,6 +65,8 @@ const sidebars: SidebarsConfig = {
         'guides/database-hosts',
         'guides/change-panel-domain',
         'guides/uninstalling',
+        'guides/migrating-from-pterodactyl',
+        'guides/translating',
       
         {
           type: 'category',
@@ -76,6 +78,7 @@ const sidebars: SidebarsConfig = {
         }
       ],
     },
+    'versioning',
     'troubleshooting',
     'comparison',
     'glossary'
