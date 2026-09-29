@@ -156,14 +156,7 @@ If your Panel URL changed, update `remote` in `config.yml` as well.
 - **Eggs:** the startup command becomes the "Default" entry in the egg's startup commands. The UUIDs of the stock eggs are updated, and `--seed` updates the stock eggs themselves. Custom eggs keep working.
 - **API keys keep working**, including old `ptla_`/`ptlc_` keys. New keys use the `papp_`/`pacc_` prefixes. The nests and locations endpoints and permissions were removed from the application API, see the [API docs](../panel/advanced/api-docs).
 - **Admins:** users with the old "root admin" flag get the Root Admin role.
-
-## What doesn't carry over
-
-- **Two-factor authentication.** 2FA is reset for all users, and they have to set it up again.
-- **First and last names.** Pelican only uses the username.
-- **Panel settings** made in the Pterodactyl admin area (such as the panel name, mail settings and the 2FA requirement) are not imported. Set them again under **Admin → Settings**. Settings in your `.env` are kept.
-- **The audit log.** Pterodactyl's audit log table is removed. The activity log is kept.
-- **Themes and panel modifications.** Pelican is a different codebase, so Pterodactyl themes and addons don't work. Look for a [plugin](../panel/advanced/plugins) instead.
+- **Themes and panel modifications** don't work, since Pelican is a different codebase. Look for a [plugin](../panel/advanced/plugins) instead.
 
 ## Rolling back
 
