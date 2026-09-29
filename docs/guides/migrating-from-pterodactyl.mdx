@@ -49,12 +49,20 @@ Pelican is installed next to Pterodactyl, in `/var/www/pelican`. Your old instal
 cd /var/www/pterodactyl
 sudo php artisan down
 
-# Back up the database (replace "panel" with your database name)
-sudo mysqldump --single-transaction panel > ~/pterodactyl-backup.sql
-
 # Back up the .env file
 sudo cp .env ~/pterodactyl-backup.env
+
+# Show the database connection details
+grep '^DB_' .env
 ```
+
+Back up the database using the `DB_HOST`, `DB_PORT`, `DB_USERNAME` and `DB_DATABASE` values shown above, and enter `DB_PASSWORD` when asked.
+
+```sh
+mysqldump -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p --single-transaction <DB_DATABASE> > ~/pterodactyl-backup.sql
+```
+
+Check that `~/pterodactyl-backup.sql` isn't empty before continuing.
 
 Stop the Pterodactyl queue worker and remove its cron job, so it doesn't run jobs against the database while it is being migrated.
 
@@ -162,12 +170,14 @@ If your Panel URL changed, update `remote` in `config.yml` as well.
 If something goes wrong, your Pterodactyl install is still in `/var/www/pterodactyl`. To go back:
 
 1. Stop the Pelican queue worker (`sudo systemctl disable --now pelican-queue`), and remove the Pelican cron job (`sudo crontab -e -u www-data`).
-2. Restore the database backup:
+2. Restore the database backup, using the same connection details as the backup (from `~/pterodactyl-backup.env`):
 
     ```sh
-    mysql -e "DROP DATABASE panel; CREATE DATABASE panel;"
-    mysql panel < ~/pterodactyl-backup.sql
+    mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p -e "DROP DATABASE <DB_DATABASE>; CREATE DATABASE <DB_DATABASE>;"
+    mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p <DB_DATABASE> < ~/pterodactyl-backup.sql
     ```
+
+    Double-check `<DB_DATABASE>` before running this, the first command deletes that database.
 
 3. Re-enable the Pterodactyl webserver site, cron job and `pteroq` service, then run `php artisan up` in `/var/www/pterodactyl`.
 4. On the nodes, put the Pterodactyl Wings binary back and restore the old `wings.service`.
