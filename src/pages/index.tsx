@@ -25,7 +25,7 @@ function HomepageHeader() {
           <Link
             style={{ fontSize: '26px' }}
             className="button button--secondary button--md"
-            to="/docs/panel/getting-started"
+            to="/docs/getting-started"
           >Install</Link>
           <Link
             style={{ fontSize: '26px', margin: '15px' }}

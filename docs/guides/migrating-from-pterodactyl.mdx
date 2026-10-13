@@ -15,7 +15,7 @@ Your game servers keep running and keep their files.
 ## Requirements
 
 - Pterodactyl 1.11.4 or newer. [Update Pterodactyl](https://docs.pterodactyl.io/v1/panel/updating) first if needed.
-- The [Panel dependencies](../panel/getting-started#dependencies), including PHP 8.4 or newer with PHP-FPM.
+- The [Panel dependencies](../panel/standalone/getting-started#dependencies), including PHP 8.4 or newer with PHP-FPM.
 
 ## Migrate the Panel
 
@@ -36,7 +36,7 @@ Your game servers keep running and keep their files.
 
         It installs Pelican in `/var/www/pelican`, copies your `.env` and upgrades the database. It also sets up the queue worker and cron job. Your old install stays untouched in `/var/www/pterodactyl`.
 
-        Last, [point your webserver](../panel/webserver-config) at `/var/www/pelican/public` and disable the Pterodactyl site.
+        Last, [point your webserver](../panel/standalone/webserver-config) at `/var/www/pelican/public` and disable the Pterodactyl site.
     </TabItem>
     <TabItem value="docker" label="Docker">
         Take Pterodactyl offline first, so nothing writes to the database:
@@ -49,7 +49,7 @@ Your game servers keep running and keep their files.
 
         Then remove the Pterodactyl `schedule:run` line from `sudo crontab -e`.
 
-        Create the `compose.yml` from the [Docker guide](../panel/advanced/docker#create-composeyml) and add these to its `environment`:
+        Create the `compose.yml` from the [Docker guide](../panel/install#create-composeyml) and add these to its `environment`:
 
         ```yml
         APP_INSTALLED: "true" # upgrade the database instead of opening the web installer
@@ -113,7 +113,7 @@ grep '^DB_' .env
 mysqldump -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p --single-transaction --no-tablespaces <DB_DATABASE> > ~/pterodactyl-backup.sql
 ```
 
-**Install Pelican.** Follow [Getting Started](../panel/getting-started) up to (and including) **Install Composer**, but don't run the web installer. Then copy your `.env` and upgrade the database:
+**Install Pelican.** Follow the [Standalone Install](../panel/standalone/getting-started) up to (and including) **Install Composer**, but don't run the web installer. Then copy your `.env` and upgrade the database:
 
 ```sh
 sudo cp /var/www/pterodactyl/.env /var/www/pelican/.env
@@ -124,7 +124,7 @@ sudo php artisan migrate --seed --force
 
 `HASHIDS_SALT`, `HASHIDS_LENGTH`, `APP_THEME` and `APP_ENVIRONMENT_ONLY` are no longer used and can be removed from `.env`.
 
-**Finish the setup.** [Set permissions](../panel/panel-setup#setting-permissions) and [configure your webserver](../panel/webserver-config). Then set up the queue worker and cron job, and bring the Panel up:
+**Finish the setup.** [Set permissions](../panel/standalone/panel-setup#setting-permissions) and [configure your webserver](../panel/standalone/webserver-config). Then set up the queue worker and cron job, and bring the Panel up:
 
 ```sh
 sudo php artisan p:environment:queue-service

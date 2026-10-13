@@ -25,7 +25,7 @@ tail -n 1000 /var/www/pelican/storage/logs/laravel-$(date +%F).log | grep "\[$(d
     * `Connection refused [tcp://_______:6379]`: Redis isn't running or isn't reachable for some other reason. (start by checking the status of the redis service: `systemctl status redis-server`)
     * `SSL: no alternative certificate subject name matches target host name '_______'`: The used SSL certificate for your panel isn't valid for your panel domain, see [this guide](./ssl) for creating a new SSL certificate.
     * `General error: 8 attempt to write a readonly database`: Your `database.sqlite` has wrong file permissions and is read-only. Make sure the file is writable and owned by the correct user.
-    * `Class '_____' not found`: This usually means you are missing php extensions. Make sure [all needed extensions](../panel/getting-started#dependencies) are installed and that you are using the correct php version.
+    * `Class '_____' not found`: This usually means you are missing php extensions. Make sure [all needed extensions](../panel/standalone/getting-started#dependencies) are installed and that you are using the correct php version.
     * `Connection timed out after 5001 milliseconds for _______:8080`: Your panel can't reach wings, see the wings connection issues steps below.
 </details>
 
