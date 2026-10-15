@@ -72,7 +72,7 @@ const config: Config = {
           items: [
             {
               label: 'Panel',
-              to: '/docs/panel/getting-started',
+              to: '/docs/panel/install',
             },
             {
               label: 'Wings',
@@ -122,6 +122,12 @@ const config: Config = {
           { from: '/docs/about', to: '/docs/contributors' },
           { from: '/docs/glossary', to: '/docs/#glossary' },
           { from: '/docs/troubleshooting', to: '/docs/guides/troubleshooting' },
+          { from: '/docs/guides/docker', to: '/docs/getting-started' },
+          { from: '/docs/panel/advanced/docker', to: '/docs/panel/install' },
+          { from: '/docs/panel/getting-started', to: '/docs/panel/standalone/getting-started' },
+          { from: '/docs/panel/webserver-config', to: '/docs/panel/standalone/webserver-config' },
+          { from: '/docs/panel/panel-setup', to: '/docs/panel/standalone/panel-setup' },
+          { from: '/docs/panel/optional-config', to: '/docs/panel/standalone/optional-config' },
         ],
       },
     ],

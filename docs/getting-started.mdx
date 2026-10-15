@@ -1,6 +1,33 @@
 import Admonition from '@theme/Admonition';
 
-# Installing Docker
+# Getting Started
+
+Pelican runs on a dedicated Linux server, and the recommended way to install it is with **Docker**.
+This page gets Docker ready, then you can [install the Panel](./panel/install).
+
+<Admonition type="danger">
+    **You should have some basic familiarity with Linux before you proceed!**
+</Admonition>
+
+<Admonition type="tip" title="Coming from Pterodactyl?">
+    You don't need a fresh install. Follow [Migrating from Pterodactyl](./guides/migrating-from-pterodactyl) to upgrade your existing Panel and keep all your data.
+</Admonition>
+
+## Requirements
+
+Pelican runs on a wide range of operating systems, so pick whichever you are most comfortable using,
+as long as it supports [Docker Engine](https://docs.docker.com/engine/install/).
+
+Docker may not work under `OpenVZ`, `Virtuozzo` or `LXC` virtualization unless your provider has configured it for nested containers.
+`kvm` and bare metal (`none`) work without issues. To check what your server uses, run:
+
+```sh
+systemd-detect-virt
+```
+
+If that command isn't available, `sudo dmidecode -s system-manufacturer` usually tells you as well.
+
+## Installing Docker
 
 For a quick install of Docker CE, you can use the command below:
 
@@ -40,3 +67,9 @@ GRUB_CMDLINE_LINUX_DEFAULT="swapaccount=1"
     Some Linux distros may ignore `GRUB_CMDLINE_LINUX_DEFAULT`.  
     Therefore you might have to use `GRUB_CMDLINE_LINUX` instead should the above variable not work for you.
 </Admonition>
+
+## Next Steps
+
+Docker is ready. Continue to [Installing the Panel](./panel/install).
+
+Prefer to run the Panel directly on your server without Docker? Follow the [standalone install](./panel/standalone/getting-started) instead.

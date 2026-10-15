@@ -13,15 +13,23 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   Sidebar: [
     'welcome',
+    'getting-started',
     {
       type: 'category',
       label: 'Panel',
       collapsed: false,
       items: [
-        'panel/getting-started',
-        'panel/webserver-config',
-        'panel/panel-setup',
-        'panel/optional-config',
+        'panel/install',
+        {
+          type: 'category',
+          label: 'Standalone',
+          items: [
+            'panel/standalone/getting-started',
+            'panel/standalone/webserver-config',
+            'panel/standalone/panel-setup',
+            'panel/standalone/optional-config',
+          ]
+        },
         'panel/update',
         {
           type: 'category',
@@ -30,7 +38,6 @@ const sidebars: SidebarsConfig = {
             'panel/advanced/redis',
             'panel/advanced/mysql',
             'panel/advanced/artisan',
-            'panel/advanced/docker',
             'panel/advanced/podman',
             'panel/advanced/cloudflare-tunnel',
             'panel/advanced/api-docs',
@@ -60,7 +67,6 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Guides',
       items: [
-        'guides/docker',
         'guides/mounts',
         'guides/ssl',
         'guides/php-upgrade',

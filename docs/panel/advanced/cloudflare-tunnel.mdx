@@ -7,7 +7,7 @@ description: Run the Docker panel behind a Cloudflare Tunnel without opening any
 
 A [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) lets you serve the panel over HTTPS without opening any inbound ports on your host. A small `cloudflared` container makes an outbound connection to Cloudflare, and Cloudflare forwards requests for your hostname down that connection to the panel.
 
-This guide builds on the [Docker](/docs/panel/advanced/docker) installation. Read that page first, as the steps for backing up your encryption key, installing, and stopping the panel are the same.
+This guide builds on the [Docker](/docs/panel/install) installation. Read that page first, as the steps for backing up your encryption key, installing, and stopping the panel are the same.
 
 :::info
 This page only covers the panel. Wings still needs to be reachable by your users' browsers and by the panel, see [Wings](#wings) below.
@@ -15,7 +15,7 @@ This page only covers the panel. Wings still needs to be reachable by your users
 
 ## Prerequisites
 
-- Docker CE with Docker Compose v2 (see the [Docker installation guide](/docs/guides/docker))
+- Docker CE with Docker Compose v2 (see [Getting Started](/docs/getting-started))
 - A domain whose DNS is managed by Cloudflare
 - A Cloudflare Zero Trust account (the free plan is enough)
 
@@ -84,7 +84,7 @@ Compared to the standard Docker setup:
 
 - There is no `ports:` section. Nothing is published on the host, all traffic arrives through the tunnel.
 - `APP_URL` is the public `https://` hostname from the tunnel.
-- `BEHIND_PROXY` makes the panel listen on plain HTTP port 80 and skip Let's Encrypt, since Cloudflare handles TLS (SSL). See [Reverse Proxy Configuration](/docs/panel/advanced/docker#reverse-proxy-configuration).
+- `BEHIND_PROXY` makes the panel listen on plain HTTP port 80 and skip Let's Encrypt, since Cloudflare handles TLS (SSL). See [Reverse Proxy Configuration](/docs/panel/install#reverse-proxy-configuration).
 - `TRUSTED_PROXIES` is the Docker network's subnet, so the panel trusts the forwarded headers from the `cloudflared` container. If you change the subnet, change both.
 
 ## Start the Panel
@@ -101,7 +101,7 @@ docker compose logs cloudflared
 
 You should see `Registered tunnel connection`, and the tunnel should show as **Healthy** in the Cloudflare dashboard.
 
-Now [back up your encryption key](/docs/panel/advanced/docker#back-up-your-encryption-key) and open `https://panel.example.com/installer` to [finish installing](/docs/panel/advanced/docker#installing).
+Now [back up your encryption key](/docs/panel/install#back-up-your-encryption-key) and open `https://panel.example.com/installer` to [finish installing](/docs/panel/install#installing).
 
 ## Wings
 

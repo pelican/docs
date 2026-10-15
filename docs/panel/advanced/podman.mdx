@@ -6,7 +6,7 @@ sidebar_label: Podman (Rootless)
 
 # Deploying with Podman
 
-This guide runs the panel's [Docker image](./docker) with **rootless Podman** on Fedora, RHEL, or Alma/Rocky Linux, using a **Quadlet** so systemd manages the container. Like the Docker guide, it uses SQLite and serves the panel over plain HTTP on port 80.
+This guide runs the panel's [Docker image](../install) with **rootless Podman** on Fedora, RHEL, or Alma/Rocky Linux, using a **Quadlet** so systemd manages the container. Like the Docker guide, it uses SQLite and serves the panel over plain HTTP on port 80.
 
 ## Prerequisites
 
@@ -130,11 +130,11 @@ Open the installer in your browser at `http://YOUR_SERVER_IP/installer` to finis
 
 ### HTTPS and Reverse Proxies
 
-The image supports the same `BEHIND_PROXY`, `LE_EMAIL` and `TRUSTED_PROXIES` environment variables as the [Docker deployment](./docker#reverse-proxy-configuration). Add them under `env:` in `pelican.yaml`. If the panel serves HTTPS itself, also publish port 443 (`containerPort: 443`, `hostPort: 443`).
+The image supports the same `BEHIND_PROXY`, `LE_EMAIL` and `TRUSTED_PROXIES` environment variables as the [Docker deployment](../install#reverse-proxy-configuration). Add them under `env:` in `pelican.yaml`. If the panel serves HTTPS itself, also publish port 443 (`containerPort: 443`, `hostPort: 443`).
 
 ### Upload Limit
 
-The default file upload limit is 2MB. To raise it, copy the image's Caddyfile and edit it as shown in the [Docker guide](./docker):
+The default file upload limit is 2MB. To raise it, copy the image's Caddyfile and edit it as shown in the [Docker guide](../install):
 
 ```sh
 podman run --rm --entrypoint cat ghcr.io/pelican/panel:latest /etc/caddy/Caddyfile > ~/pelican/Caddyfile
