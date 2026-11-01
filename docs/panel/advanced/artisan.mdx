@@ -1,7 +1,15 @@
 # Artisan Commands
 This is very much a WIP! Many Many commands, Layout might change.
 
-Updated: 01/11/2025
+Updated: 01/11/2026
+
+## Panel Information
+
+Displays the application, database, email and backup configurations along with the panel version.
+```sh
+php artisan p:info
+```
+
 ## User Commands
 ### Create a User
 
@@ -54,6 +62,244 @@ Options:
 
 ```
 
+## Node Commands
+### Create a Node
+
+Creates a new node on the system via the CLI.
+```sh
+php artisan p:node:make [options]
+```
+
+```sh
+Options:
+      --name[=NAME]                                    A name to identify the node.
+      --description[=DESCRIPTION]                      A description to identify the node.
+      --locationId[=LOCATIONID]                        A valid locationId.
+      --fqdn[=FQDN]                                    The domain name (e.g node.example.com) to be used for connecting to the daemon. An IP address may only be used if you are not using SSL for this node.
+      --public[=PUBLIC]                                Should the node be public or private? (public=1 / private=0).
+      --scheme[=SCHEME]                                Which scheme should be used? (Enable SSL=https / Disable SSL=http).
+      --proxy[=PROXY]                                  Is the daemon behind a proxy? (Yes=1 / No=0).
+      --maintenance[=MAINTENANCE]                      Should maintenance mode be enabled? (Enable Maintenance mode=1 / Disable Maintenance mode=0).
+      --maxMemory[=MAXMEMORY]                          Set the max memory amount.
+      --overallocateMemory[=OVERALLOCATEMEMORY]        Enter the amount of ram to overallocate (% or -1 to overallocate the maximum).
+      --maxDisk[=MAXDISK]                              Set the max disk amount.
+      --overallocateDisk[=OVERALLOCATEDISK]            Enter the amount of disk to overallocate (% or -1 to overallocate the maximum).
+      --maxCpu[=MAXCPU]                                Set the max cpu amount.
+      --overallocateCpu[=OVERALLOCATECPU]              Enter the amount of cpu to overallocate (% or -1 to overallocate the maximum).
+      --uploadSize[=UPLOADSIZE]                        Enter the maximum upload filesize.
+      --daemonListeningPort[=DAEMONLISTENINGPORT]      Enter the daemon listening port.
+      --daemonConnectingPort[=DAEMONCONNECTINGPORT]    Enter the daemon connecting port.
+      --daemonSFTPPort[=DAEMONSFTPPORT]                Enter the daemon SFTP listening port.
+      --daemonSFTPAlias[=DAEMONSFTPALIAS]              Enter the daemon SFTP alias.
+      --daemonBase[=DAEMONBASE]                        Enter the base folder.
+  -q, --quiet                                          Do not output any message
+      --ansi|--no-ansi                                 Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction                                 Do not ask any interactive question
+```
+
+### List Nodes
+
+Lists all nodes with their ID, UUID, name and host.
+```sh
+php artisan p:node:list [options]
+```
+
+```sh
+Options:
+      --format[=FORMAT]  The output format: "text" or "json". [default: "text"]
+  -q, --quiet            Do not output any message
+      --ansi|--no-ansi   Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction   Do not ask any interactive question
+```
+
+### Node Configuration
+
+Displays the Wings configuration for the specified node.
+```sh
+php artisan p:node:configuration [options] <node>
+```
+
+```sh
+Arguments:
+  node                   The ID or UUID of the node to return the configuration for.
+
+Options:
+      --format[=FORMAT]  The output format. Options are "yaml" and "json". [default: "yaml"]
+  -q, --quiet            Do not output any message
+      --ansi|--no-ansi   Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction   Do not ask any interactive question
+```
+
+## Server Commands
+### Bulk Power Actions
+
+Perform bulk power management on large groupings of servers or nodes at once.
+```sh
+php artisan p:server:bulk-power [options] <action>
+```
+
+```sh
+Arguments:
+  action                 The action to perform (start, stop, restart, kill)
+
+Options:
+      --servers[=SERVERS]  A comma separated list of servers.
+      --nodes[=NODES]      A comma separated list of nodes.
+  -q, --quiet              Do not output any message
+      --ansi|--no-ansi     Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction     Do not ask any interactive question
+```
+
+### Process Schedules
+
+Process schedules in the database and determine which are ready to run. This runs every minute via the scheduler.
+```sh
+php artisan p:schedule:process
+```
+
+## Egg Commands
+### Check for Egg Updates
+
+Compares each egg against its update URL and reports whether it is up to date. Eggs without an update URL are skipped. This runs daily via the scheduler.
+```sh
+php artisan p:egg:check-updates
+```
+
+### Update Egg Index
+
+Refreshes the cached index of available eggs from the Pelican CDN. This runs daily via the scheduler.
+```sh
+php artisan p:egg:update-index
+```
+
+### Normalize an Egg
+
+Upgrades an egg json/yaml file to the latest format as yaml.
+```sh
+php artisan p:egg:normalize [options] <file>
+```
+
+```sh
+Arguments:
+  file                   Path to the egg json/yaml file.
+
+Options:
+      --delete-original  Delete the original file after converting.
+  -q, --quiet            Do not output any message
+      --ansi|--no-ansi   Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction   Do not ask any interactive question
+```
+
+## Plugin Commands
+### List Plugins
+
+List all installed plugins.
+```sh
+php artisan p:plugin:list
+```
+
+### Create a Plugin
+
+Create a new plugin.
+```sh
+php artisan p:plugin:make [options]
+```
+
+```sh
+Options:
+      --name[=NAME]
+      --author[=AUTHOR]
+      --description[=DESCRIPTION]
+      --category[=CATEGORY]
+      --url[=URL]
+      --updateUrl[=UPDATEURL]
+      --panels[=PANELS]
+      --panelVersion[=PANELVERSION]
+  -q, --quiet                    Do not output any message
+      --ansi|--no-ansi           Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction           Do not ask any interactive question
+```
+
+### Install a Plugin
+
+Installs and enables a plugin. If no `id` is given you will be asked to choose one.
+```sh
+php artisan p:plugin:install [<id>]
+```
+
+### Update a Plugin
+
+Updates a plugin, if an update is available.
+```sh
+php artisan p:plugin:update [<id>]
+```
+
+### Disable a Plugin
+
+Disables a plugin.
+```sh
+php artisan p:plugin:disable [<id>]
+```
+
+### Uninstall a Plugin
+
+Uninstalls a plugin.
+```sh
+php artisan p:plugin:uninstall [options] [<id>]
+```
+
+```sh
+Options:
+      --delete           Delete the plugin files
+  -q, --quiet            Do not output any message
+      --ansi|--no-ansi   Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction   Do not ask any interactive question
+```
+
+### Install Plugin Composer Packages
+
+Makes sure the needed composer packages for all installed plugins are available.
+```sh
+php artisan p:plugin:composer
+```
+
+## Maintenance Commands
+### Prune Docker Images
+
+Clean up all dangling docker images to clear up disk space. If no node ID is given, all nodes are cleaned. This runs daily via the scheduler.
+```sh
+php artisan p:maintenance:prune-images [<node>]
+```
+
+### Prune Orphaned Backups
+
+Marks all backups older than "n" minutes that have not yet completed as being failed. Defaults to the `backups.prune_age` config value (360 minutes).
+```sh
+php artisan p:maintenance:prune-backups [options]
+```
+
+```sh
+Options:
+      --prune-age[=PRUNE-AGE]  Age in minutes after which an uncompleted backup is marked as failed.
+  -q, --quiet                  Do not output any message
+      --ansi|--no-ansi         Force (or disable --no-ansi) ANSI output
+  -n, --no-interaction         Do not ask any interactive question
+```
+
+### Clean Service Backup Files
+
+Clean orphaned .bak files created when modifying services. This runs daily via the scheduler.
+```sh
+php artisan p:maintenance:clean-service-backups
+```
+
+### Fix Database Grants
+
+Re-issues the grants of all server databases so that their names are no longer used as wildcard patterns.
+```sh
+php artisan p:maintenance:fix-database-grants
+```
+
 ## Editing the Environment
 
 ### Editing Cache
@@ -82,10 +328,11 @@ php artisan p:environment:database [options]
 Options:
       --driver[=DRIVER]      The database driver backend to use.
       --database[=DATABASE]  The database to use.
-      --host[=HOST]          The connection address for the MySQL/ MariaDB server.
-      --port[=PORT]          The connection port for the MySQL/ MariaDB server.
-      --username[=USERNAME]  Username to use when connecting to the MySQL/ MariaDB server.
-      --password[=PASSWORD]  Password to use for the MySQL/ MariaDB database.
+      --schema[=SCHEMA]      The schema to use for the PostgreSQL database.
+      --host[=HOST]          The connection address for the MySQL/ MariaDB/ PostgreSQL server.
+      --port[=PORT]          The connection port for the MySQL/ MariaDB/ PostgreSQL server.
+      --username[=USERNAME]  Username to use when connecting to the MySQL/ MariaDB/ PostgreSQL server.
+      --password[=PASSWORD]  Password to use for the MySQL/ MariaDB/ PostgreSQL database.
   -q, --quiet                Do not output any message
       --ansi|--no-ansi       Force (or disable --no-ansi) ANSI output
   -n, --no-interaction       Do not ask any interactive question
@@ -179,6 +426,7 @@ php artisan p:environment:setup [options]
 
 ```sh
 Options:
+      --url[=URL]            The URL that this Panel is running on.
   -q, --quiet                Do not output any message
       --ansi|--no-ansi       Force (or disable --no-ansi) ANSI output
   -n, --no-interaction       Do not ask any interactive question
@@ -265,3 +513,7 @@ php artisan cache:clear # Clears application cache
 ```sh
 php artisan config:clear # Clears configuration cache
 ```
+
+:::note
+`php artisan config:cache` is disabled in Pelican, and `php artisan optimize` skips config caching. Caching the config would stop plugin config files (`/plugins/config/*.php`) from loading.
+:::
