@@ -1,0 +1,91 @@
+---
+title: "Uninstalling"
+---
+
+This guide will show you how to uninstall the Pelican Panel and Wings. Note that the uninstallation of dependency services is not covered here.
+
+<Admonition type="danger">
+    **You will lose all data and this action is irreversible!**
+</Admonition>
+
+## Panel
+
+### Panel files
+
+First, run the following command to delete all panel files.
+
+```sh
+sudo rm -rf /var/www/pelican
+```
+
+### Webserver config
+
+Next, remove the Pelican webserver config.
+
+<Tabs>
+    <TabItem value="nginx" label="NGINX">
+    ```sh
+    sudo rm /etc/nginx/sites-enabled/pelican.conf
+    sudo rm /etc/nginx/sites-available/pelican.conf
+
+    systemctl restart nginx
+    ```
+    </TabItem>
+    <TabItem value="apache" label="Apache">
+    ```sh
+    sudo rm /etc/apache2/sites-enabled/pelican.conf
+    sudo rm /etc/apache2/sites-available/pelican.conf
+
+    systemctl restart apache2
+    ```
+    </TabItem>
+    <TabItem value="caddy" label="Caddy">
+    ```sh
+    sudo rm /etc/caddy/Caddyfile
+
+    systemctl restart caddy
+    ```
+    </TabItem>
+</Tabs>
+
+### Queue worker service
+
+Finally, remove the queue worker service.
+
+```sh
+systemctl disable --now pelican-queue
+sudo rm /etc/systemd/system/pelican-queue.service
+```
+
+### (Optional) Panel database
+
+If you used MySQL/ MariaDB and also want to remove the panel database, run the following commands:
+
+```sh
+mysql -u root -p
+
+DROP DATABASE panel;
+DROP USER 'pelican'@'127.0.0.1';
+```
+
+## Wings
+
+### Wings service
+
+To uninstall Wings you just have to remove the wings service, delete the wings binary and delete the wings config file.
+
+```sh
+systemctl disable --now wings
+sudo rm /etc/systemd/system/wings.service
+
+sudo rm /usr/local/bin/wings
+sudo rm -rf /etc/pelican
+```
+
+### (Optional) Server data & backups
+
+If you also want to remove all server files and backups run the following command:
+
+```sh
+sudo rm -rf /var/lib/pelican
+```

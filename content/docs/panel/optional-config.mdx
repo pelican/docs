@@ -1,0 +1,109 @@
+---
+title: "Optional Configuration"
+---
+
+## Backups
+
+Pelican allows users to create backups of their servers. To create backups, a backup storage method has to be configured.
+
+When changing Pelican's backup storage method, users may still download or delete existing backups from the prior storage driver. In the instance of migrating from S3 to local backups, S3 credentials must remain configured after switching to the local backup storage method.
+
+Make sure to clear the config cache (`cd /var/www/pelican && php artisan config:clear`) and to restart the queue worker (`systemctl restart pelican-queue`) after changing the backup driver to apply the changes.
+
+### Using Local Backups
+
+By default, Pelican uses local storage via Wings for backups. That said, this method of backup storage can be explicitly set within the Settings Page on the Admin side of the panel.
+
+
+Please note that, when using local storage via Wings, the destination for backups is set in the Wings config file with the following setting key:
+
+```yml {2}
+system:
+  backup_directory: /path/to/backup/storage
+```
+
+### Using S3 Backups
+
+AWS S3 (or compatible storage) can be used to store remote or cloud-based backups. This can be configured in the Settings Page on the Admin side of the panel.
+
+For some configurations, you might have to change your S3 URL from `bucket.domain.com` to `domain.com/bucket`. To accomplish this, add `AWS_USE_PATH_STYLE_ENDPOINT=true` to your `.env` file.
+
+#### Multipart Upload
+
+The S3 backup is using the S3 multipart upload capabilities. In rare situations, you might want to adjust the size of a single part or the lifespan of the generated pre-signed URLs. The default part size is 5GB, and the default pre-signed URL lifespan is 60 minutes.
+
+You can configure the maximal part size using the `BACKUP_MAX_PART_SIZE` environment variable. You must specify the size in bytes. To define the pre-signed URL lifespan, use the `BACKUP_PRESIGNED_URL_LIFESPAN` variable. The expected unit is minutes.
+
+The following `.env` snippet configures 1GB parts and uses 120 minutes as the pre-signed URL lifespan:
+
+```sh
+BACKUP_MAX_PART_SIZE=1073741824
+BACKUP_PRESIGNED_URL_LIFESPAN=120
+```
+
+#### Storage Class
+
+Should you need to specify a storage class, use the `AWS_BACKUPS_STORAGE_CLASS` environment variable. The default option is `STANDARD` (S3 Standard).
+
+```sh
+AWS_BACKUPS_STORAGE_CLASS=
+```
+
+## Reverse Proxy Setup
+
+When running Pelican behind a reverse proxy, such as [Cloudflare's Flexible SSL](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/)
+or NGINX/Apache/Caddy, etc., you will need to make a quick modification to the Panel to ensure things continue to work as expected. By default, when using these reverse proxies,
+your Panel will not correctly handle requests. You'll most likely be unable to login or see security warnings in your browser console as it attempts to load insecure assets.
+This is because the internal logic the Panel uses to determine how links should be generated thinks it is running over HTTP and not over HTTPS.
+
+You will need to edit trusted proxies, on the Settings page. We highly suggest providing a specific IP address
+(or comma-separated list of IPs) rather than allowing `*`. For example, if your proxy is running on the same machine as the server,
+the chances are that using `127.0.0.1` would work for you.
+
+### NGINX Specific Configuration
+
+To properly respond to an NGINX reverse proxy, the NGINX `location` config must contain the following lines:
+
+```NGINX
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_redirect off;
+proxy_buffering off;
+proxy_request_buffering off;
+```
+
+### Cloudflare Specific Configuration
+
+If you're using Cloudflare's Flexible SSL you should set `TRUSTED_PROXIES` to contain [their IP addresses](https://www.cloudflare.com/ips/).
+
+You can easily do this on the Settings page in the Panel.
+
+## Captcha
+
+The Panel has options to enable captcha to secure the login page from brute-force attacks. By default only Cloudflare Turnstile is available.
+
+### Disable Captcha
+
+If you cannot access your panel, you have to modify the `.env` directly to disable it.
+
+Edit the `.env` in the panel's root directory `/var/www/pelican/` and change the value of `CAPTCHA_TURNSTILE_ENABLED` to `false`.
+
+After that run `php artisan config:clear` to refresh the config cache.
+
+## 2FA
+
+If possible you should use the panel to update your 2FA settings. If you can't access your panel for whatever reason you can use the following steps.
+
+### Disable 2FA requirement
+
+Edit the `.env` in the panel's root directory `/var/www/pelican/` and change the value of `APP_2FA_REQUIRED` to `0`.
+
+### Disable 2FA for a specific user
+
+Run the following command in your `/var/www/pelican` directory.
+
+```sh
+php artisan p:user:disable2fa
+```

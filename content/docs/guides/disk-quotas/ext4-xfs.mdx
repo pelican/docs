@@ -1,0 +1,223 @@
+---
+title: "EXT4 and XFS"
+---
+
+This page covers disk quota management for EXT4/XFS.
+
+Both EXT4 and XFS use the built-in quota management services in linux.
+
+<Admonition type="warning">
+    Please read <Link to="/docs/guides/disk-quotas/about">About Quotas</Link> before continuing
+</Admonition>
+
+## Configure Filesystem
+How to format and mount a device for use with quotas  
+
+<details>
+<summary>I understand the risks and Pelican is not Liable for anything that breaks</summary>
+
+<Admonition type="warning">
+   Enabling quotas for `/` is difficult, as it requires booting a live disk to change.
+
+   We do not recommended this!
+</Admonition>
+
+These examples use the following:  
+`/dev/sdb` as the device formatted as EXT4 enabling only project quotas.  
+`/var/lib/pelican/volumes/` as the mount point and data directory  
+
+<Tabs>
+    <TabItem value='New EXT4 Filesystem'>
+        ## Format Device
+        `mkfs.ext4` will format the disk with the ext4 filesystem
+        * The `O` flag is the enable Feature Options
+          - enable quotas while formatting
+        * The `E` flag is for Extended Options
+          - set the quota type as project
+        ```bash
+        mkfs.ext4 -O quota -E quotatype=prjquota /dev/sdb
+        ```
+
+        <Admonition type="warning">
+            You need to update fstab so the disk mounts automatically on boot with quotas enabled.
+        </Admonition>
+
+        ## Add to fstab
+        ### get device UUID
+        The disk UUID is the best option for mounting the correct device via fstab.
+        ```bash
+        lsblk /dev/sdb -no UUID
+        # example output
+        6c3b1734-3db4-4368-9bee-58651731b206
+        ```
+
+        ### add new mount to fstab
+        ```shell title="/etc/fstab" {4}
+        # <file system> <mount point>   <type>  <options>       <dump>  <pass>
+        # / was on /dev/sda1 during installation
+        UUID=8529a07b-28bc-4296-848a-a185aaf11e94 /               ext4    errors=remount-ro 0       1
+        UUID=6c3b1734-3db4-4368-9bee-58651731b206 /var/lib/pelican/volumes/ ext4 defaults,prjquota 0 1
+        ```
+        For more information on fstab check the [Arch Linux fstab docs](https://wiki.archlinux.org/title/Fstab)
+
+        <Admonition type="warning">
+            Depending on the OS you may need to refresh services to be able to mount the partition after updating `fstab`.
+
+            It is often easier to reboot and have the disk mount on boot.
+        </Admonition>
+    </TabItem>
+    <TabItem value='Existing EXT4 Filesystem'>
+        ## Update existing partition
+        Get the disk device path and uuid for your partition  
+
+        by default `findmnt` lists all mounts on the system and lists their source, fstype, and options
+        * The `n` flag disables headers
+        * The `o` flag only returns specified values
+          - `SOURCE` is device path
+          - `UUID` is the device id
+        ```bash
+        findmnt /var/lib/pelican/volumes -no SOURCE,UUID
+        ## example response
+        /dev/sdb 6c3b1734-3db4-4368-9bee-58651731b206
+        ```
+
+        ## Unmount disk
+        Use `umount` to unmount Pelican's volume mount.
+        ```bash
+        umount /var/lib/pelican/volumes/
+        ```
+
+        ## Enable quotas
+        <Admonition type="warning">
+            This can only be ran on an unmounted disk
+        </Admonition>
+        `tune2fs` is used to adjust tunable file system parameters for EXT filesystems
+        * The `Q` flag is to manage quotas
+          - `prjquota` is to enable project quotas
+        * The device path is needed
+        ```bash
+        tune2fs -Q prjquota /dev/sdb
+        ```
+
+        ## update fstab entry
+        add `prjquota` to the line for the mount  
+        from
+        ```shell title="/etc/fstab"
+        UUID=6c3b1734-3db4-4368-9bee-58651731b206 /var/lib/pelican/volumes/ ext4 defaults 0 1
+        ```
+        to
+        ```shell title="/etc/fstab"
+        UUID=6c3b1734-3db4-4368-9bee-58651731b206 /var/lib/pelican/volumes/ ext4 defaults,prjquota 0 1
+        ```
+        For more information on fstab check the [Arch Linux fstab docs](https://wiki.archlinux.org/title/Fstab)
+
+        <Admonition type="warning">
+            Depending on the OS you may need to refresh services to be able to mount the partition after updating `fstab`.
+
+            It is often easier to reboot and have the disk mount on boot.
+        </Admonition>
+    </TabItem>
+</Tabs>
+</details>
+
+## Advanced EXT4 Quota Management
+<Admonition type="danger">
+    The following section is for manual management of quotas.
+</Admonition>
+
+<details>
+<summary>I understand </summary>
+<Admonition type="danger">
+    You should never need to go here, this is your last warning.
+</Admonition>
+<details>
+<summary>I agree and Pelican is not Liable for anything that breaks</summary>
+
+## Manually Manage Quotas
+Limits for the servers are managed on a "project" level so they can be assigned per-directory.  
+
+### Add A New Project
+To add a new project 2 files must be edited.
+
+First is the `projid` file which is formatted where each line is in the `project_name:project_id` format as seen below  
+* Pelican will use the server UUID as the project name
+* Make sure the ID is not already being used.
+```shell title="/etc/projid"
+235844d3-9258-4846-bb04-bcff209ccf9a:1
+b91d5528-d53f-4586-8d5c-682027f74a36:2
+```
+
+Second is the `projects` file which is formatted where each line is in the `project_id:path_to_directory` format as seen below  
+```shell title="/etc/projects"
+1:/var/lib/pelican/volumes/235844d3-9258-4846-bb04-bcff209ccf9a
+2:/var/lib/pelican/volumes/b91d5528-d53f-4586-8d5c-682027f74a36
+```
+
+### Set directory attributes
+The project attribute must be set on the directory to track quota usage.
+
+The `chattr` command changes attribute for files and directories.
+* The `+` and `-` operators add or remove attributes
+  - The `P` makes it so files and directories created in the directory will inherit the project id of the directory.
+    - The project id and directory must match
+* The `p` flag is for the project id
+```bash
+chattr +P -p ${project_id} ${path_to_directory}
+```
+
+Example:
+```bash
+chattr +P -p 1 /var/lib/pelican/volumes/235844d3-9258-4846-bb04-bcff209ccf9a
+```
+
+### set quota limits
+The built in quota management uses blocks by default.
+* You can specify limits in bytes as well.  
+
+The `setquota` command sets the quota for any object that supports quotas.
+* The `P` flag sets the quota for a project
+  - This can use the project `id` or `name`
+  - The should be the server UUID as shown in the examples below
+* The soft limit would send a warning to a user
+  - This is not used by Pelican and will be set to 0
+* The hard limit is set to the disk resource limit set in Pelican
+* Neither the block or inode/file grace sections will be used by Pelican.
+* The path for either the device or the mount point
+  - `/dev/sdb/` or `/var/lib/pelican/volumes/`
+```bash
+setquota -P ${server_uuid} ${soft_limit} ${hard_limit} ${block_grace} ${inode_grace} ${path}
+```
+
+Example:  
+setting a hard limit, in Gigabytes
+```bash
+setquota -P 235844d3-9258-4846-bb04-bcff209ccf9a 0 10G 0 0 /var/lib/pelican/volumes/
+```
+
+### get quota stats
+The `repquota` command will generate a report on the quotas for the specified device or mount path  
+* The `P` flag will break down the report by project.
+  - In this case it should be the server UUID that is the project name
+* The `--human-readable` flag sets the limits to be displayed in a human readable format. By default that is Megabytes
+  - `=g,g` changes the output to be in Gigabytes (can be `k`, `g`, `m`, or `t`)
+
+Example:
+```bash
+repquota -P --human-readable=g,g /var/lib/pelican/volumes/ # could also be /dev/sdb
+```
+
+Example Output
+```shell
+                        Block limits                File limits
+Project         used    soft    hard  grace    used  soft  hard  grace
+----------------------------------------------------------------------
+235844d3-9258-4846-bb04-bcff209ccf9 --      3G      0G      5G             1g    0g    0g
+cdb26bbb-963d-44b1-8353-360243032b1 --      2G      0G      2G             1g    0g    0g
+```
+
+</details>
+</details>
+
+<Admonition type="note">
+    TODO: Add documentation specifically for XFS
+</Admonition>

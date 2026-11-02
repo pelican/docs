@@ -1,0 +1,236 @@
+---
+title: "Docker"
+---
+
+Pelican provides pre-built Docker images via GitHub Packages. `ghcr.io/pelican/panel:latest` is the current latest release, and `ghcr.io/pelican/panel:main` is built automatically from the current `main` branch. Deploying the panel in Docker is still a work in progress. While the plan is to make Docker the preferred installation method, we currently recommend the [standard deployment instructions](/docs/panel/getting-started)
+
+This guide requires Docker CE. (Docker Compose has been included in the Docker CLI since v2. Docker Compose v1 is unsupported.) For instructions on installing and configuring Docker, see the [installation guide](/docs/guides/docker).
+
+## Basics
+
+The easiest deployment method is using the standard `compose.yml` file.
+
+This configuration includes an integrated web server that will automatically obtain SSL certificates if you are serving over HTTPS. For the database, it assumes you want to use SQLite (or you have an external database server to configure using the  installer.) It also assumes you intend to use the Filesystem driver for cache, filesystem or database driver for session, and database driver for queue (or you have an external Redis server to configure using the installer.) If you want to use other options built into Docker, see [Advanced Options](#advanced-options).
+
+### Create compose.yml
+
+```yml {17,18} title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "http://localhost"
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+
+volumes:
+  pelican-data:
+  pelican-logs:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+### Set Required Environment Variables
+
+1. Set `APP_URL` to the base URL your panel will be reachable on, including the protocol (https:// or http://) and port. 
+    - Note that Caddy, the integrated webserver, will serve a 308 redirect to any requests on port 80 if the `APP_URL` begins with `https://`. If your final site will be reachable over HTTPS but TLS (SSL) will be handled and terminated by an upstream server, such as a reverse proxy, see [Reverse Proxy Configuration](#reverse-proxy-configuration).
+2. Set the `ADMIN_EMAIL` to your email address. Caddy will use this email address to generate a LetsEncrypt SSL certificate if you are serving via HTTPS.
+
+Now, close and save changes to `compose.yml`. 
+
+### Starting
+
+From the directory in which the compose file is located, run:
+
+```sh
+docker compose up -d
+```
+
+### Back Up Your Encryption Key
+
+The first time the container starts, it will generate an `APP_KEY` which is used as an encryption key. This will be saved automatically, but you should save a copy in a secure place in case you need it later.
+
+```sh
+docker compose logs panel | grep 'Generated app key:'
+```
+
+### Installing
+
+Open the installer in your browser at `APP_URL/installer` to finish setting up the panel.
+
+:::note
+The first time the container starts after installing or updating, it will apply database migrations, which may take a few minutes. The panel will not be accessible during this process.
+:::
+
+#### Sensible Driver Defaults:
+
+* Cache Driver: Filesystem
+* Database Driver: SQLite
+* Queue Driver: Database
+* Session Driver: Filesystem
+
+For other configuration, such as UI options, CAPTCHA, email, backups and OAuth, head to the settings menu in the admin panel.
+
+### Stopping
+
+The panel will automatically restart if the container crashes or the host restarts.  If you need to non-destructively stop the panel for any reason, navigate back to the directory containing `compose.yml` and run:
+
+```sh
+docker compose down
+```
+
+### Uninstalling
+
+To uninstall the panel, navigate to the directory containing `compose.yml` and run:
+
+```sh
+docker compose down -v
+```
+
+:::danger
+    **This will permanently delete the panel and all associated data including the SQLite database and your encryption key.**
+:::
+
+## Advanced Options
+
+### Custom Caddyfile
+
+The default Caddyfile will work for standard installations. If you need to edit the configuration of the integrated webserver, such as to place it behind a reverse proxy that terminates TLS, you can do so by bind-mounting a Caddyfile on the host to `/etc/caddy/Caddyfile` inside the container.
+
+This example assumes there is a Caddyfile in the same directory as the `compose.yml` file. 
+
+```yml {15} title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "http://localhost"
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+
+volumes:
+  pelican-data:
+  pelican-logs:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+An example Caddyfile for hosting the panel behind a reverse proxy is shown below. It exposes the panel on port 80 regardless of the Host header, and will not attempt to obtain a TLS certificate. `[UPSTREAM IP]` must be replaced with the IP address of the reverse proxy.
+
+```caddyfile title="Caddyfile"
+{
+    admin off
+    servers {
+        trusted_proxies static [UPSTREAM IP]
+    }
+}
+
+:80 {
+    root * /var/www/html/public
+    encode gzip
+
+    php_fastcgi 127.0.0.1:9000
+    file_server
+}
+```
+
+:::info
+    **Note:** If the trusted directive is not set or improperly configured, file uploads will fail. Commonly, when the reverse proxy is running outside of Docker, the IP address will not match `127.0.0.1`, but will instead match a Docker bridge interface or `docker0`.
+:::
+
+#### Raising file upload limits
+
+The default file upload limit is 2MB. To raise this limit, modify the `Caddyfile` file as such:
+
+```caddyfile {6-9} title="Caddyfile"
+<domain> {
+    ...
+
+    encode gzip
+
+    php_fastcgi 127.0.0.1:9000 {
+        env PHP_VALUE "upload_max_filesize = 256M
+                       post_max_size = 256M"
+    }
+    file_server
+}
+```
+
+### Reverse Proxy Configuration
+
+When running the panel behind a reverse proxy that handles TLS (SSL), set the following environment variables:
+
+1. Set `APP_URL` to the URL users will visit, e.g. `https://panel.example.com`.
+2. Set `BEHIND_PROXY` to `"true"`. This does 2 things:
+    1. The panel listens on port `80` inside the container, regardless of the `APP_URL`. Map whichever host port your proxy forwards to onto container port `80`.
+    2. The panel will not attempt to obtain a certificate from Let's Encrypt. Without this, an `https://` `APP_URL` requires the `LE_EMAIL` environment variable and the panel will exit if it is missing.
+3. Set `TRUSTED_PROXIES` to a comma-separated list of the IP addresses (or CIDR ranges) of your reverse proxy, so the panel trusts its forwarded headers.
+
+No custom Caddyfile is needed for this setup. An example `compose.yml` for hosting the panel behind a reverse proxy is shown below.
+
+```yml {8,16-18} title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "81:80" # Change 81 to the host port your reverse proxy forwards to
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "https://panel.example.com"
+      BEHIND_PROXY: "true"
+      TRUSTED_PROXIES: "127.0.0.1,172.17.0.1,172.20.0.1" # Change to the IP(s) of your proxy. These defaults cover a proxy on the same host
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+
+volumes:
+  pelican-data:
+  pelican-logs:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+:::info
+    **Note:** If `TRUSTED_PROXIES` is not set or does not match your proxy, file uploads will fail. When the reverse proxy runs outside of Docker, its requests usually come from a Docker bridge interface (such as `docker0`, commonly `172.17.0.1`) rather than `127.0.0.1`.
+:::

@@ -1,0 +1,167 @@
+---
+title: "Troubleshooting"
+---
+
+## Panel errors
+
+If you see a `500 | SERVER ERROR` or `An unexpected error was encountered while processing this request` you have to check your panel logs by running the following command.
+
+```sh
+tail -n 1000 /var/www/pelican/storage/logs/laravel-$(date +%F).log | grep "\[$(date +%Y)"
+```
+
+<details>
+    <summary>Common errors</summary>
+
+    * `ErrorException: file_put_contents(_____): failed to open stream: Permission denied`: Wrong file permissions/ ownership for the panel files, see [below](#wrong-file-permissions).
+    * `502 Bad Gateway Error`: Make sure that php-fpm is running and that you are using the correct php version in your webserver config.
+    * `CSRF token mismatch`: Enable SSL for your Panel with HTTPS protocol scheme in the `APP_URL`, or set `SESSION_SECURE_COOKIE` to `false` in your `.env` file.
+    * `Connection refused [tcp://_______:6379]`: Redis isn't running or isn't reachable for some other reason. (start by checking the status of the redis service: `systemctl status redis-server`)
+    * `SSL: no alternative certificate subject name matches target host name '_______'`: The used SSL certificate for your panel isn't valid for your panel domain, see [this guide](./ssl) for creating a new SSL certificate.
+    * `General error: 8 attempt to write a readonly database`: Your `database.sqlite` has wrong file permissions and is read-only. Make sure the file is writable and owned by the correct user.
+    * `Class '_____' not found`: This usually means you are missing php extensions. Make sure [all needed extensions](../panel/getting-started#dependencies) are installed and that you are using the correct php version.
+    * `Connection timed out after 5001 milliseconds for _______:8080`: Your panel can't reach wings, see the wings connection issues steps below.
+</details>
+
+### Wrong file permissions
+
+If the command above doesn't return anything, you most likely have incorrect file permissions . So you first need to fix that.  
+You can set the correct permissions by running `sudo chmod -R 755 /var/www/pelican/storage/* /var/www/pelican/bootstrap/cache/`. Also make sure that your panel files are owned by the correct user.
+
+<Tabs groupId="webserver">
+    <TabItem value='NGINX/Apache'>
+        ```sh
+        sudo chown -R www-data:www-data /var/www/pelican
+        ```
+    </TabItem>
+    <TabItem value='Rocky Linux NGINX'>
+        ```sh 
+        sudo chown -R nginx:nginx /var/www/pelican
+        ```
+    </TabItem>
+    <TabItem value='Rocky Linux Apache'>
+        ```sh 
+        sudo chown -R apache:apache /var/www/pelican
+        ```
+    </TabItem>
+</Tabs>
+
+## Wings connection issues
+
+### Check the wings service
+
+First you should make sure that the wings service is running. To do that run `systemctl status wings`.  
+It should say that the service is active and running. If its in a failed state run `sudo wings diagnostics` to check the wings logs for errors.
+
+<details>
+    <summary>Common errors</summary>
+
+    * `open /etc/letsencrypt/live/_____________/fullchain.pem: no such file or directory`: The SSL certificate for wings is missing, see [this guide](./ssl) for creating a SSL certificate.
+    * `Pool overlaps with other one on this address space`: You already have a docker network using the default subnet. (`172.18.0.0/16`) Change the subnet in your wings config file and use `systemctl stop wings && docker network rm pelican_nw && systemctl start wings` to apply the change.
+    * `Error response from Panel: AccessDeniedHttpException: You are not authorized to access this resource. (HTTP/403)`: Your wings token is wrong, you need [update the token in your config.yml file](../wings/install#configure)
+    * `Error response from Panel: _MissingResponseCode: No error response returned from API endpoint`: Your panel is not responding correctly. This usually happens when Cloudflare is blocking the connection. In that case make sure your wings ip is added to the Cloudflare firewall. If you aren't using Cloudflare it might be some other CDN/ DDoS protection service or your provider.
+    * `remote: could not unmarshal response: invalid character '<' looking for beginning of value`: This is basically the same error as above: Cloudflare is blocking the connection.
+</details>
+
+### Check the wings port
+
+If you confirmed that wings is running without errors you should make sure that the wings port (`8080` by default) isn't blocked by any firewall. The best way to check this is to use online port checkers like [dnschecker.org](https://dnschecker.org/port-scanner.php)  
+It should say "open" if you check for your node FQDN (e.g. `node.example.com` or `123.123.123.123`) and your wings port (e.g. `8080`). If it says "timed-out" you have some firewall blocking the port. This could be an internal firewall (like iptables) or an external firewall (e.g. from your provider).
+
+### Check for NAT loop back
+
+If your panel and wings are on the same machine or same network, and you are using domains you should check for NAT loop back issues.  
+Edit the `/etc/hosts` file on your panel/ wings machine and add an entry for your ip and domain.
+
+Example:
+
+```txt title="/etc/hosts"
+123.123.123.123 panel.example.com node.example.com
+```
+
+### Check the wings connection
+
+If you confirmed the above points you have to do some advanced troubleshooting.
+
+Check if your panel and your browser can connect to wings.
+
+#### Panel \<-> Wings connection
+
+Run `curl <protocol><node fqdn>:<node port>` (e.g. `curl https://node.example.com:8080` or `curl http://123.123.123.123:8080`) on your panel machine and see what it outputs.
+
+#### Browser \<-> Wings connection
+
+Open `<protocol><node fqdn>:<node port>` (e.g. `https://node.example.com:8080` or `http://123.123.123.123:8080`) in your browser and see what it outputs.
+
+In both cases it should output this when wings is reachable:
+```
+{"error" : "The required authorization heads were not present in the request."}
+```
+
+<Admonition type="info">
+    Not sure what a specific error means?
+    Visit our [Discord](https://discord.gg/pelican-panel) and we will be happy to help you!
+</Admonition>
+
+### Check node settings
+
+If the connection checks above were both successfull you might have misconfigured the Node settings in the Panel.  
+Make sure that your Node FQDN/ IP, Port and Scheme (HTTP/ HTTPS) is correct.
+
+When using a reverse proxy you might have different external and internal ports for Wings. (e.g. `80` internally and `443` externally)  
+In that case make sure the Node settings in the Panel uses the external port while the Wings config file uses the internal port!
+
+## Schedules not running
+
+If your Schedules are stuck on `Processing` or don't execute the tasks check the following:
+
+* Is your Schedule set to run `ONLY WHEN SERVER IS ONLINE` and the server is currently offline?
+* Is your queue worker service running? (`systemctl status pelican-queue`)
+* Is your queue worker service using the correct PHP version? (`php -v`)
+* Is your cronjob setup correctly? `crontab -l -u www-data` (where `www-data` is your webserver user) should show the following entry:  
+`* * * * * php /var/www/pelican/artisan schedule:run >> /dev/null 2>&1`
+
+If your queue worker service is not running you can also check the panel logs for errors.
+
+```sh
+tail -n 100 /var/www/pelican/storage/logs/laravel-$(date +%F).log | grep "\[$(date +%Y)"
+```
+
+To recreate the queue worker service you can run `php /var/www/pelican/artisan p:environment:queue-service --overwrite`.
+
+## File Upload issues
+
+If a file upload form returns an error like `mountedActionsData.0.files.24d4b82d-a3ae-47fd-981f-8b2f0f6a21d4` it is most likely a proxy issue.
+
+Make sure your `Trusted Proxies` are set to the correct ips, both in the panel settings and your proxy settings!  
+Also make sure your webserver and/ or proxy have a high enough upload limit. (e.g. `client_max_body_size`, `upload_max_filesize` and `post_max_size`)
+
+In some cases the issue can also be caused by incorrect file permissions. See [above](#wrong-file-permissions) on how to fix your file permissions.
+
+## Plugin uninstalling issues
+If you can't uninstall a plugin via the admin panel, you may have to do it via ssh.
+Navigate to the root application directory: `/var/www/pelican/` and run this command:
+```sh
+php artisan p:plugin:uninstall
+```
+It will ask for which plugin you want to remove and if you want to delete its data.
+Uninstalling may take a few seconds
+
+After all this, try visiting the plugins page on the admin dashboard. If you see any 500 error, setup permissions back running this command on the root directory (`/var/www/pelican/`):
+<Tabs groupId="webserver">
+    <TabItem value='NGINX/Apache/Caddy'>
+        ```sh
+        sudo chown -R www-data:www-data /var/www/pelican
+        ```
+    </TabItem>
+    <TabItem value='Rocky Linux NGINX'>
+        ```sh
+        sudo chown -R nginx:nginx /var/www/pelican
+        ```
+    </TabItem>
+    <TabItem value='Rocky Linux Apache'>
+        ```sh
+        sudo chown -R apache:apache /var/www/pelican
+        ```
+    </TabItem>
+</Tabs>

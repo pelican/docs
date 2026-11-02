@@ -1,12 +1,15 @@
 # Dependencies
 /node_modules
 
-# Production
-/build
+# Production (static export)
+/out
 
 # Generated files
-.docusaurus
-.cache-loader
+/.next
+/.source
+next-env.d.ts
+*.tsbuildinfo
+.netlify
 
 # Misc
 .DS_Store
@@ -22,3 +25,6 @@ yarn-error.log*
 /.idea
 
 package-lock.json
+
+# design skill working files
+.taste-skill

@@ -1,0 +1,216 @@
+---
+title: "Creating a Custom Yolk"
+---
+
+:::warning
+This tutorial uses examples from our [`ghcr.io/pelican-eggs/yolks:java_8`](https://github.com/pelican-eggs/yolks) docker image, which can be found on GitHub. This tutorial also assumes some knowledge of [Docker](https://docker.io/), we suggest reading up if this all looks foreign to you.
+:::
+
+## Creating the Dockerfile
+
+The most important part of this process is to create the [`Dockerfile`](https://docs.docker.com/engine/reference/builder/) that will be used by Wings. Due to heavy restrictions on server containers, you must setup this file in a specific manner.
+
+In the past we have tried to make use of [Alpine Linux](https://alpinelinux.org) as much as possible for our images in order to keep their size down. But for my example we will just use what most eggs are built on, Ubuntu. 
+
+```dockerfile
+# ----------------------------------
+# Pelican Panel Dockerfile
+# Environment: Java
+# Minimum Panel Version: 1.0.0
+# ----------------------------------
+
+FROM        --platform=$TARGETOS/$TARGETARCH eclipse-temurin:8-jdk-noble
+
+LABEL       org.opencontainers.image.authors=“support@pelican.dev” \
+            org.opencontainers.image.source=“https://github.com/pelican-eggs/yolks” \
+            org.opencontainers.image.licenses=MIT \
+            org.opencontainers.image.description=“Custom Yolk for Pelican Hosting Panel”
+
+RUN         apt update -y \
+            && apt install -y \
+                curl \
+                lsof \
+                ca-certificates \
+                openssl \
+                git \
+                tar \
+                sqlite3 \
+                fontconfig \
+                tzdata \
+                iproute2 \
+                libfreetype6 \
+                redis-tools \
+                tini \
+                zip \
+                unzip \
+                jq
+
+## Setup user and working directory
+RUN         useradd -m -d /home/container -s /bin/bash container
+USER        container
+ENV         USER=container HOME=/home/container
+WORKDIR     /home/container
+
+STOPSIGNAL SIGINT
+
+COPY        --chown=container:container ./entrypoint.sh /entrypoint.sh
+RUN         chmod +x /entrypoint.sh
+ENTRYPOINT    ["/usr/bin/tini", "-g", "--"]
+CMD         ["/entrypoint.sh"]
+```
+
+Let's walk through the `Dockerfile` above. The first thing you'll notice is the [`FROM`](https://docs.docker.com/engine/reference/builder/#from) declaration.
+
+```dockerfile
+FROM        --platform=$TARGETOS/$TARGETARCH eclipse-temurin:8-jdk-noble
+```
+
+In this case, we are using [`eclipse-temurin:8-jdk-noble`](https://github.com/adoptium/temurin-build) which provides us with Java 8.
+
+# Dockerfile Platform Architecture
+
+The `--platform=$TARGETOS/$TARGETARCH` flag tells Docker which platform architecture to use when pulling the base image.
+
+## Build-time variables
+
+- `$TARGETOS` - Target operating system (e.g., `linux`)
+- `$TARGETARCH` - Target CPU architecture (e.g., `amd64`, `arm64`, `arm`)
+
+Docker automatically sets these during the build based on your target platform.
+This is essential for cross-platform builds and ensuring containers run correctly on different architectures.
+
+## Installing Dependencies
+
+The next thing we do is install the dependencies we will need using Ubuntu's package manager: `apt-get`. To keep things clean everything is being contained in a single [`RUN`](https://docs.docker.com/engine/reference/builder/#run) block.
+
+```bash
+RUN         apt update -y \
+            && apt install -y \
+                curl \
+                lsof \
+                ca-certificates \
+                openssl \
+                git \
+                tar \
+                sqlite3 \
+                fontconfig \
+                tzdata \
+                iproute2 \
+                libfreetype6 \
+                redis-tools \
+                tini \
+                zip \
+                unzip \
+                jq
+```
+
+## Creating a Container User
+
+Within this `RUN` block, you'll notice the `useradd` command. This is needed to be sure the container has the correct permissions within the system. 
+
+```bash
+RUN         useradd -m -d /home/container -s /bin/bash container
+```
+
+:::warning
+All Pelican containers must have a user named `container`, and the user home **must** be `/home/container`.
+:::
+
+After we create that user, we then define the default container [`USER`](https://docs.docker.com/engine/reference/builder/#user) as well as a few [`ENV`](https://docs.docker.com/engine/reference/builder/#env) settings to be applied to things running within the container.
+
+```bash
+ENV         USER=container HOME=/home/container
+```
+
+## Work Directory & Entrypoint
+
+One of the last things we do is define a `WORKDIR` which is where everything else will be executed. The `WORKDIR` must be set to `/home/container`.
+```bash
+WORKDIR     /home/container
+```
+
+Finally, we need to copy our `ENTRYPOINT` script into the docker image root. This is done using `COPY`, after which we define the command to be used when the container is started using `CMD`. The `CMD` line should always point to the `entrypoint.sh` file.
+```dockerfile
+COPY        --chown=container:container ./entrypoint.sh /entrypoint.sh
+RUN         chmod +x /entrypoint.sh
+ENTRYPOINT  ["/usr/bin/tini", "-g", "--"]
+CMD         ["/entrypoint.sh"]
+```
+
+### Understanding the ENTRYPOINT
+
+The `ENTRYPOINT ["/usr/bin/tini", "-g", "--"]` line sets up Tini as the init process for the container.
+
+**What is Tini:** Tini is a minimal init system that acts as PID 1 inside the container, handling process signals and reaping zombie processes.
+
+**Flags:**
+- `-g` - Sends signals to the entire process group, not just the child process
+- `--` - Separates Tini's arguments from the command that follows
+
+**Why use it:**
+- **Signal handling:** Ensures signals (like `SIGTERM` during container shutdown) are properly forwarded to your application, allowing graceful shutdowns
+- **Zombie reaping:** Prevents zombie processes from accumulating when child processes aren't properly cleaned up
+
+:::warning
+Sometimes you may need to change the permissions of the `entrypoint.sh` file. On Ubuntu Linux you can do this by executing `chmod +x entrypoint.sh` in the directory where the file is located.
+:::
+
+## Entrypoint Script
+
+In order to complete this `Dockerfile`, we will need an `entrypoint.sh` file which tells Docker how to run this specific server type.
+
+These entrypoint files are actually fairly abstracted, and Wings will pass in the start command as an environment variable before processing it and then executing the command.
+
+```bash
+#!/bin/bash
+cd /home/container
+
+# Output Current Java Version
+java -version ## only really needed to show what version is being used. Should be changed for different applications
+
+# Replace Startup Variables
+MODIFIED_STARTUP=`eval echo $(echo ${STARTUP} | sed -e 's/{{/${/g' -e 's/}}/}/g')`
+echo ":/home/container$ ${MODIFIED_STARTUP}"
+
+# Run the Server
+${MODIFIED_STARTUP}
+```
+
+The second command, `cd /home/container`, simply ensures we are in the correct directory when running the rest of the commands. We then follow that up with `java -version` to output this information to end-users, but that is not necessary.
+
+## Modifying the Startup Command
+
+The most significant part of this file is the `MODIFIED_STARTUP` environment variable. What we are doing in this case is parsing the environment `STARTUP` that is passed into the container by Wings. In most cases, this variable looks something like the example below:
+
+```bash
+STARTUP="java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}"
+```
+
+You'll notice some placeholders there, specifically `{{SERVER_MEMORY}}` and `{{SERVER_JARFILE}}`. These both refer to other environment variables being passed in, and they look something like the example below.
+
+```bash
+SERVER_MEMORY=1024
+SERVER_JARFILE=server.jar
+```
+
+There are a host of different environment variables, and they change depending on the specific egg configuration. However, that is not necessarily anything to worry about here.
+
+```bash
+MODIFIED_STARTUP=`eval echo $(echo ${STARTUP} | sed -e 's/{{/${/g' -e 's/}}/}/g')`
+```
+
+The command above simply evaluates the `STARTUP` environment variable, and then replaces anything surrounded in curly braces `{{EXAMPLE}}` with a matching environment variable (such as `EXAMPLE`). Thus, our `STARTUP` command:
+
+```bash
+java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}
+```
+
+Becomes:
+
+```bash
+java -Xms128M -Xmx1024M -jar server.jar
+```
+
+## Run the Command
+
+The last step is to run this modified startup command, which is done with the line `${MODIFIED_STARTUP}`.

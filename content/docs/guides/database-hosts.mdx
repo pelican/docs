@@ -1,0 +1,59 @@
+---
+title: "Database Hosts"
+---
+
+Database hosts allow to create per-server databases on the given host.
+
+## Database Configuration
+
+### Create Database Host user
+
+You will need a database user with the correct permissions before continuing any further.
+
+Run the following commands to quickly create a user for your new database host:
+
+```sql
+mysql -u root -p
+
+# Remember to change 'yourPassword' below to be a unique password
+# Replace 127.0.0.1 with your panel ip if your panel and wings are on different machines
+CREATE USER 'pelicanuser'@'127.0.0.1' IDENTIFIED BY 'yourPassword';
+GRANT ALL PRIVILEGES ON *.* TO 'pelicanuser'@'127.0.0.1' WITH GRANT OPTION;
+exit
+```
+
+### Allow external database access
+
+Chances are you'll need to allow external access to this MySQL instance in order to allow servers to connect to it.
+
+To do this, open `my.cnf`, which varies in location depending on your OS and how MySQL was installed. You can type `find /etc -iname my.cnf` to locate it.
+
+Open `my.cnf`, add text below to the bottom of the file and save it:
+
+```txt
+[mysqld]
+bind-address=0.0.0.0
+```
+
+Restart MySQL/ MariaDB to apply these changes. This will override the default MySQL configuration, which by default will only accept requests from localhost. Updating this will allow connections on all interfaces, and thus, external connections. Make sure to allow the MySQL port (default 3306) in your firewall.
+
+## Panel Configuration
+
+In the admin area of the panel, go to "Databases" and click the "New Database Host" button.
+
+<Admonition type="tip">
+    Users will later see the host as their database endpoint. Therefore, you should set it to a public ip or FQDN and not to `localhost` for example.
+</Admonition>
+
+Hit "Create" and if everything was entered correctly you should be redirected to the database host list and see your new database host.
+
+### Common issues
+
+`Connection refused`:
+Make sure that your database server is running and that you allowed external access to your database.
+
+`Host '_______' is not allowed to connect to this MariaDB server`:
+You most likely created the database user with a 127.0.0.1 host and are trying to connect from a different host.
+
+`Access denied for user '_______'@'_______'`:
+You either entered a wrong password or something is wrong with the database user you entered. Make sure that the database user exists and has the required permissions.

@@ -1,0 +1,41 @@
+import './global.css';
+import { RootProvider } from 'fumadocs-ui/provider/next';
+import type { Metadata } from 'next';
+import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
+import { ExternalLinkGuard } from '@/components/external-link-guard';
+
+// The brand faces from the V12 design, used across the whole site:
+// Bricolage Grotesque for display, Instrument Sans for reading and interface,
+// JetBrains Mono for code.
+const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--pl-font-display', display: 'swap' });
+const text = Instrument_Sans({ subsets: ['latin'], variable: '--pl-font-text', display: 'swap' });
+const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-jetbrains' });
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://pelican.dev'),
+  title: {
+    default: 'Pelican: free, open-source game server panel',
+    template: '%s | Pelican',
+  },
+  description:
+    'Pelican is a free, open-source panel for running game servers and applications in isolated Docker containers.',
+  icons: { icon: '/img/favicon.ico', apple: '/img/logo.png' },
+};
+
+export default function RootLayout({ children }: LayoutProps<'/'>) {
+  return (
+    <html lang="en" className={`${display.variable} ${text.variable} ${mono.variable}`} suppressHydrationWarning>
+      <body className="flex min-h-screen flex-col">
+        <RootProvider
+          // Follows the reader's system setting; the switch in the docs bar overrides it.
+          theme={{ defaultTheme: 'system' }}
+          // The search index is a static file built with the site (app/api/search).
+          search={{ options: { type: 'static' } }}
+        >
+          {children}
+          <ExternalLinkGuard />
+        </RootProvider>
+      </body>
+    </html>
+  );
+}

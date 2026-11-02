@@ -1,0 +1,184 @@
+---
+title: "Frequently Asked Questions"
+---
+
+Here are some of the most asked questions and our answers.
+
+**Last Updated: 2026-11-02**
+
+<Admonition type="info" title="Is Pelican ready?">
+    Almost: Pelican 1.0 is at its second release candidate (1.0.0-rc.2, released 22 October 2026).
+    **Head over to the [Install docs](/docs/panel/getting-started) and try out Pelican yourself.**
+</Admonition>
+
+<Tabs groupId="faq" queryString>
+    <TabItem label="Panel" value="panel">
+        <details>
+            <summary>What makes Pelican different to Pterodactyl?</summary>
+
+            We have a dedicated [Comparison page](https://pelican.dev/docs/comparison) where you can see differences and planned features.
+        </details>
+        <details>
+            <summary>Will my Eggs still be compatible?</summary>
+
+            Yes! We have a newer version of them planned, but the original ones will **always** work.
+        </details>
+        <details>
+            <summary>How can I migrate to Pelican?</summary>
+
+            Follow our [Migrating from Pterodactyl](/docs/guides/migrating-from-pterodactyl) guide.
+            Pelican upgrades your existing Pterodactyl database in place, so your users, servers and nodes carry over.
+        </details>
+        <details>
+            <summary>Are automatic updates planned?</summary>
+
+            Yes. And easier manual updates too.
+        </details>
+        <details>
+            <summary>Can I use the original API?</summary>
+
+            Yes, it'll be backwards compatible. Any new changes for the API will be put in a new and separated version.
+        </details>
+        <details>
+            <summary>Where can I submit bugs and pull requests?</summary>
+
+            They can be posted on our [Github](https://github.com/pelican/panel)!
+        </details>
+        <details>
+            <summary>Will Blueprint extensions work on Pelican?</summary>
+
+            No, Blueprint extensions will not work with Pelican.
+        </details>
+        <details>
+            <summary>Will WHMCS and other billing solutions still work?</summary>
+
+            To our knowledge, almost all of these solutions use the Panel's API to function.
+            We will be supporting the same API, so everything should work the same.
+        </details>
+        </TabItem>
+    <TabItem label="Wings" value="wings">
+        <details>
+            <summary>Are automatic updates planned?</summary>
+
+            Yes!
+        </details>
+        <details>
+            <summary>Where can I submit bugs and pull requests?</summary>
+
+            They can be posted on our [Github](https://github.com/pelican/wings)!
+        </details>
+        <details>
+            <summary>Will Wings support plugins?</summary>
+
+            Currently it's not planned. But new features are being built into Wings and are on the way!
+        </details>
+        <details>
+            <summary>Will the original Wings still be compatible with Pelican?</summary>
+
+            Yes, the original latest version of Wings will remain compatible with Pelican.
+            We are working on adding new features and improvements to Wings that will greatly improve your experience.
+        </details>
+        <details>
+            <summary>Will Podman / Kubernetes be supported?</summary>
+
+            Yes, we plan on supporting them in the future.
+        </details>
+    </TabItem>
+    <TabItem label="Licensing" value="licensing">
+        We forked from Pterodactyl and made the decision to relicense the Panel from the original [MIT license](https://choosealicense.com/licenses/mit/) to the [AGPLv3 license](https://choosealicense.com/licenses/agpl-3.0/).
+        
+        The AGPL license is what is known as a [copyleft](https://en.wikipedia.org/wiki/Copyleft) type license. It requires that any modifications to a public panel _must_ be open sourced under the same license. Private panels do not have that restriction!
+
+        Plugins do _not_ fall under the new license because they do not modify the panel source code. See the [plugin FAQ](?faq=plugins) for more information.
+
+        <Admonition type="info" title="Summary">
+            The license change does only affect you if you meet _all_ of the following requirements:
+            1. You modified the Pelican panel source files.
+            2. These modifications are not open source.
+            3. Your modified panel is publicly available. (Note: People who are family, friends, and acquaintances are not the public)
+
+            If you meet _all_ of the above requirements you need a commercial license.  
+            **Please note that the usage or development of plugins/themes does not require a commercial license.**
+        </Admonition>
+    </TabItem>
+    <TabItem label="Project" value="project">
+        <details>
+            <summary>Where can I submit feature requests and discuss new ideas?</summary>
+
+            They can be posted on our [Github Discussions](https://github.com/pelican/panel/discussions)
+        </details>
+        <details>
+            <summary>Are there any hostilities with the previous project?</summary>
+
+            Not at all. We also gave the previous team 2 months of advance notice.
+        </details>
+        <details>
+            <summary>Why move away to make your own project?</summary>
+
+            Difference of visions, directions, and opinions.
+        </details>
+        <details>
+            <summary>Couldn't these changes be part of Pterodactyl?</summary>
+
+            If they could, they would. But they can't, so they shan't.
+        </details>
+        <details>
+            <summary>What will happen with Pterodactyl? Is it EOL now?</summary>
+
+            We can't say that. That's up to the Maintainer of Pterodactyl. Pelican and Pterodactyl are separate projects.
+        </details>
+    </TabItem>
+    <TabItem label="Plugins" value="plugins">
+        <details>
+            <summary>When will the plugin system be available?</summary>
+
+            The plugin system was released with beta30!
+        </details>
+        <details>
+            <summary>Will pterodactyl addons work with the new system?</summary>
+
+            No. Pterodactyl "addons" are just code modifications. Our codebase now greatly differs from pterodactyls.
+            Pelicans plugin system will be a "real" plugin system where plugins don't touch any core files.
+        </details>
+        <details>
+            <summary>Will blueprint plugins work with the new system?</summary>
+
+            No. And the creator of blueprint won't port blueprint to also support pelican:
+            > [I] do not have the capacity to work on multiple Pterodactyl forks [and I] do not believe making an extension framework for a platform promising it's own addon system is worth our time.
+        </details>
+        <details>
+            <summary>Do I need the commercial license to use or develop plugins?</summary>
+
+            No. Pelicans plugin system will be a "real" plugin system where plugins don't touch any core files.
+        </details>
+        <details>
+            <summary>Do I need to license my plugins under the same license as pelican?</summary>
+
+            No. You can do whatever you want with your plugins, it's your code.
+        </details>
+        <details>
+            <summary>What can plugins do?</summary>
+
+            Pretty much anything you want! They can add new pages, change existing ones (to some extent), add new languages, change the theme (color/ font/ css) and more.
+
+            The first iteration _will_ have some limitations but we will continuously improve the capabilities of plugins.
+        </details>
+        <details>
+            <summary>How are plugins installed?</summary>
+
+            You can find information on that [here](./docs/panel/advanced/plugins#install-a-plugin).
+        </details>
+        <details>
+            <summary>How do you create plugins?</summary>
+
+            You can find detailed information on that [here](./docs/panel/advanced/plugins#create-a-plugin).
+        </details>
+        <details>
+            <summary>Are the plugins from the sneak peaks available?</summary>
+
+            Yes! Everything that was shown as little sneak peaks (+ more!) is available as plugin, for free and open source.
+
+            You can find the official plugin repo [here](https://github.com/pelican/plugins).
+        </details>
+    </TabItem>
+</Tabs>

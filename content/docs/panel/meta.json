@@ -1,0 +1,12 @@
+{
+  "title": "Panel",
+  "defaultOpen": true,
+  "pages": [
+    "getting-started",
+    "webserver-config",
+    "panel-setup",
+    "optional-config",
+    "update",
+    "advanced"
+  ]
+}
