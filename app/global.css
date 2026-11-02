@@ -539,6 +539,67 @@ figure.shiki {
   outline-offset: 3px;
 }
 
+/* Dark: the V3 night card (navy surface, white edge, sky shadow). */
+.dark .xl-dialog::backdrop {
+  background: rgba(0, 11, 18, 0.78);
+}
+
+.dark .xl-dialog__box {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+}
+
+.dark .xl-dialog__close {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+}
+
+.dark .xl-dialog__close:hover {
+  color: var(--pl-ink);
+}
+
+.dark .xl-dialog__kicker {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+}
+
+.dark .xl-dialog__desc {
+  color: #b9ccd6;
+}
+
+.dark .xl-dialog__url {
+  background: #04121c;
+  border-color: #2e4756;
+}
+
+.dark .xl-dialog__remember input {
+  accent-color: var(--pl-sky);
+}
+
+.dark .xl-btn {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 var(--pl-sky);
+}
+
+.dark .xl-btn:hover {
+  box-shadow: 6px 6px 0 var(--pl-sky);
+}
+
+.dark .xl-btn--go {
+  border-color: var(--pl-sky);
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  box-shadow: 4px 4px 0 #ffffff;
+}
+
+.dark .xl-btn--go:hover {
+  box-shadow: 6px 6px 0 #ffffff;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .xl-dialog[open] .xl-dialog__box {
     animation: xl-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;

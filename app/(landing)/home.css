@@ -23,6 +23,21 @@
   --font-text: var(--pl-font-text), 'Helvetica Neue', system-ui, sans-serif;
   --font-code: var(--font-jetbrains), ui-monospace, Menlo, monospace;
   --btn-shadow: var(--ink);
+  /* Theme roles. --ink and --white flip in dark mode (see "Dark theme" at the
+     end); these stay put or carry the role the light values had. */
+  --navy: #04121c; /* always navy: text on sky, chrome that is dark in both themes */
+  --snow: #ffffff; /* always white: text on navy */
+  --shadow: var(--ink); /* hard offset shadow on cards */
+  --muted: #33505f;
+  --faint: #8aa3b0;
+  --rule: #d5e3ea;
+  --rule-soft: #e3edf2;
+  --rule-ink: rgba(4, 18, 28, 0.12);
+  --chip: #e3edf2;
+  --hover: #e8f6fd;
+  --hover-strong: #cdeefd;
+  --on-sky-soft: #0b2a3b;
+  --kbd-bg: rgba(255, 255, 255, 0.5);
 
   container: page / inline-size;
   flex: 1;
@@ -107,7 +122,7 @@
 .pl-fine {
   margin-top: 24px;
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl kbd {
@@ -115,7 +130,7 @@
   font-size: 0.9em;
   padding: 0 5px;
   border: 2px solid currentColor;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--kbd-bg);
 }
 
 .pl-skip {
@@ -180,6 +195,7 @@
 
 .pl-btn--sky {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-btn--on-ink {
@@ -218,7 +234,7 @@
 .pl-card {
   border: var(--line);
   background: var(--white);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
 }
 
 /* ---- Announcement + nav ---------------------------------------------------------- */
@@ -229,8 +245,8 @@
   justify-content: center;
   gap: 8px 14px;
   padding: 11px var(--pad);
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
   font-size: 15px;
   font-weight: 500;
   text-align: center;
@@ -239,7 +255,7 @@
 .pl-announce__tag {
   padding: 2px 8px;
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
   font-weight: 700;
   font-size: 14px;
 }
@@ -328,7 +344,7 @@
   padding: 12px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
   font-size: 18px;
   font-weight: 600;
 }
@@ -340,6 +356,7 @@
 
 .pl-menu__sheet a:not(.pl-btn):hover {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-menu__sheet .pl-btn {
@@ -431,7 +448,7 @@
 .pl-window {
   border: var(--line);
   background: var(--white);
-  box-shadow: 14px 14px 0 var(--ink);
+  box-shadow: 14px 14px 0 var(--shadow);
 }
 
 .pl-window__bar {
@@ -906,7 +923,7 @@
   place-items: center;
   border: 2px solid var(--white);
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
   font-family: var(--font-display);
   font-weight: 800;
   line-height: 1;
@@ -1007,7 +1024,7 @@
   gap: 10px;
   padding: 8px 12px;
   border: 2px solid var(--line-on-ink);
-  background: var(--ink);
+  background: var(--navy);
 }
 
 .pl-egg__image > span {
@@ -1152,6 +1169,7 @@
 
 .pl-jump a:hover {
   background: var(--sky);
+  color: var(--navy);
 }
 
 /* ---- 01 Why ---------------------------------------------------------------------------------- */
@@ -1208,6 +1226,7 @@
 
 .pl-idx__row:hover {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-idx__n {
@@ -1275,7 +1294,7 @@
 
 .pl-ftab:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--shadow);
 }
 
 .pl-ftab[aria-selected='true'] {
@@ -1628,11 +1647,12 @@
 
 .pl-flow__box--sky {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-flow__box--ink {
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
 }
 
 .pl-flow__grid {
@@ -1667,7 +1687,7 @@
 
 .pl-machine:hover {
   transform: translate(-3px, -3px);
-  box-shadow: 11px 11px 0 var(--ink);
+  box-shadow: 11px 11px 0 var(--shadow);
 }
 
 .pl-machine img {
@@ -1690,7 +1710,7 @@
 
 .pl-machine span {
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 /* ---- 03 Plugins ------------------------------------------------------------------------------ */
@@ -1735,7 +1755,7 @@
   flex-direction: column;
   border: var(--line);
   background: var(--white);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
@@ -1743,7 +1763,7 @@
 
 .pl-pcard:hover {
   transform: translate(-3px, -3px);
-  box-shadow: 11px 11px 0 var(--ink);
+  box-shadow: 11px 11px 0 var(--shadow);
 }
 
 .pl-sticker {
@@ -1764,6 +1784,7 @@
 
 .pl-sticker--sky {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-pcard__body {
@@ -1861,7 +1882,7 @@
 }
 
 .pl-log__item + .pl-log__item {
-  border-top: 2px solid #d5e3ea;
+  border-top: 2px solid var(--rule);
 }
 
 .pl-log__row {
@@ -1882,7 +1903,7 @@
 
 .pl-log__row:hover,
 .pl-log__item[data-open] .pl-log__row {
-  background: #e8f6fd;
+  background: var(--hover);
 }
 
 .pl-log__ver strong {
@@ -1893,7 +1914,7 @@
 .pl-log__ver em {
   font-style: normal;
   font-size: 13px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-log__what {
@@ -1920,7 +1941,7 @@
 
 .pl-log__changes {
   padding: 4px 20px 16px;
-  background: #e8f6fd;
+  background: var(--hover);
 }
 
 .pl-log__changes li {
@@ -1939,7 +1960,7 @@
 .pl-log__changes em {
   font-style: normal;
   font-size: 13px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-log__full {
@@ -1949,10 +1970,10 @@
 
 .pl-people {
   padding: 24px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
   border: var(--line);
-  box-shadow: 8px 8px 0 var(--white);
+  box-shadow: 8px 8px 0 var(--snow);
 }
 
 .pl-people__head {
@@ -2048,6 +2069,7 @@
   margin-bottom: 8px;
   border: var(--line);
   background: var(--sky);
+  color: var(--navy);
   font-size: 20px;
 }
 
@@ -2077,7 +2099,8 @@
   padding: 22px 24px;
   border: var(--line);
   background: var(--sky);
-  box-shadow: 8px 8px 0 var(--ink);
+  color: var(--navy);
+  box-shadow: 8px 8px 0 var(--shadow);
 }
 
 .pl-domain__label {
@@ -2192,7 +2215,7 @@
 
 .pl-fund__bar .is-sky {
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
 }
 .pl-fund__bar .is-white {
   background: var(--white);
@@ -2293,7 +2316,7 @@
 
 .pl-final__logo {
   border-radius: 50%;
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--shadow);
 }
 
 .pl-final__title {
@@ -2448,7 +2471,7 @@
     height: 38px;
   }
   .pl-window {
-    box-shadow: 8px 8px 0 var(--ink);
+    box-shadow: 8px 8px 0 var(--shadow);
   }
   .pl-window__bar {
     font-size: 13px;
@@ -2511,7 +2534,7 @@
   }
   .pl-card,
   .pl-pcard {
-    box-shadow: 6px 6px 0 var(--ink);
+    box-shadow: 6px 6px 0 var(--shadow);
   }
   .pl-stats {
     grid-template-columns: repeat(2, 1fr);
@@ -2647,7 +2670,7 @@
   display: block;
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--ink);
+  background: var(--navy);
 }
 
 .pl-art--card {
@@ -2667,7 +2690,7 @@
 .pl-art--mark {
   display: grid;
   place-items: center;
-  color: var(--ink);
+  color: var(--navy);
   font-family: var(--font-display);
   font-weight: 800;
 }
@@ -2690,7 +2713,7 @@
 .pl-pcard__thumb {
   position: relative;
   border-bottom: var(--line);
-  background: var(--ink);
+  background: var(--navy);
 }
 
 .pl-pcard__bar {
@@ -2712,7 +2735,7 @@
 }
 
 .pl-pcard__bar i:nth-child(2) {
-  background: var(--white);
+  background: var(--snow);
 }
 
 .pl-pcard__bar i:nth-child(3) {
@@ -2829,8 +2852,8 @@ html:has(.pl-pcard__dialog[open]) {
   justify-content: space-between;
   gap: 16px;
   padding: 8px 8px 8px 20px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
 }
 
 .pl-pcard__dialog-bar p {
@@ -2846,7 +2869,7 @@ html:has(.pl-pcard__dialog[open]) {
   height: 44px;
   border: 3px solid var(--white);
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
   cursor: pointer;
 }
 
@@ -2920,7 +2943,7 @@ html:has(.pl-pcard__dialog[open]) {
   padding: 0 20px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
 }
 
 .pl-ei__search:focus-within {
@@ -2961,6 +2984,7 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__filter:hover {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-ei__filter:active {
@@ -3014,7 +3038,7 @@ html:has(.pl-pcard__dialog[open]) {
   gap: 12px;
   margin-top: 18px;
   padding-top: 18px;
-  border-top: 2px solid #d5e3ea;
+  border-top: 2px solid var(--rule);
 }
 
 .pl-ei__group {
@@ -3039,7 +3063,7 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__hint {
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ei__clear {
@@ -3050,10 +3074,10 @@ html:has(.pl-pcard__dialog[open]) {
   padding: 0 12px;
   border: 2px solid var(--ink);
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
   font: 700 14px var(--font-text);
   cursor: pointer;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--shadow);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
@@ -3061,12 +3085,12 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__clear:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--shadow);
 }
 
 .pl-ei__clear:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--ink);
+  box-shadow: 1px 1px 0 var(--shadow);
 }
 
 .pl-ei__count {
@@ -3077,7 +3101,7 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__sortnote {
   font-weight: 500;
-  color: #33505f;
+  color: var(--muted);
 }
 
 /* The list: one row per game (a button that opens its eggs), columns like a table. */
@@ -3090,7 +3114,7 @@ html:has(.pl-pcard__dialog[open]) {
   --gap: 16px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
 }
 
 .pl-ei__head,
@@ -3104,8 +3128,8 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__head {
   min-height: 42px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -3120,7 +3144,7 @@ html:has(.pl-pcard__dialog[open]) {
 }
 
 .pl-ei__game {
-  border-top: 2px solid #d5e3ea;
+  border-top: 2px solid var(--rule);
   scroll-margin-top: 220px;
 }
 
@@ -3154,11 +3178,11 @@ html:has(.pl-pcard__dialog[open]) {
 }
 
 .pl-ei__row:hover {
-  background: #e8f6fd;
+  background: var(--hover);
 }
 
 .pl-ei__game[data-open] .pl-ei__row {
-  background: #cdeefd;
+  background: var(--hover-strong);
 }
 
 .pl .pl-ei__row:focus-visible {
@@ -3169,7 +3193,7 @@ html:has(.pl-pcard__dialog[open]) {
   display: block;
   aspect-ratio: 460 / 215;
   border: 2px solid var(--ink);
-  background: var(--ink);
+  background: var(--navy);
   overflow: hidden;
 }
 
@@ -3200,7 +3224,7 @@ html:has(.pl-pcard__dialog[open]) {
 .pl-ei__peek {
   overflow: hidden;
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -3212,7 +3236,7 @@ html:has(.pl-pcard__dialog[open]) {
 }
 
 .pl-ei__cell--none {
-  color: #8aa3b0;
+  color: var(--faint);
 }
 
 /* "Updated" is the column's heading on wide screens; phones show it in the line. */
@@ -3247,7 +3271,7 @@ html:has(.pl-pcard__dialog[open]) {
   gap: 4px 18px;
   padding: 10px 0;
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ei__gamefacts a {
@@ -3273,7 +3297,7 @@ html:has(.pl-pcard__dialog[open]) {
   column-gap: var(--gap);
   min-height: 60px;
   padding: 8px 0 8px 14px;
-  border-top: 2px solid #d5e3ea;
+  border-top: 2px solid var(--rule);
   transition: background-color 0.12s ease;
 }
 
@@ -3282,7 +3306,7 @@ html:has(.pl-pcard__dialog[open]) {
 }
 
 .pl-ei__egg:hover {
-  background: #e8f6fd;
+  background: var(--hover);
 }
 
 .pl-ei__egg:has(.pl-ei__eggname:focus-visible) {
@@ -3323,7 +3347,7 @@ html:has(.pl-pcard__dialog[open]) {
 }
 
 .pl-ei__egg[data-dim] .pl-ei__eggname {
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ei__desc {
@@ -3377,6 +3401,7 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__copy:hover {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-ei__more {
@@ -3390,7 +3415,7 @@ html:has(.pl-pcard__dialog[open]) {
   color: var(--ink);
   font: 700 14px var(--font-text);
   cursor: pointer;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--shadow);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
@@ -3398,7 +3423,7 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__more:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--shadow);
 }
 
 .pl-ei__empty {
@@ -3464,7 +3489,7 @@ html:has(.pl-pcard__dialog[open]) {
   }
   .pl-ei__table {
     --thumb: 68px;
-    box-shadow: 6px 6px 0 var(--ink);
+    box-shadow: 6px 6px 0 var(--shadow);
   }
   .pl-ei__head {
     display: none;
@@ -3505,7 +3530,7 @@ html:has(.pl-pcard__dialog[open]) {
   .pl-ei__cell,
   .pl-ei__egg .pl-ei__cell {
     font-size: 13px;
-    color: #33505f;
+    color: var(--muted);
   }
   .pl-ei__cell:nth-child(3) {
     display: inline;
@@ -3599,8 +3624,8 @@ html:has(.pl-ed[open]) {
   gap: 16px;
   flex: none;
   padding: 16px 16px 18px 24px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
 }
 
 .pl-ed__titles {
@@ -3628,7 +3653,7 @@ html:has(.pl-ed[open]) {
   height: 44px;
   border: 3px solid var(--white);
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
   cursor: pointer;
 }
 
@@ -3656,7 +3681,7 @@ html:has(.pl-ed[open]) {
   flex-wrap: wrap;
   margin-top: 10px;
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ed__meta span + span::before {
@@ -3674,7 +3699,7 @@ html:has(.pl-ed[open]) {
 .pl-ed__how {
   margin-top: 14px;
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ed__note {
@@ -3720,7 +3745,7 @@ html:has(.pl-ed[open]) {
 
 .pl-ed code {
   padding: 1px 5px;
-  background: #e3edf2;
+  background: var(--chip);
   font-family: var(--font-code);
   font-size: 13.5px;
   overflow-wrap: anywhere;
@@ -3728,7 +3753,7 @@ html:has(.pl-ed[open]) {
 
 .pl-ed__muted {
   font-size: 14px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ed__label {
@@ -3741,7 +3766,7 @@ html:has(.pl-ed[open]) {
   align-items: flex-start;
   gap: 12px;
   padding: 8px 0;
-  border-top: 2px solid #e3edf2;
+  border-top: 2px solid var(--rule-soft);
 }
 
 .pl-ed__images li:first-child {
@@ -3768,6 +3793,7 @@ html:has(.pl-ed[open]) {
   padding: 1px 8px;
   border: 2px solid var(--ink);
   background: var(--sky);
+  color: var(--navy);
   font-size: 12px;
   font-weight: 700;
 }
@@ -3791,8 +3817,8 @@ html:has(.pl-ed[open]) {
 .pl-ed .pl-ed__cmd {
   margin: 0;
   padding: 14px 16px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -3814,7 +3840,7 @@ html:has(.pl-ed[open]) {
 
 .pl-ed__var {
   padding: 12px 0;
-  border-top: 2px solid #e3edf2;
+  border-top: 2px solid var(--rule-soft);
 }
 
 .pl-ed__var:first-child {
@@ -3848,6 +3874,7 @@ html:has(.pl-ed[open]) {
 
 .pl-ed__access--edit {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-ed__access--see {
@@ -3855,9 +3882,9 @@ html:has(.pl-ed[open]) {
 }
 
 .pl-ed__access--hidden {
-  border-color: #8aa3b0;
-  background: #e3edf2;
-  color: #33505f;
+  border-color: var(--faint);
+  background: var(--chip);
+  color: var(--muted);
 }
 
 .pl-ed__vardesc {
@@ -3886,7 +3913,7 @@ html:has(.pl-ed[open]) {
 .pl-ed__varmeta dt {
   font-size: 13px;
   font-weight: 700;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ed__varmeta dd {
@@ -3919,14 +3946,15 @@ html:has(.pl-ed[open]) {
 
 .pl-ed__script summary:hover {
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-ed__script pre {
   max-height: 460px;
   margin: 12px 0 0;
   padding: 14px 16px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
   overflow: auto;
 }
 
@@ -3942,7 +3970,7 @@ html:has(.pl-ed[open]) {
 .pl-ed__credit {
   margin-top: 24px;
   font-size: 13px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-ed__credit a,
@@ -4057,12 +4085,12 @@ html:has(.pl-ed[open]) {
 .pl-mdx table {
   border: 3px solid var(--ink);
   background: var(--white);
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: 6px 6px 0 var(--shadow);
 }
 
 .pl-mdx th {
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
 }
 
 .pl-mdx details {
@@ -4120,7 +4148,7 @@ html:has(.pl-ed[open]) {
 .pl-mdx [data-orientation='horizontal'].border {
   border: 2px solid var(--ink);
   border-radius: 0;
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--shadow);
 }
 
 /* Smallest phones: logo, stars and Menu don't fit on one line; GitHub stays in the menu and footer. */
@@ -4143,8 +4171,8 @@ html:has(.pl-ed[open]) {
 
 .pl-sup-ways__title {
   padding: 14px 22px;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--navy);
+  color: var(--snow);
   font-size: 15px;
   font-weight: 700;
 }
@@ -4237,7 +4265,7 @@ html:has(.pl-ed[open]) {
   padding: clamp(22px, 2.2cqi, 32px);
   border: var(--line);
   background: var(--white);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 var(--shadow);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
@@ -4245,7 +4273,7 @@ html:has(.pl-ed[open]) {
 
 .pl-sup-plan:hover {
   transform: translate(-3px, -3px);
-  box-shadow: 11px 11px 0 var(--ink);
+  box-shadow: 11px 11px 0 var(--shadow);
 }
 
 .pl-sup-plan__name {
@@ -4294,7 +4322,7 @@ html:has(.pl-ed[open]) {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #33505f;
+  color: var(--muted);
 }
 
 .pl-sup-plan__group--adds {
@@ -4303,7 +4331,7 @@ html:has(.pl-ed[open]) {
   padding: 3px 8px;
   border: 2px solid var(--ink);
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
 }
 
 .pl-sup-plan__group:first-child {
@@ -4339,14 +4367,14 @@ html:has(.pl-ed[open]) {
 .pl-sup-plan__perks .is-new .pl-sup-plan__mark {
   border: 2px solid var(--ink);
   background: var(--sky);
-  color: var(--ink);
+  color: var(--navy);
 }
 
 .pl-sup-plans__note {
   margin-top: 32px;
   max-width: 70ch;
   font-size: 15px;
-  color: #33505f;
+  color: var(--muted);
 }
 
 /* How signing up works */
@@ -4377,6 +4405,7 @@ html:has(.pl-ed[open]) {
   height: 44px;
   border: var(--line);
   background: var(--sky);
+  color: var(--navy);
   font-size: 24px;
   line-height: 1;
 }
@@ -4403,7 +4432,7 @@ html:has(.pl-ed[open]) {
   overflow-x: auto;
   border: var(--line);
   background: var(--white);
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: 6px 6px 0 var(--shadow);
 }
 
 .pl-sup-compare table {
@@ -4417,7 +4446,7 @@ html:has(.pl-ed[open]) {
   padding: 12px 16px;
   text-align: left;
   vertical-align: top;
-  border-bottom: 2px solid rgba(4, 18, 28, 0.12);
+  border-bottom: 2px solid var(--rule-ink);
 }
 
 .pl-sup-compare tbody tr:last-child > * {
@@ -4426,6 +4455,7 @@ html:has(.pl-ed[open]) {
 
 .pl-sup-compare thead th {
   background: var(--sky);
+  color: var(--navy);
   border-bottom: var(--line);
   font-family: var(--font-display);
   font-size: 19px;
@@ -4540,6 +4570,7 @@ html:has(.pl-ed[open]) {
 /* Give once (sky) */
 .pl-sup-once {
   background: var(--sky);
+  color: var(--navy);
   padding: var(--section) 0;
 }
 
@@ -4557,7 +4588,7 @@ html:has(.pl-ed[open]) {
 .pl-sup-once__body .pl-sup-once__fine {
   margin-top: 14px;
   font-size: 15px;
-  color: #0b2a3b;
+  color: var(--on-sky-soft);
 }
 
 .pl-sup-once .pl-btn {
@@ -4581,7 +4612,7 @@ html:has(.pl-ed[open]) {
   padding: 26px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: 6px 6px 0 var(--shadow);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
@@ -4589,7 +4620,7 @@ html:has(.pl-ed[open]) {
 
 .pl-sup-help__card:hover {
   transform: translate(-3px, -3px);
-  box-shadow: 9px 9px 0 var(--ink);
+  box-shadow: 9px 9px 0 var(--shadow);
 }
 
 .pl-sup-help__icon {
@@ -4598,6 +4629,7 @@ html:has(.pl-ed[open]) {
   padding: 10px;
   border: var(--line);
   background: var(--sky);
+  color: var(--navy);
 }
 
 .pl-sup-help__card h3 {
@@ -4759,7 +4791,7 @@ html:has(.pl-ed[open]) {
   .pl-sup-compare tr {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    border-bottom: 2px solid rgba(4, 18, 28, 0.12);
+    border-bottom: 2px solid var(--rule-ink);
   }
   .pl-sup-compare tbody tr:last-child {
     border-bottom: 0;
@@ -4787,7 +4819,7 @@ html:has(.pl-ed[open]) {
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #33505f;
+    color: var(--muted);
   }
   .pl-sup-head__lede,
   .pl-sup-money__lede,
@@ -4803,6 +4835,271 @@ html:has(.pl-ed[open]) {
   .pl .pl-sup-plan:hover,
   .pl .pl-sup-help__card:hover,
   .pl .pl-sup-ways a:hover svg {
+    transform: none;
+  }
+}
+
+/* =========================================================================
+ * Dark theme, after the V12 "V3 · Night" board.
+ *
+ * next-themes puts `dark` on <html> before the first paint (system setting
+ * by default, the switch in the nav or the docs bar overrides it, and the
+ * choice is shared through localStorage "theme"). In the dark, --ink and
+ * --white swap roles: --ink is the foreground (text, the 3px borders) and
+ * --white the card surface, so most rules above follow on their own.
+ * Shadows turn sky; sky bands become navy grounds; navy (.on-ink) sections
+ * keep their light values and only the bands around them change.
+ * ====================================================================== */
+.dark .pl {
+  --ground: #04121c;
+  --deep: #071926;
+  --code: #000b12;
+  --ink: #ffffff;
+  --white: #0a1e2b;
+  --card: #0a1e2b; /* the surface, also inside .on-ink where --white is white again */
+  --paper: #071926;
+  --text: #d4e3ea;
+  --muted: #b9ccd6;
+  --faint: #7f99a6;
+  --rule: #2e4756;
+  --rule-soft: #1f3a4a;
+  --rule-ink: rgba(185, 204, 214, 0.18);
+  --chip: #14304a;
+  --hover: #0f2c3d;
+  --hover-strong: #123a52;
+  --on-sky-soft: #b9ccd6;
+  --kbd-bg: rgba(255, 255, 255, 0.1);
+  --sky-deep: #38bdf8;
+  --shadow: var(--sky);
+  --btn-shadow: var(--sky);
+  background: var(--ground);
+}
+
+.dark .pl ::selection {
+  background: var(--sky);
+  color: var(--navy);
+}
+
+/* Navy sections were already dark: give them back their light values. */
+.dark .pl .on-ink {
+  --ink: #04121c;
+  --white: #ffffff;
+  --line: 3px solid var(--line-on-ink);
+  --btn-shadow: var(--snow);
+}
+
+/* ---- Full-width bands: navy grounds with slate edges, no bright blocks ---- */
+.dark .pl :is(.pl-features, .pl-activity, .pl-sup-faq) {
+  background: var(--ground);
+}
+
+.dark .pl :is(.pl-final, .pl-sup-once) {
+  background: var(--deep);
+}
+
+.dark .pl-games {
+  background: var(--deep);
+  border-bottom: 3px solid var(--rule);
+}
+
+.dark .pl :is(
+    .pl-jump,
+    .pl-features,
+    .pl-activity,
+    .pl-final,
+    .pl-ei__list,
+    .pl-page__body,
+    .pl-sup-plans,
+    .pl-sup-help,
+    .pl-sup-faq
+  ) {
+  border-color: var(--rule);
+}
+
+.dark .pl :is(.pl-final, .pl-sup-once) {
+  border-top: 3px solid var(--rule);
+}
+
+.dark .pl-sup-once {
+  color: var(--ink);
+  border-bottom: 3px solid var(--rule);
+}
+
+.dark .pl-announce {
+  background: var(--deep);
+  border-bottom: 3px solid var(--rule);
+}
+
+/* ---- Buttons: sky fill, white offset (the board's primary) ---- */
+.dark .pl .pl-btn--ink,
+.dark .pl .pl-btn--sky {
+  background: var(--sky);
+  color: var(--navy);
+  border-color: var(--sky);
+  --btn-shadow: var(--snow);
+}
+
+/* Selected states read as sky, like the board's hovered tiles. */
+.dark .pl-badge span,
+.dark .pl-ei__filter[aria-checked='true'],
+.dark .pl-ei__filter[aria-pressed='true'] {
+  background: var(--sky);
+  color: var(--navy);
+}
+
+.dark .pl-ei__filter[aria-checked='true'],
+.dark .pl-ei__filter[aria-pressed='true'] {
+  border-color: var(--sky);
+}
+
+.dark .pl-ftab[aria-selected='true'] {
+  background: var(--sky);
+  color: var(--navy);
+  border-color: var(--sky);
+  box-shadow: 7px 7px 0 var(--snow);
+}
+
+/* Sky things with a shadow get a white one, so they don't blur into it. */
+.dark .pl :is(.pl-ei__clear, .pl-sticker--sky) {
+  --shadow: var(--snow);
+}
+
+/* ---- Homepage pieces ---- */
+.dark .pl-jump {
+  --line: 3px solid var(--rule);
+}
+
+.dark .pl-flow__box--ink,
+.dark .pl-ei__head,
+.dark .pl-ed .pl-ed__cmd,
+.dark .pl-ed__script pre {
+  background: var(--code);
+}
+
+.dark .pl-people {
+  background: var(--card);
+  box-shadow: 8px 8px 0 var(--sky);
+}
+
+.dark .pl-log__bar span {
+  background: var(--sky);
+}
+
+.dark .pl-domain {
+  background: var(--white);
+  color: var(--ink);
+  border-color: var(--sky);
+}
+
+.dark .pl-domain__input {
+  background: var(--ground);
+}
+
+.dark .pl-domain__input:focus-visible {
+  box-shadow: 0 0 0 3px var(--sky);
+}
+
+.dark .pl-ei__search:focus-within {
+  box-shadow: 8px 8px 0 var(--snow);
+}
+
+/* ---- /support ---- */
+.dark .pl-sup-compare thead th {
+  background: var(--code);
+  color: var(--ink);
+}
+
+.dark .pl-sup-compare thead th,
+.dark .pl-sup-compare thead tr {
+  border-bottom-color: var(--sky);
+}
+
+.dark .pl-sup-compare__no {
+  color: var(--faint);
+}
+
+/* ---- /faq: Fumadocs' dark palette inside the MDX ---- */
+.dark .pl-mdx {
+  --color-fd-background: #071926;
+  --color-fd-foreground: #f3f7f9;
+  --color-fd-muted: #0a1f2e;
+  --color-fd-muted-foreground: #b9ccd6;
+  --color-fd-card: #0a1e2b;
+  --color-fd-card-foreground: #f3f7f9;
+  --color-fd-border: rgba(185, 204, 214, 0.18);
+  --color-fd-primary: #38bdf8;
+  --color-fd-primary-foreground: #04121c;
+  --color-fd-secondary: #0f2a3c;
+  --color-fd-secondary-foreground: #f3f7f9;
+  --color-fd-accent: rgba(56, 189, 248, 0.16);
+  --color-fd-accent-foreground: #e0f2fe;
+  --color-fd-info: #38bdf8;
+  --color-fd-warning: #fbbf24;
+  --color-fd-error: #fb7185;
+  --color-fd-success: #4ade80;
+  --pl-edge: #2e4756;
+  --pl-shadow: #38bdf8;
+}
+
+/* ---- Theme switch (Fumadocs' ThemeSwitch, drawn as a B v3 button) ---- */
+.pl-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 4px;
+  border: var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--btn-shadow);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.pl-theme:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--btn-shadow);
+}
+
+.pl-theme:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--btn-shadow);
+}
+
+.pl-theme > svg {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border-radius: 0;
+  color: var(--muted);
+}
+
+/* The active half is filled; the other half shows what a click switches to. */
+.pl-theme > svg[class*='bg-fd-accent'] {
+  background: var(--sky);
+  color: var(--navy);
+}
+
+.pl-menu__theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0 6px 8px;
+}
+
+@container page (max-width: 700px) {
+  .pl-nav__actions > .pl-theme {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl .pl-theme:hover,
+  .pl .pl-theme:active {
     transform: none;
   }
 }
