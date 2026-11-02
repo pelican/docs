@@ -72,6 +72,30 @@
   status = 301
   force = true
 
+# ---- Markdown for AI tools (lib/llms.ts) ---------------------------------
+# /docs/panel/update.md is built to out/md/panel/update.md (the docs page route
+# owns every path under /docs). Not forced, so it only applies when no file
+# exists: the HTML pages under /docs are served as before. Keep it last.
+[[redirects]]
+  from = "/docs/*"
+  to = "/md/:splat"
+  status = 200
+
+[[headers]]
+  for = "/*.md"
+  [headers.values]
+    Content-Type = "text/markdown; charset=utf-8"
+
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+[[headers]]
+  for = "/llms-full.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
 # The install scripts are fetched with curl; make sure they come back as text.
 [[headers]]
   for = "/*.sh"

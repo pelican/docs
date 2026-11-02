@@ -2,7 +2,17 @@ import './(landing)/home.css';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooterNav } from '@/components/home/sections';
+import type { Metadata } from 'next';
 import { links } from '@/lib/links';
+import { ogImage } from '@/lib/og';
+
+// No canonical: a 404 isn't a page to index (Next.js adds `robots: noindex` itself).
+export const metadata: Metadata = {
+  title: 'Page not found',
+  description: 'This page doesn’t exist on pelican.dev. It may have moved when the docs were rebuilt.',
+  openGraph: { type: 'website', siteName: 'Pelican', title: 'Page not found', images: [ogImage.home] },
+  twitter: { card: 'summary_large_image', title: 'Page not found', images: [ogImage.home] },
+};
 
 /** 404, in the homepage's design. */
 export default function NotFound() {

@@ -3080,138 +3080,297 @@ html:has(.pl-pcard__dialog[open]) {
   color: #33505f;
 }
 
-.pl-ei__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
-  gap: 28px;
-}
-
-.pl-ei__card {
-  display: flex;
-  flex-direction: column;
+/* The list: one row per game (a button that opens its eggs), columns like a table. */
+.pl-ei__table {
+  --thumb: 104px;
+  --c-eggs: 118px;
+  --c-installs: 128px;
+  --c-updated: 116px;
+  --c-act: 132px;
+  --gap: 16px;
   border: var(--line);
   background: var(--white);
   box-shadow: 8px 8px 0 var(--ink);
-  content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
-  scroll-margin-top: 200px;
 }
 
-.pl-ei__art {
-  aspect-ratio: 231 / 87;
-  border-bottom: var(--line);
+.pl-ei__head,
+.pl-ei__row {
+  display: grid;
+  grid-template-columns: var(--thumb) minmax(0, 1fr) var(--c-eggs) var(--c-installs) var(--c-updated) var(--c-act);
+  align-items: center;
+  column-gap: var(--gap);
+  padding: 0 16px;
+}
+
+.pl-ei__head {
+  min-height: 42px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pl-ei__head span:first-child {
+  grid-column: 1 / 3;
+}
+
+.pl-ei__cells {
+  display: contents;
+}
+
+.pl-ei__game {
+  border-top: 2px solid #d5e3ea;
+  scroll-margin-top: 220px;
+}
+
+.pl-ei__game:first-child {
+  border-top: 0;
+}
+
+.pl-ei__game[data-open] {
+  border-top-color: var(--ink);
+}
+
+.pl-ei__game[data-open] + .pl-ei__game {
+  border-top: var(--line);
+}
+
+.pl-ei__gh {
+  font: inherit;
+}
+
+.pl-ei__row {
+  width: 100%;
+  min-height: 76px;
+  padding-block: 10px;
+  border: 0;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.pl-ei__row:hover {
+  background: #e8f6fd;
+}
+
+.pl-ei__game[data-open] .pl-ei__row {
+  background: #cdeefd;
+}
+
+.pl .pl-ei__row:focus-visible {
+  outline-offset: -5px;
+}
+
+.pl-ei__thumb {
+  display: block;
+  aspect-ratio: 460 / 215;
+  border: 2px solid var(--ink);
   background: var(--ink);
   overflow: hidden;
 }
 
-.pl-ei__body {
-  padding: 16px 18px 18px;
+.pl-ei__thumb .pl-art--icon {
+  padding: 4px;
+}
+
+.pl-ei__thumb .pl-art--mark {
+  font-size: 26px;
+}
+
+.pl-ei__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .pl-ei__name {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
+  font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
-.pl-ei__meta {
-  margin-top: 4px;
+.pl-ei__peek {
+  overflow: hidden;
+  font-size: 14px;
+  color: #33505f;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pl-ei__cell {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-ei__cell--none {
+  color: #8aa3b0;
+}
+
+/* "Updated" is the column's heading on wide screens; phones show it in the line. */
+.pl-ei__updl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pl-ei__chev {
+  justify-self: end;
+  transition: transform 0.15s ease;
+}
+
+.pl-ei__game[data-open] .pl-ei__chev {
+  transform: rotate(180deg);
+}
+
+/* An open game: its eggs, lined up under the game's columns. */
+.pl-ei__drawer {
+  padding: 4px 16px 18px calc(16px + var(--thumb) + var(--gap));
+  border-top: var(--line);
+  background: var(--paper);
+}
+
+.pl-ei__gamefacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: 10px 0;
   font-size: 14px;
   color: #33505f;
 }
 
-.pl-ei__meta a {
+.pl-ei__gamefacts a {
+  color: var(--ink);
   font-weight: 600;
 }
 
 .pl-ei__eggs {
-  margin-top: 12px;
+  margin-top: 10px;
+  border: 2px solid var(--ink);
+  background: var(--white);
+}
+
+.pl-ei__gamefacts + .pl-ei__eggs {
+  margin-top: 0;
 }
 
 .pl-ei__egg {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) var(--c-eggs) var(--c-installs) var(--c-updated) calc(var(--c-act) - 2px);
   align-items: center;
-  column-gap: 10px;
-  padding: 10px 0;
+  column-gap: var(--gap);
+  min-height: 60px;
+  padding: 8px 0 8px 14px;
   border-top: 2px solid #d5e3ea;
+  transition: background-color 0.12s ease;
+}
+
+.pl-ei__egg:first-child {
+  border-top: 0;
+}
+
+.pl-ei__egg:hover {
+  background: #e8f6fd;
+}
+
+.pl-ei__egg:has(.pl-ei__eggname:focus-visible) {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.pl-ei__eggmain {
+  min-width: 0;
 }
 
 .pl-ei__eggname {
-  min-width: 0;
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1.3;
-  text-decoration: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 700 16px/1.3 var(--font-text);
+  text-align: left;
   overflow-wrap: anywhere;
+  cursor: pointer;
 }
 
-/* Inline, so a wrapped name keeps the icon after its last word. */
-.pl-ei__eggname svg {
-  display: inline;
-  vertical-align: -1px;
+/* The whole row opens the egg; Copy URL sits above it. */
+.pl-ei__eggname::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
-.pl-ei__actions {
-  display: flex;
-  gap: 6px;
+.pl .pl-ei__eggname:focus-visible {
+  outline: none;
 }
 
-.pl-ei__desc,
-.pl-ei__image,
-.pl-ei__stats {
-  grid-column: 1 / -1;
+.pl-ei__egg:hover .pl-ei__eggname {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
-/* Visible, not a hover tooltip, so touch screens get it too. Details on Pelican Hub has the rest. */
+.pl-ei__egg[data-dim] .pl-ei__eggname {
+  color: #33505f;
+}
+
 .pl-ei__desc {
-  display: -webkit-box;
-  margin-top: 5px;
+  margin-top: 2px;
   overflow: hidden;
   font-size: 14px;
   line-height: 1.4;
   color: var(--text);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
-.pl-ei__stats {
-  margin-top: 2px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #33505f;
-}
-
-.pl-ei__eggname:hover {
-  text-decoration: underline;
-}
-
-.pl-ei__image {
-  display: block;
-  min-width: 0;
-  margin-top: 5px;
-  font-family: var(--font-code);
-  font-size: 12.5px;
-  color: #33505f;
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.pl-ei__egg .pl-ei__cell {
+  font-size: 14px;
+}
+
+.pl-ei__eggact {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-right: 10px;
+}
+
+.pl-ei__go {
+  flex: none;
+  transition: transform 0.12s ease;
+}
+
+.pl-ei__egg:hover .pl-ei__go {
+  transform: translateX(3px);
+}
+
 .pl-ei__copy {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  text-decoration: none;
   flex-shrink: 0;
-  min-height: 34px;
+  min-height: 36px;
   padding: 0 10px;
   border: 2px solid var(--ink);
   background: var(--white);
   color: var(--ink);
   font: 700 13px var(--font-text);
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.12s ease;
 }
@@ -3220,11 +3379,26 @@ html:has(.pl-pcard__dialog[open]) {
   background: var(--sky);
 }
 
-.pl-ei__more summary {
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 700;
+.pl-ei__more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin-top: 14px;
+  padding: 0 14px;
+  border: 2px solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  font: 700 14px var(--font-text);
   cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.pl-ei__more:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
 }
 
 .pl-ei__empty {
@@ -3238,6 +3412,28 @@ html:has(.pl-pcard__dialog[open]) {
 
 .pl-ei__source {
   margin-top: 48px;
+}
+
+/* Narrower screens: drop the Updated column, then the Eggs column moves into the line. */
+@container page (max-width: 1000px) {
+  .pl-ei__table {
+    --thumb: 88px;
+    --c-eggs: 104px;
+    --c-installs: 112px;
+    --c-act: 120px;
+    --gap: 12px;
+  }
+  .pl-ei__head,
+  .pl-ei__row {
+    grid-template-columns: var(--thumb) minmax(0, 1fr) var(--c-eggs) var(--c-installs) var(--c-act);
+  }
+  .pl-ei__egg {
+    grid-template-columns: minmax(0, 1fr) var(--c-eggs) var(--c-installs) calc(var(--c-act) - 2px);
+  }
+  .pl-ei__head span:nth-child(4),
+  .pl-ei__cell:nth-child(3) {
+    display: none;
+  }
 }
 
 @container page (max-width: 700px) {
@@ -3266,8 +3462,535 @@ html:has(.pl-pcard__dialog[open]) {
   .pl-ei__chips {
     overflow: visible;
   }
-  .pl-ei__card {
+  .pl-ei__table {
+    --thumb: 68px;
     box-shadow: 6px 6px 0 var(--ink);
+  }
+  .pl-ei__head {
+    display: none;
+  }
+  .pl-ei__row {
+    grid-template-columns: var(--thumb) minmax(0, 1fr) 22px;
+    grid-template-areas:
+      'thumb who chev'
+      'thumb cells chev';
+    align-items: start;
+    row-gap: 4px;
+    min-height: 0;
+    padding: 12px;
+  }
+  .pl-ei__thumb {
+    grid-area: thumb;
+    margin-top: 2px;
+  }
+  .pl-ei__who {
+    grid-area: who;
+  }
+  .pl-ei__name {
+    font-size: 18px;
+  }
+  .pl-ei__peek {
+    display: none;
+  }
+  .pl-ei__chev {
+    grid-area: chev;
+    align-self: center;
+  }
+  .pl-ei__cells {
+    grid-area: cells;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 12px;
+  }
+  .pl-ei__cell,
+  .pl-ei__egg .pl-ei__cell {
+    font-size: 13px;
+    color: #33505f;
+  }
+  .pl-ei__cell:nth-child(3) {
+    display: inline;
+  }
+  .pl-ei__cell--none {
+    display: none !important;
+  }
+  .pl-ei__updl {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
+  .pl-ei__drawer {
+    padding: 2px 10px 14px;
+  }
+  .pl-ei__egg {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'main act'
+      'cells act';
+    row-gap: 2px;
+    padding: 10px 0 10px 12px;
+  }
+  .pl-ei__eggmain {
+    grid-area: main;
+  }
+  .pl-ei__egg .pl-ei__cells {
+    grid-area: cells;
+  }
+  .pl-ei__eggact {
+    grid-area: act;
+    padding-right: 6px;
+  }
+  .pl-ei__desc {
+    display: none;
+  }
+}
+
+/* Small phones: Copy URL keeps its icon (and its label for screen readers). */
+@container page (max-width: 420px) {
+  .pl-ei__copy {
+    justify-content: center;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+  .pl-ei__copy span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ---- /eggs: one egg's details, in a dialog ------------------------------------------ */
+html:has(.pl-ed[open]) {
+  overflow: hidden;
+}
+
+.pl-ed {
+  width: min(1000px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  box-shadow: 10px 10px 0 var(--sky);
+  overflow: hidden;
+}
+
+.pl-ed[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.pl-ed::backdrop {
+  background: rgba(4, 18, 28, 0.85);
+}
+
+.pl-ed__bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex: none;
+  padding: 16px 16px 18px 24px;
+  background: var(--ink);
+  color: var(--white);
+}
+
+.pl-ed__titles {
+  min-width: 0;
+}
+
+.pl-ed__kicker {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sky);
+}
+
+.pl-ed__title {
+  margin-top: 2px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.pl-ed__close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--white);
+  background: var(--sky);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pl .pl-ed__close:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 3px;
+}
+
+.pl-ed__body {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 24px 28px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.pl-ed__desc {
+  max-width: 72ch;
+  font-size: 18px;
+  white-space: pre-line;
+}
+
+.pl-ed__meta {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #33505f;
+}
+
+.pl-ed__meta span + span::before {
+  content: '·';
+  margin: 0 8px;
+}
+
+.pl-ed__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.pl-ed__how {
+  margin-top: 14px;
+  font-size: 14px;
+  color: #33505f;
+}
+
+.pl-ed__note {
+  margin-top: 24px;
+  padding: 16px 18px;
+  border: 3px dashed var(--ink);
+  background: var(--white);
+  font-weight: 600;
+}
+
+.pl-ed__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.pl-ed__sec {
+  min-width: 0;
+  padding: 16px 18px 18px;
+  border: var(--line);
+  background: var(--white);
+}
+
+.pl-ed__sec--wide {
+  grid-column: 1 / -1;
+}
+
+.pl-ed__h {
+  margin-bottom: 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.pl-ed__sec > p + p,
+.pl-ed__sec > ul + p {
+  margin-top: 8px;
+}
+
+.pl-ed code {
+  padding: 1px 5px;
+  background: #e3edf2;
+  font-family: var(--font-code);
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.pl-ed__muted {
+  font-size: 14px;
+  color: #33505f;
+}
+
+.pl-ed__label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pl-ed__images li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 2px solid #e3edf2;
+}
+
+.pl-ed__images li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.pl-ed__images code {
+  min-width: 0;
+}
+
+/* The image's name in the egg, and "Default" under the first one. */
+.pl-ed__imgtag {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 68px;
+  padding-top: 2px;
+}
+
+.pl-ed__badge {
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  background: var(--sky);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pl-ed__plain li + li {
+  margin-top: 6px;
+}
+
+.pl-ed__plain {
+  font-size: 15px;
+}
+
+.pl-ed__startup + .pl-ed__startup {
+  margin-top: 12px;
+}
+
+.pl-ed__startup .pl-ed__label {
+  margin-bottom: 6px;
+}
+
+.pl-ed .pl-ed__cmd {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--ink);
+  color: var(--white);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pl-ed .pl-ed__cmd code {
+  padding: 0;
+  background: none;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pl-ed__tok {
+  color: var(--sky);
+}
+
+.pl-ed .pl-ed__chip {
+  font-size: 14px;
+}
+
+.pl-ed__var {
+  padding: 12px 0;
+  border-top: 2px solid #e3edf2;
+}
+
+.pl-ed__var:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.pl-ed__var:last-child {
+  padding-bottom: 0;
+}
+
+.pl-ed__varhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.pl-ed__varhead strong {
+  font-size: 16px;
+}
+
+.pl-ed__access {
+  margin-left: auto;
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pl-ed__access--edit {
+  background: var(--sky);
+}
+
+.pl-ed__access--see {
+  background: var(--white);
+}
+
+.pl-ed__access--hidden {
+  border-color: #8aa3b0;
+  background: #e3edf2;
+  color: #33505f;
+}
+
+.pl-ed__vardesc {
+  margin-top: 4px;
+  max-width: 80ch;
+  font-size: 14px;
+  color: var(--text);
+  white-space: pre-line;
+}
+
+.pl-ed__varmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  margin: 8px 0 0;
+}
+
+.pl-ed__varmeta div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.pl-ed__varmeta dt {
+  font-size: 13px;
+  font-weight: 700;
+  color: #33505f;
+}
+
+.pl-ed__varmeta dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+
+.pl-ed .pl-ed__rule {
+  font-size: 12.5px;
+}
+
+.pl-ed__script {
+  margin-top: 12px;
+}
+
+.pl-ed__script summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--ink);
+  background: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pl-ed__script summary:hover {
+  background: var(--sky);
+}
+
+.pl-ed__script pre {
+  max-height: 460px;
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  background: var(--ink);
+  color: var(--white);
+  overflow: auto;
+}
+
+.pl-ed__script pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: normal;
+}
+
+.pl-ed__credit {
+  margin-top: 24px;
+  font-size: 13px;
+  color: #33505f;
+}
+
+.pl-ed__credit a,
+.pl-ed__note a {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .pl-ed {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    box-shadow: 5px 5px 0 var(--sky);
+  }
+  .pl-ed__bar {
+    padding: 12px 12px 14px 16px;
+  }
+  .pl-ed__body {
+    padding: 18px 14px 22px;
+  }
+  .pl-ed__desc {
+    font-size: 16px;
+  }
+  .pl-ed__meta {
+    flex-direction: column;
+  }
+  .pl-ed__meta span + span::before {
+    content: none;
+  }
+  .pl-ed__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pl-ed__sec {
+    padding: 14px;
+  }
+  .pl-ed__actions {
+    gap: 10px;
+  }
+  .pl-ed__actions .pl-btn {
+    flex: 1 1 100%;
+    min-height: 46px;
+    padding: 8px 14px;
+    line-height: 1.25;
+    white-space: normal;
+    text-align: center;
+  }
+  .pl-ed__access {
+    margin-left: 0;
   }
 }
 

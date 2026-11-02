@@ -5,6 +5,8 @@
  */
 
 export interface EggEntry {
+  /** "<game>/<egg>", unique: the egg's detail view is /eggs/?egg=<id>, its data /data/eggs/<id>.json. */
+  id: string;
   name: string;
   description: string;
   /** Raw egg file, as a panel imports it ("#" encoded as %23). */
@@ -58,6 +60,45 @@ export const USUAL_PORTS: Record<string, string> = {
   terraria: '7777',
   factorio: '34197',
 };
+
+/** Everything the detail view shows that the list doesn't have: public/data/eggs/<id>.json. */
+export interface EggDetail {
+  id: string;
+  game: { slug: string; name: string };
+  name: string;
+  author: string | null;
+  /** The whole description (the list has the first 220 characters). */
+  description: string;
+  /** Raw egg file. */
+  url: string;
+  /** "PLCN_v3" (Pelican), "PTDL_v2" (Pterodactyl)… */
+  format: string | null;
+  /** Docker images in the egg's order; the first is the default. label is left out when it is the image itself. */
+  images: { label?: string; image: string }[];
+  /** Startup commands; Pelican eggs can offer several, each with a name. */
+  startup: { label: string; command: string }[];
+  stop: string | null;
+  /** Panel features, including any the filters don't know. */
+  features: string[];
+  variables: {
+    name: string;
+    description: string;
+    env: string;
+    default: string;
+    rules: string[];
+    /** Users can see it on their server's Startup page. */
+    viewable: boolean;
+    /** Users can change it there. */
+    editable: boolean;
+  }[];
+  install: { container: string | null; entrypoint: string | null; script: string };
+}
+
+/** Where an egg's detail file is served from. */
+export const eggDetailUrl = (id: string) => `/data/eggs/${id}.json`;
+
+/** Address of an egg's detail view on /eggs. */
+export const eggPageUrl = (id: string) => `/eggs/?egg=${id}`;
 
 /** The egg file on GitHub (for reading), from its raw download URL. */
 export function eggSourceUrl(rawUrl: string): string {

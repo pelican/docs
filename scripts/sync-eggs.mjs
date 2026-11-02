@@ -26,15 +26,23 @@
  * egg's Hub page, install count and last update. When the Hub can't be reached,
  * the values from the previous run are kept.
  *
+ * An egg published twice (as JSON and as YAML, same uuid and name) is listed once.
+ * Each egg gets an id ("minecraft/paper") and a small detail file,
+ * public/data/eggs/<id>.json (images, startup and stop commands, variables,
+ * install script), which /eggs loads only when someone opens that egg.
+ *
  *   node scripts/sync-eggs.mjs            # refresh everything
  *   node scripts/sync-eggs.mjs --if-online # used by `pnpm build`: never fails the build
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'data/eggs.json');
+/** One small JSON file per egg for its detail view on /eggs, loaded when it opens. */
+const DETAILS = join(root, 'public/data/eggs');
 const ICONS = join(root, 'public/img/eggs');
 const GAME_ICONS = join(root, 'public/img/games');
 const INDEX_URL = 'https://raw.githubusercontent.com/pelican-eggs/pelican-eggs.github.io/main/content/pelican.json';
@@ -256,52 +264,83 @@ function imageNote(images) {
   return `${images.length} images`;
 }
 
-const unquote = (s) => s.trim().replace(/^(['"])(.*)\1$/, '$2');
+/** Text from an egg file: Windows line ends made plain, outer blank lines dropped. */
+const text = (value) => (typeof value === 'string' ? value.replace(/\r\n?/g, '\n').trim() : '');
 
-/** The indented lines under a top-level YAML key ("docker_images:", "features:"). */
-function yamlBlock(text, key) {
-  const lines = text.split('\n');
-  const start = lines.findIndex((line) => line.replace(/\s+$/, '') === `${key}:`);
-  if (start < 0) return [];
-  const block = [];
-  for (const line of lines.slice(start + 1)) {
-    if (!/^\s/.test(line)) break;
-    if (line.trim()) block.push(line);
+/**
+ * Validation rules as a list. Older eggs write them as one "required|string|max:20"
+ * string; a regex rule may hold "|" itself, so its pieces are joined back up.
+ */
+function ruleList(rules) {
+  if (Array.isArray(rules)) return rules.filter((r) => typeof r === 'string' && r).map((r) => r.trim());
+  if (typeof rules !== 'string' || !rules.trim()) return [];
+  const out = [];
+  for (const piece of rules.split('|')) {
+    const last = out.at(-1);
+    // Still inside "regex:/…/": the closing delimiter hasn't come yet.
+    if (last?.startsWith('regex:') && !/^regex:(.).*\1[a-z]*$/s.test(last)) out[out.length - 1] = `${last}|${piece}`;
+    else out.push(piece.trim());
   }
-  return block;
+  return out.filter(Boolean);
 }
 
-/** Pull what the page needs out of an egg file (JSON or YAML, either format). */
-function readEgg(text) {
-  const out = { uuid: null, images: [], icon: null, features: [], vars: [] };
-  let data = null;
+/** Pull what the page needs out of an egg file (JSON or YAML; Pterodactyl's or Pelican's format). */
+function readEgg(source) {
+  let data;
   try {
-    data = JSON.parse(text);
+    data = JSON.parse(source);
   } catch {
-    /* YAML: read the few fields we need with patterns */
+    data = parseYaml(source);
   }
-  if (data) {
-    const egg = data.egg ?? data;
-    out.uuid = egg.uuid ?? null;
-    // The first image is the default: the panel picks it for new servers.
-    out.images = Object.values(egg.docker_images ?? {}).filter((v) => typeof v === 'string');
-    if (!out.images.length && egg.image_docker) out.images = [egg.image_docker];
-    out.features = Array.isArray(egg.features) ? egg.features : [];
-    out.vars = (Array.isArray(egg.variables) ? egg.variables : []).map((v) => v?.env_variable);
-    if (typeof egg.image === 'string' && egg.image.startsWith('data:image/')) out.icon = egg.image;
-  } else {
-    out.uuid = /^uuid:\s*['"]?([0-9a-f-]{36})/m.exec(text)?.[1] ?? null;
-    // "  'Java 25': 'ghcr.io/…:java_25'"; keys may hold a colon too ("ghcr.io/…:wine_latest: ghcr.io/…").
-    out.images = yamlBlock(text, 'docker_images')
-      .map((line) => unquote(line.slice(line.lastIndexOf(': ') + 2)))
-      .filter(Boolean);
-    out.features = yamlBlock(text, 'features').map((line) => /^\s+-\s+(.+)$/.exec(line)?.[1]).map((f) => f && unquote(f));
-    out.vars = [...text.matchAll(/^\s*(?:-\s+)?env_variable:\s*['"]?([A-Za-z0-9_]+)/gm)].map((m) => m[1]);
-    const icon = /^image:\s*['"]?(data:image\/[a-z+]+;base64,[A-Za-z0-9+/=]+)/m.exec(text);
-    if (icon) out.icon = icon[1];
-  }
+  const egg = data?.egg ?? data;
+  if (!egg || typeof egg !== 'object') throw new Error('not an egg');
+  const out = { uuid: egg.uuid ?? null, images: [], icon: null, features: [], vars: [], detail: null };
+
+  // The first image is the default: the panel picks it for new servers.
+  const images = Object.entries(egg.docker_images ?? {}).filter(([, image]) => typeof image === 'string' && image);
+  if (!images.length && typeof egg.image_docker === 'string') images.push([egg.image_docker, egg.image_docker]);
+  out.images = images.map(([, image]) => image);
+  out.features = Array.isArray(egg.features) ? egg.features.filter((f) => typeof f === 'string') : [];
+  const variables = (Array.isArray(egg.variables) ? egg.variables : []).filter((v) => v && typeof v === 'object');
+  out.vars = [...new Set(variables.map((v) => v.env_variable).filter((v) => typeof v === 'string' && v))];
+  // Pelican's YAML export calls the icon "icon"; its JSON export and older eggs call it "image".
+  const icon = [egg.icon, egg.image].find((v) => typeof v === 'string' && v.startsWith('data:image/'));
+  if (icon) out.icon = icon;
+
+  // Everything the egg's detail view shows (public/data/eggs/<id>.json).
+  const startup =
+    egg.startup_commands && typeof egg.startup_commands === 'object'
+      ? Object.entries(egg.startup_commands).map(([label, command]) => ({ label, command: text(command) }))
+      : [{ label: 'Default', command: text(egg.startup) }];
+  const install = egg.scripts?.installation ?? {};
+  out.detail = {
+    format: egg.meta?.version ?? null,
+    author: text(egg.author) || null,
+    description: text(egg.description),
+    images: images.map(([label, image]) => (label === image ? { image } : { label, image })),
+    startup: startup.filter((s) => s.command),
+    stop: text(egg.config?.stop) || null,
+    features: [...new Set(out.features)],
+    variables: variables
+      .slice()
+      .sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0))
+      .map((v) => ({
+        name: text(v.name) || text(v.env_variable),
+        description: text(v.description),
+        env: text(v.env_variable),
+        default: v.default_value == null ? '' : String(v.default_value),
+        rules: ruleList(v.rules),
+        viewable: Boolean(v.user_viewable),
+        editable: Boolean(v.user_editable),
+      })),
+    install: {
+      container: text(install.container) || null,
+      entrypoint: text(install.entrypoint) || null,
+      script: text(install.script),
+    },
+  };
+
   out.features = [...new Set(out.features.filter((f) => FEATURES.has(f)))].sort();
-  out.vars = [...new Set(out.vars.filter((v) => typeof v === 'string' && v))];
   return out;
 }
 
@@ -484,7 +523,7 @@ async function loadSharp() {
   try {
     return (await import('sharp')).default;
   } catch {
-    console.warn('eggs: sharp is not installed; featured icons stay remote this run');
+    console.warn('eggs: sharp is not installed; featured icons stay remote and egg icons full size this run');
     return null;
   }
 }
@@ -520,6 +559,7 @@ async function main() {
       const slug = gameName === 'Minecraft: Bedrock Edition' ? 'minecraft-bedrock' : slugify(gameName);
       if (!groups.has(slug)) groups.set(slug, { slug, name: gameName, category, folder, eggs: [] });
       groups.get(slug).eggs.push({
+        id: null,
         name: entry.egg.name,
         description: (entry.egg.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 220),
         url: encodeEggUrl(url),
@@ -539,7 +579,10 @@ async function main() {
   const allEggs = [...groups.values()].flatMap((g) => g.eggs.map((e) => ({ g, e })));
   const uuids = new Map();
   mkdirSync(ICONS, { recursive: true });
+  const sharp = await loadSharp();
+  const savedIcons = new Set();
   let read = 0;
+  const details = new Map();
   await pool(allEggs, 16, async ({ g, e }) => {
     try {
       const egg = readEgg(await getText(e.url));
@@ -547,20 +590,65 @@ async function main() {
       e.imageNote = imageNote(egg.images);
       e.features = egg.features;
       e.vars = egg.vars;
+      details.set(e, egg.detail);
       if (egg.uuid) uuids.set(e, egg.uuid);
       if (egg.icon) {
         const [, ext, b64] = /^data:image\/([a-z+]+);base64,(.+)$/.exec(egg.icon) ?? [];
         if (b64) {
-          const file = `${slugify(g.slug + '-' + e.name)}.${ext === 'svg+xml' ? 'svg' : ext}`;
-          writeFileSync(join(ICONS, file), Buffer.from(b64, 'base64'));
+          const name = slugify(g.slug + '-' + e.name);
+          const bytes = Buffer.from(b64, 'base64');
+          // Egg icons can be 512px PNGs of 200 KB; /eggs shows them as small thumbnails.
+          let file = null;
+          if (sharp && ext !== 'svg+xml') {
+            file = `${name}.webp`;
+            await sharp(bytes)
+              .resize(ICON_PX, ICON_PX, { fit: 'inside', withoutEnlargement: true })
+              .webp({ quality: 90, alphaQuality: 90, effort: 6 })
+              .toFile(join(ICONS, file))
+              .catch(() => (file = null));
+          }
+          if (!file) {
+            file = `${name}.${ext === 'svg+xml' ? 'svg' : ext}`;
+            writeFileSync(join(ICONS, file), bytes);
+          }
           e.icon = `/img/eggs/${file}`;
+          savedIcons.add(file);
         }
       }
       read++;
-    } catch {
-      /* keep the egg without extras */
+    } catch (error) {
+      console.warn(`eggs: could not read ${e.url} (${error.message}); listed without its details`);
     }
   });
+
+  // public/img/eggs only holds icons this script saves: drop ones no egg uses any more.
+  // (An egg whose file couldn't be read this run keeps its icon file.)
+  const unreadIcons = new Set(allEggs.filter(({ e }) => !details.has(e)).map(({ g, e }) => slugify(g.slug + '-' + e.name)));
+  for (const file of readdirSync(ICONS)) {
+    if (!savedIcons.has(file) && !unreadIcons.has(file.replace(/\.[a-z]+$/, ''))) rmSync(join(ICONS, file));
+  }
+
+  // Some eggs are published twice, as JSON and as YAML (same uuid, same name): list them
+  // once, keeping the JSON file, which older panels can import too.
+  let duplicates = 0;
+  for (const g of groups.values()) {
+    const seen = new Set();
+    const ordered = [...g.eggs].sort((a, b) => Number(b.url.endsWith('.json')) - Number(a.url.endsWith('.json')));
+    const keep = new Set();
+    for (const e of ordered) {
+      const key = uuids.has(e) ? `${uuids.get(e)} ${norm(e.name)}` : e.url;
+      if (seen.has(key)) {
+        duplicates++;
+        continue;
+      }
+      seen.add(key);
+      keep.add(e);
+    }
+    g.eggs = g.eggs.filter((e) => keep.has(e));
+  }
+  for (let i = allEggs.length - 1; i >= 0; i--) {
+    if (!allEggs[i].g.eggs.includes(allEggs[i].e)) allEggs.splice(i, 1);
+  }
 
   // Pelican Hub: each egg's page, install count and last update, matched by uuid.
   // Offline or rate-limited: keep what the previous run found.
@@ -625,7 +713,6 @@ async function main() {
   // Square icons. Featured games get a local WebP (once; the file is the cache);
   // other Steam games keep the address of their 32px community icon.
   const featured = featuredSlugs();
-  const sharp = featured.size ? await loadSharp() : null;
   mkdirSync(GAME_ICONS, { recursive: true });
   let iconLookups = 0;
   let iconFiles = 0;
@@ -666,9 +753,43 @@ async function main() {
     // No store artwork: fall back to an original drawing, or an icon built into the game's own egg.
     g.art ??= DRAWN_ICONS[g.slug] ?? ownEggIcon(g);
     delete g.folder;
-    g.eggs.sort((a, b) => a.name.localeCompare(b.name));
+    g.eggs.sort((a, b) => a.name.localeCompare(b.name) || a.url.localeCompare(b.url));
+    // "<game>/<egg>": the address of the egg's detail view (/eggs/?egg=minecraft/paper).
+    const taken = new Set();
+    for (const e of g.eggs) {
+      const base = `${g.slug}/${slugify(e.name) || 'egg'}`;
+      let id = base;
+      for (let n = 2; taken.has(id); n++) id = `${base}-${n}`;
+      taken.add(id);
+      e.id = id;
+    }
   }
   games.sort((a, b) => b.eggs.length - a.eggs.length || a.name.localeCompare(b.name));
+
+  // Detail files. An egg whose file couldn't be read this run keeps its previous one.
+  const written = new Set();
+  let detailFiles = 0;
+  for (const { g, e } of allEggs) {
+    const file = join(DETAILS, `${e.id}.json`);
+    written.add(file);
+    const detail = details.get(e);
+    if (!detail) continue;
+    const { format, author, description, ...rest } = detail;
+    const out = { id: e.id, game: { slug: g.slug, name: g.name }, name: e.name, author, description, url: e.url, format, ...rest };
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify(out) + '\n');
+    detailFiles++;
+  }
+  if (existsSync(DETAILS)) {
+    for (const entry of readdirSync(DETAILS, { recursive: true, withFileTypes: true })) {
+      const file = join(entry.parentPath, entry.name);
+      if (entry.isFile() && file.endsWith('.json') && !written.has(file)) rmSync(file);
+    }
+    for (const entry of readdirSync(DETAILS, { withFileTypes: true })) {
+      const dir = join(DETAILS, entry.name);
+      if (entry.isDirectory() && !readdirSync(dir).length) rmSync(dir, { recursive: true });
+    }
+  }
 
   const categories = Object.entries(CATEGORY_NAMES)
     .map(([id, name]) => ({ id, name, count: games.filter((g) => g.category === id).reduce((n, g) => n + g.eggs.length, 0) }))
@@ -678,7 +799,8 @@ async function main() {
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify(out, null, 1) + '\n');
   console.log(
-    `eggs: ${allEggs.length} eggs (${read} files read) in ${games.length} groups; ` +
+    `eggs: ${allEggs.length} eggs (${read} files read, ${duplicates} duplicates dropped, ` +
+      `${detailFiles} detail files written) in ${games.length} groups; ` +
       `${allEggs.filter(({ e }) => e.hubUrl).length} on Pelican Hub (${hubMatched} matched this run), ` +
       `${allEggs.filter(({ e }) => e.installs).length} with installs; ` +
       `${games.filter((g) => g.art).length} with artwork (${looked} Steam lookups), ` +

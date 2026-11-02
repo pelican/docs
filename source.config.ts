@@ -11,7 +11,18 @@ import { transformerSetup } from './lib/shiki-setup';
 // The documentation under /docs.
 export const docs = defineDocs({
   dir: 'content/docs',
-  docs: { schema: frontmatterSchema },
+  docs: {
+    schema: frontmatterSchema,
+    postprocess: {
+      // Markdown of each page for /llms.txt, /llms-full.txt and /docs/….md
+      // (lib/llms.ts). The JSX components come out as placeholders that
+      // lib/llms.ts turns into plain Markdown.
+      includeProcessedMarkdown: {
+        headingIds: false,
+        mdxAsPlaceholder: ['Admonition', 'Callout', 'Tabs', 'TabItem', 'Link', 'SetupPanel', 'Mermaid'],
+      },
+    },
+  },
   meta: { schema: metaSchema },
 });
 

@@ -24,7 +24,7 @@ import { DomainCta } from './domain-cta';
 import { DiscordIcon, GitHubIcon } from '@/components/icons';
 import { links } from '@/lib/links';
 import { builtSinceFork, project, recentContributors } from '@/lib/home-data';
-import { eggCount, eggIndex, eggSourceUrl, FEATURED, gameBySlug, gameCount, USUAL_PORTS } from '@/lib/eggs';
+import { eggCount, eggIndex, eggPageUrl, FEATURED, gameBySlug, gameCount, USUAL_PORTS } from '@/lib/eggs';
 
 const fmt = new Intl.NumberFormat('en');
 const repo = 'https://github.com/pelican/panel';
@@ -112,7 +112,7 @@ export function GamesSection() {
           name: e.name,
           description: e.description,
           url: e.url,
-          sourceUrl: eggSourceUrl(e.url),
+          detailUrl: eggPageUrl(e.id),
           image: e.image,
         })),
       },

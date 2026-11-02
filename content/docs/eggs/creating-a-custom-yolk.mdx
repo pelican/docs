@@ -1,5 +1,6 @@
 ---
 title: "Creating a Custom Yolk"
+description: "Build a custom yolk, a Docker image for Pelican eggs, by writing the Dockerfile and entrypoint script that Wings uses to start servers."
 ---
 
 :::warning
@@ -67,7 +68,7 @@ FROM        --platform=$TARGETOS/$TARGETARCH eclipse-temurin:8-jdk-noble
 
 In this case, we are using [`eclipse-temurin:8-jdk-noble`](https://github.com/adoptium/temurin-build) which provides us with Java 8.
 
-# Dockerfile Platform Architecture
+## Dockerfile Platform Architecture
 
 The `--platform=$TARGETOS/$TARGETARCH` flag tells Docker which platform architecture to use when pulling the base image.
 

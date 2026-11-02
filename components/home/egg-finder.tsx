@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { ArrowRight, ArrowUpRight, Check, Copy, Search } from 'lucide-react';
+import { ArrowRight, Check, Copy, Search } from 'lucide-react';
 import { GameIcon } from './game-art';
 
 /** One egg, with only what the strip shows. */
@@ -10,8 +10,8 @@ export interface FinderEgg {
   description: string;
   /** Raw egg file: the URL a panel imports. */
   url: string;
-  /** The same file on GitHub, for reading. */
-  sourceUrl: string;
+  /** The egg's details on /eggs (images, variables, install script). */
+  detailUrl: string;
   image: string | null;
 }
 
@@ -174,7 +174,7 @@ function EggCard({ egg }: { egg: FinderEgg }) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      /* clipboard blocked: the file link next to it still works */
+      /* clipboard blocked: the details link next to it has the URL too */
     }
   }
 
@@ -201,8 +201,8 @@ function EggCard({ egg }: { egg: FinderEgg }) {
       )}
       <p className="pl-egg__desc">{egg.description || 'No description yet.'}</p>
       <div className="pl-egg__actions">
-        <a href={egg.sourceUrl} className="pl-egg__file">
-          Egg file <ArrowUpRight size={15} aria-hidden />
+        <a href={egg.detailUrl} className="pl-egg__file" aria-label={`Details for ${egg.name}`}>
+          Details <ArrowRight size={15} aria-hidden />
         </a>
         <button type="button" className="pl-egg__copy" onClick={copy} aria-label={`Copy the import URL for ${egg.name}`}>
           {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}

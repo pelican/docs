@@ -2,13 +2,16 @@ import type { Metadata } from 'next';
 import { ArrowRight, Bug, Check, Code, Egg, Heart, Languages, MessageCircle, Plug, Plus } from 'lucide-react';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooterNav } from '@/components/home/sections';
+import { ogImage, pageMetadata } from '@/lib/og';
 import { compareRows, funding, helpWays, plans, signupSteps, supportFaq, supportLinks } from '@/lib/support';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Support Pelican',
   description:
     'Pelican is free and always will be. See what each monthly plan costs and gives, where the money goes, how to give once, and how to help without paying.',
-};
+  path: '/support/',
+  image: ogImage.support,
+});
 
 const HELP_ICONS = [Code, Languages, Bug, Egg, Plug, MessageCircle];
 

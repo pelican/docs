@@ -3,6 +3,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 import { ExternalLinkGuard } from '@/components/external-link-guard';
+import { OG_SIZE, SITE_NAME, ogImage } from '@/lib/og';
 
 // The brand faces from the V12 design, used across the whole site:
 // Bricolage Grotesque for display, Instrument Sans for reading and interface,
@@ -19,7 +20,17 @@ export const metadata: Metadata = {
   },
   description:
     'Pelican is a free, open-source panel for running game servers and applications in isolated Docker containers.',
+  applicationName: SITE_NAME,
   icons: { icon: '/img/favicon.ico', apple: '/img/logo.png' },
+  // Fallbacks only: each page sets its own canonical, Open Graph and Twitter card
+  // through pageMetadata() in lib/og.ts.
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    locale: 'en_US',
+    images: [{ url: ogImage.home, ...OG_SIZE, alt: 'Pelican' }],
+  },
+  twitter: { card: 'summary_large_image', images: [ogImage.home] },
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
