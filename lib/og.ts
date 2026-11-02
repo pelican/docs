@@ -5,6 +5,15 @@ import { links } from '@/lib/links';
 export const SITE_URL = 'https://pelican.dev';
 export const SITE_NAME = 'Pelican';
 
+/** Netlify sets CONTEXT ("production", "deploy-preview", "branch-deploy") and DEPLOY_PRIME_URL at build time. */
+export const IS_PRODUCTION = !process.env.CONTEXT || process.env.CONTEXT === 'production';
+
+/**
+ * Origin for share images. On previews it's the deploy's own URL, so link previews
+ * work before these images exist on pelican.dev. Canonicals always stay on SITE_URL.
+ */
+export const ASSET_URL = (!IS_PRODUCTION && process.env.DEPLOY_PRIME_URL) || SITE_URL;
+
 /** Social card size; the generated PNGs under /og are exactly this. */
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 

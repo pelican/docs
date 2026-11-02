@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITE_URL } from '@/lib/og';
+import { IS_PRODUCTION, SITE_URL } from '@/lib/og';
 
 // Written once into out/robots.txt by the static export.
 export const dynamic = 'force-static';
@@ -7,7 +7,8 @@ export const dynamic = 'force-static';
 /** Everything is open, AI crawlers included: the owner wants the docs discoverable. */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: '*', allow: '/' },
+    // Deploy previews are closed to crawlers; production is open to everyone.
+    rules: IS_PRODUCTION ? { userAgent: '*', allow: '/' } : { userAgent: '*', disallow: '/' },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

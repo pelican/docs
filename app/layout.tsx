@@ -3,7 +3,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 import { ExternalLinkGuard } from '@/components/external-link-guard';
-import { OG_SIZE, SITE_NAME, ogImage } from '@/lib/og';
+import { ASSET_URL, IS_PRODUCTION, OG_SIZE, SITE_NAME, ogImage } from '@/lib/og';
 
 // The brand faces from the V12 design, used across the whole site:
 // Bricolage Grotesque for display, Instrument Sans for reading and interface,
@@ -13,7 +13,10 @@ const text = Instrument_Sans({ subsets: ['latin'], variable: '--pl-font-text', d
 const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-jetbrains' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pelican.dev'),
+  // Resolves the relative share-image URLs; a preview's own address on deploy previews.
+  metadataBase: new URL(ASSET_URL),
+  // Previews must not compete with pelican.dev in search results.
+  ...(IS_PRODUCTION ? {} : { robots: { index: false, follow: false } }),
   title: {
     default: 'Pelican: free, open-source game server panel',
     template: '%s | Pelican',
