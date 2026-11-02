@@ -4897,9 +4897,11 @@ html:has(.pl-ed[open]) {
   background: var(--deep);
 }
 
+/* Dark-only dividers are inset shadows, not borders: a border adds height, so the page
+   would jump when someone switches theme. Shadows take no space. */
 .dark .pl-games {
   background: var(--deep);
-  border-bottom: 3px solid var(--rule);
+  box-shadow: inset 0 -3px 0 var(--rule);
 }
 
 .dark .pl :is(
@@ -4916,18 +4918,20 @@ html:has(.pl-ed[open]) {
   border-color: var(--rule);
 }
 
-.dark .pl :is(.pl-final, .pl-sup-once) {
-  border-top: 3px solid var(--rule);
+.dark .pl .pl-final {
+  box-shadow: inset 0 3px 0 var(--rule);
 }
 
-.dark .pl-sup-once {
+.dark .pl .pl-sup-once {
   color: var(--ink);
-  border-bottom: 3px solid var(--rule);
+  box-shadow:
+    inset 0 3px 0 var(--rule),
+    inset 0 -3px 0 var(--rule);
 }
 
 .dark .pl-announce {
   background: var(--deep);
-  border-bottom: 3px solid var(--rule);
+  box-shadow: inset 0 -3px 0 var(--rule);
 }
 
 /* ---- Buttons: sky fill, white offset (the board's primary) ---- */

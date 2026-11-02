@@ -9,16 +9,23 @@ export function Mermaid({ chart }: { chart: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    let drawnDark: boolean | undefined;
+    let renders = 0;
 
     async function render() {
-      const { default: mermaid } = await import('mermaid');
       const dark = document.documentElement.classList.contains('dark');
+      // Other class changes on <html> aren't a theme change: keep the current drawing.
+      if (dark === drawnDark) return;
+      drawnDark = dark;
+      const { default: mermaid } = await import('mermaid');
       mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
         theme: dark ? 'dark' : 'default',
       });
-      const result = await mermaid.render(`mermaid-${id}-${dark ? 'd' : 'l'}`, chart);
+      // A fresh id each time: mermaid removes any element that already has the id it's given,
+      // which would take the diagram on the page with it.
+      const result = await mermaid.render(`mermaid-${id}-${++renders}`, chart);
       if (!cancelled) setSvg(result.svg);
     }
 
@@ -32,7 +39,20 @@ export function Mermaid({ chart }: { chart: string }) {
     };
   }, [chart, id]);
 
-  if (!svg) return <pre className="text-sm">{chart}</pre>;
+  if (!svg) {
+    // Until mermaid has drawn it, hold the diagram's space so the page doesn't jump when it
+    // appears. Mermaid can't size a diagram without a browser, so this is a typical flowchart's
+    // shape (3:1, like the docs home one); a much taller diagram still settles once, on load.
+    // Without JavaScript the source is shown instead.
+    return (
+      <div className="my-6">
+        <div aria-hidden className="w-full" style={{ aspectRatio: '3 / 1' }} />
+        <noscript>
+          <pre className="text-sm">{chart}</pre>
+        </noscript>
+      </div>
+    );
+  }
   // Mermaid output for our own content, rendered with securityLevel 'strict'.
   return <div className="my-6 flex justify-center" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
