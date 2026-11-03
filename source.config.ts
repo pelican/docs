@@ -4,7 +4,7 @@ import { remarkAdmonition } from 'fumadocs-core/mdx-plugins/remark-admonition';
 import { remarkMdxMermaid } from 'fumadocs-core/mdx-plugins/remark-mdx-mermaid';
 import { transformerMetaHighlight } from '@shikijs/transformers';
 import lastModified from 'fumadocs-mdx/plugins/last-modified';
-import type { Root } from 'mdast';
+import type { Paragraph, PhrasingContent, Root } from 'mdast';
 import { visit } from 'unist-util-visit';
 import { transformerSetup } from './lib/shiki-setup';
 
@@ -45,6 +45,51 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   caddyfile: 'plaintext',
 };
 
+// Docusaurus took `:::note` blocks written tight, with no blank lines:
+//
+//   :::note
+//   Text.
+//   :::
+//
+// Markdown reads that as one paragraph, but remarkAdmonition only matches when
+// `:::note` and `:::` are paragraphs of their own, so the page showed the colons
+// as text. This splits them out first, so pages copied from main work as written.
+const ADMONITION_OPEN = /^:::\w+(\[[^\]\n]*\])?[ \t]*\n/;
+const ADMONITION_CLOSE = /\n[ \t]*:::[ \t]*$/;
+
+function remarkSplitAdmonitions() {
+  const paragraph = (value: string): Paragraph => ({ type: 'paragraph', children: [{ type: 'text', value }] });
+  return (tree: Root) => {
+    visit(tree, 'paragraph', (node, index, parent) => {
+      if (!parent || index === undefined) return;
+      const children: PhrasingContent[] = [...node.children];
+      let opener: string | undefined;
+      let closer = false;
+
+      const head = children[0];
+      const open = head?.type === 'text' ? ADMONITION_OPEN.exec(head.value) : null;
+      if (head?.type === 'text' && open) {
+        opener = open[0].trim();
+        children[0] = { type: 'text', value: head.value.slice(open[0].length) };
+      }
+      const tail = children[children.length - 1];
+      if (tail?.type === 'text' && ADMONITION_CLOSE.test(tail.value)) {
+        closer = true;
+        children[children.length - 1] = { type: 'text', value: tail.value.replace(ADMONITION_CLOSE, '') };
+      }
+      if (!opener && !closer) return;
+
+      const body = children.filter((c) => !(c.type === 'text' && c.value === ''));
+      const parts: Paragraph[] = [];
+      if (opener) parts.push(paragraph(opener));
+      if (body.length > 0) parts.push({ type: 'paragraph', children: body });
+      if (closer) parts.push(paragraph(':::'));
+      parent.children.splice(index, 1, ...parts);
+      return index + parts.length;
+    });
+  };
+}
+
 function remarkLanguageAliases() {
   return (tree: Root) => {
     visit(tree, 'code', (node) => {
@@ -59,6 +104,7 @@ export default defineConfig({
     remarkPlugins: (plugins) => [
       // `:::note` ... `:::` blocks become a <Callout>, coloured the same way as
       // <Admonition type="…"> (components/mdx/admonition.tsx).
+      remarkSplitAdmonitions,
       [
         remarkAdmonition,
         {
