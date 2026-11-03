@@ -1,0 +1,16 @@
+{
+  "title": "Guides",
+  "pages": [
+    "docker",
+    "mounts",
+    "ssl",
+    "php-upgrade",
+    "database-hosts",
+    "change-panel-domain",
+    "uninstalling",
+    "migrating-from-pterodactyl",
+    "translating",
+    "troubleshooting",
+    "disk-quotas"
+  ]
+}

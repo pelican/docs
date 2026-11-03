@@ -1,0 +1,97 @@
+---
+title: "Getting Started"
+description: "Start a Pelican Panel install: supported operating systems, PHP and webserver dependencies, downloading the panel files and installing Composer."
+---
+
+Pelican Panel is designed to run on your webserver.
+
+You are expected to read through our documentation.
+We have spent a lot of time curating these docs for the community,
+so please take some time to read through them before asking for help on the forums!
+
+<Admonition type="danger">
+    **You should have some basic familiarity with Linux before you proceed!**
+</Admonition>
+
+<Admonition type="tip" title="Coming from Pterodactyl?">
+    You don't need a fresh install. Follow [Migrating from Pterodactyl](../guides/migrating-from-pterodactyl) to upgrade your existing Panel and keep all your data.
+</Admonition>
+
+Pelican can be installed directly on your server (this guide) or with [Docker](./advanced/docker). Both are fully supported.
+
+### Picking an Operating System (OS)
+
+Pelican runs on a wide range of operating systems, so pick whichever you are most comfortable using. Note: Other OS's, not listed below, might still work.
+
+This documentation assumes a Debian/Ubuntu based OS with apt as package manager.
+
+<Admonition type="warning">
+    OpenVZ, **unless specifically configured**, will **not** work with Pelican.
+</Admonition>
+
+| Operating System | Version | Supported | Notes                                                               |
+|:----------------:|:-------:|:---------:|:--------------------------------------------------------------------:|
+| **Ubuntu**       | 22.04   |     ✅︎︎    |                                                                      |
+|                  | 24.04   |     ✅︎    |                                                                      |
+|                  | 26.04   |     ✅︎    |                                                                      |
+| **Debian**       | 11      |     ⚠️   | **No SQLite Support**                                                |
+|                  | 12      |     ✅︎    |                                                                      |
+|                  | 13      |     ✅︎    |                                                                      |
+| **Alma Linux**   | 8       |     ⚠️   | **No SQLite Support**                                                |
+|                  | 9       |     ⚠️   | **No SQLite Support**                                                |
+|                  | 10      |     ✅︎    |                                                                      |
+| **Rocky Linux**  | 8       |     ⚠️   | **No SQLite Support**                                                |
+|                  | 9       |     ⚠️   | **No SQLite Support**                                                |
+|                  | 10      |     ✅︎    |                                                                      |
+| **CentOS**       | 10      |     ✅︎    |                                                                      |
+
+SQLite support depends on [libsqlite3-0_3.35+](https://pkgs.org/download/libsqlite3-0) being on the host system.
+"No SQLite Support" means you'll have to build the package from source.
+
+### Dependencies
+
+For the Panel you need to install **PHP `8.5` (recommended) or `8.4`**, with the following **extensions**:  
+`gd`, `mysql`, `mbstring`, `bcmath`, `xml`, `curl`, `zip`, `intl`, `sqlite3` and `fpm`.
+
+You will also need a Webserver. Currently, **Apache, NGINX or Caddy** are supported.
+
+If you want to use MySQL, MariaDB or PostgreSQL for the panel database make sure to install either **MySQL 8.4+, MariaDB 10.11+ or PostgreSQL 17+**. (both client and server!)
+
+Finally, for some commands during the installation you need `curl`, `tar` and `unzip`.
+
+<Admonition type="warning">
+    Please make sure you installed **all** needed dependencies before continuing!
+</Admonition>
+
+### Create Directories & Downloading Files
+
+The first step in this process is to create the folder where the panel will live and then move ourselves into that
+newly created folder.
+
+```sh setup
+sudo mkdir -p /var/www/pelican
+cd /var/www/pelican
+```
+
+Once you have created a new directory to use and moved into it, you'll need to download the Panel files.
+This is as simple as using `curl` to download the latest release.
+
+```sh
+curl -L https://github.com/pelican/panel/releases/latest/download/panel.tar.gz | sudo tar -xzv
+```
+
+### Install Composer
+
+Next we will set up Composer along with the required dependencies.
+
+``` bash
+curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+```
+
+```sh
+sudo COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
+```
+
+<Admonition type="info">
+    Even though composer might tell you that you have outdated dependencies, do **not** run `composer update`!
+</Admonition>

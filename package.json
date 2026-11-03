@@ -1,69 +1,45 @@
 {
   "name": "pelicandocs",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "docusaurus": "docusaurus",
-    "start": "docusaurus start --host 0.0.0.0",
-    "build": "docusaurus build",
-    "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
-    "clear": "docusaurus clear",
-    "serve": "docusaurus serve",
-    "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "dev": "next dev",
+    "sync:eggs": "node scripts/sync-eggs.mjs",
+    "prebuild": "node scripts/sync-eggs.mjs --if-online",
+    "build": "next build",
+    "start": "npx serve out",
+    "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit",
+    "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
-    "@algolia/client-search": "^5.46.1",
-    "@docusaurus/core": "^3.10.1",
-    "@docusaurus/faster": "^3.10.1",
-    "@docusaurus/plugin-client-redirects": "^3.10.1",
-    "@docusaurus/preset-classic": "^3.10.1",
-    "@docusaurus/theme-common": "^3.10.1",
-    "@docusaurus/theme-mermaid": "^3.10.1",
-    "@docusaurus/theme-search-algolia": "^3.10.1",
-    "@fortawesome/fontawesome-svg-core": "^6.7.2",
-    "@fortawesome/free-brands-svg-icons": "^6.7.2",
-    "@fortawesome/free-regular-svg-icons": "^6.7.2",
-    "@fortawesome/free-solid-svg-icons": "^6.7.2",
-    "@fortawesome/react-fontawesome": "^0.2.6",
-    "@iconify/react": "^5.2.1",
-    "@mdx-js/react": "^3.1.1",
-    "clsx": "^2.1.1",
-    "docusaurus-lunr-search": "^3.6.0",
-    "docusaurus-plugin-sass": "^0.2.6",
-    "lunr": "^2.3.9",
-    "postcss-import": "^16.1.1",
-    "prism-react-renderer": "^2.4.1",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "react-medium-image-zoom": "^5.4.0",
-    "remark-gfm": "^4.0.1",
-    "sass": "^1.97.1"
+    "@shikijs/transformers": "4.6.0",
+    "fumadocs-core": "16.17.10",
+    "fumadocs-mdx": "15.4.10",
+    "fumadocs-ui": "16.17.10",
+    "lucide-react": "1.66.0",
+    "mermaid": "12.2.0",
+    "next": "16.4.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "shiki": "4.6.0",
+    "unist-util-visit": "5.2.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^3.10.1",
-    "@docusaurus/tsconfig": "^3.10.1",
-    "@docusaurus/types": "^3.10.1",
-    "autoprefixer": "^10.4.23",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3"
-  },
-  "browserslist": {
-    "production": [
-      ">0.5%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 3 chrome version",
-      "last 3 firefox version",
-      "last 5 safari version"
-    ]
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/mdast": "4.0.4",
+    "@types/mdx": "2.0.14",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "postcss": "8.5.28",
+    "sharp": "0.35.5",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "yaml": "2.9.1"
   },
   "engines": {
-    "node": ">=18.0"
-  }
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.34.9"
 }

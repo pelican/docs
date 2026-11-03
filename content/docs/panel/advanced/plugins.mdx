@@ -1,0 +1,425 @@
+---
+title: "Plugins"
+description: "Install, update and uninstall Pelican Panel plugins, and create and publish your own with Filament resources, translations, settings and permissions."
+---
+
+Plugins allow you to add new functionality to the panel without modifying any panel core files.
+
+<Admonition type="warning">
+    The plugin system is still in development and features might be missing!
+</Admonition>
+
+## Install a Plugin
+
+<Tabs groupId="method">
+    <TabItem value="frontend" label="Via Panel Frontend">
+        Use the Import button on the plugin list to upload a plugin. After the import is done, use the Install button to complete the installation.
+
+        Plugin installs run in the background so it might take a few seconds. If a plugin isn't installing [check your queue worker configuration](../../guides/troubleshooting#schedules-not-running).
+    </TabItem>
+    <TabItem value="manually" label="Manually">
+        Move the plugin folder to `plugins` inside your panel directory (`/var/www/pelican/plugins` by default). Then run `php artisan p:plugin:install` inside your panel directory and select the new plugin.
+    </TabItem>
+</Tabs>
+
+<Admonition type="info" title="Need some plugins?">
+    You can find various official and third party plugins on the [Hub plugin marketplace](https://hub.pelican.dev/plugins)!  
+    Also check out our [Plugins repo](https://github.com/pelican/plugins)! It contains free and open source plugins created by the Pelican team.
+</Admonition>
+
+## Update a Plugin
+
+For one-click updates to work the plugin needs to have a [update url](#update-url) set. Otherwise you need to manually update the plugin files.
+
+<Tabs groupId="method">
+    <TabItem value="frontend" label="Via Panel Frontend">
+        The panel will automatically check for plugins updates when visiting the plugin list. If an update is available you can use the Update button to download and install the update.
+
+        Plugin updates run in the background so it might take a few seconds. If a plugin isn't updating [check your queue worker configuration](../../guides/troubleshooting#schedules-not-running).
+    </TabItem>
+    <TabItem value="manually" label="Manually">
+        Run `php artisan p:plugin:update` inside your panel directory (`/var/www/pelican` by default) and select the plugin you want to update.
+    </TabItem>
+</Tabs>
+
+## Uninstall a Plugin
+
+<Tabs groupId="method">
+    <TabItem value="frontend" label="Via Panel Frontend">
+        Use the Uninstall button on the plugin list.
+
+        Plugin uninstalls run in the background so it might take a few seconds. If a plugin isn't uninstalling [check your queue worker configuration](../../guides/troubleshooting#schedules-not-running).
+    </TabItem>
+    <TabItem value="manually" label="Manually">
+        Run `php artisan p:plugin:uninstall` inside your panel directory (`/var/www/pelican` by default) and select the plugin you want to uninstall.
+    </TabItem>
+</Tabs>
+
+## Create a Plugin
+
+<Admonition type="danger">
+    You **need** at least basic [PHP](https://php.net), [Laravel](https://laravel.com) and [Filament](https://filamentphp.com) knowledge to create plugins!
+</Admonition>
+
+Run `php artisan p:plugin:make` inside your panel directory (`/var/www/pelican` by default) to create the basic files and folders for your new plugin. This will create the `plugin.json`, the main plugin file, a config file and a service provider.
+
+<Admonition type="info" title="Need help?">
+    Visit our [Discord](https://discord.gg/pelican-panel) if you need any help when creating plugins!
+</Admonition>
+
+### Plugin Structure
+
+The two most important files of your plugin are the `plugin.json` (which contains general information like name, version etc.) and the main plugin file. (where you can load Filament resources, pages etc.)  
+While the `plugin.json` is in the root of your plugin folder, the main plugin file is in `src`.
+
+In general, the plugin folder tries to mimic the structure of a normal Laravel/FilamentPHP project. For example, translations go into `lang` and migrations are in `database/migrations`.  
+Everything is auto-discovered and service providers, artisan commands, migrations etc. are automatically registered.
+
+The only exception to a normal Laravel project is the `app` folder, it is called `src` instead. Besides that, is still follows the same sub-structure, e.g. models go in `src/Models` and service providers are in `src/Providers`.
+
+<Admonition type="info">
+    The plugin id and the plugin root folder name need to match!
+</Admonition>
+
+#### plugin.json
+
+Most of the fields inside the `plugin.json` are generated when running the [artisan command](#create-a-plugin).
+
+| Field             | Required | Description                                                                                                                                                   |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id                | Yes      | Unique identifier of the plugin. Has to match with the plugin root folder name!                                                                               |
+| name              | Yes      | Display name of the plugin.                                                                                                                                   |
+| author            | Yes      | Display name of the plugin creator.                                                                                                                           |
+| version           | No       | Version of the plugin. Ideally, this should follow [semantic versioning](https://semver.org/). When not set it will assume version 1.0.0.                     |
+| description       | No       | Short description of the plugin.                                                                                                                              |
+| category          | Yes      | Either `plugin`, `theme` or `language`.                                                                                                                       |
+| update_url        | No       | URL that will be fetched when checking for updates. See [below](#update-url) for more information.                                                            |
+| namespace         | Yes      | The php namespace for the plugin files.                                                                                                                       |
+| class             | Yes      | The name of the plugin main class.                                                                                                                            |
+| panels            | No       | Array of [FilamentPHP panel](#filament-panels) ids the plugin should be loaded on. When not set the plugin will be loaded on all panels.                      |
+| panel_version     | No       | The panel version required for the plugin. See [below](#panel-version) for more information.                                                                  |
+| api_version       | No       | The plugin api version the plugin targets. When not set, version 1 is assumed. See [below](#api-version) for more information.                                |
+| composer_packages | No       | Array of additional composer packages. Key is the package name and value is the version. See [below](#additional-composer-dependencies) for more information. |
+
+<Admonition type="info">
+    You can ignore the `meta` fields. Those are used internally to keep track of the plugin status and load order.
+</Admonition>
+
+#### Update URL
+
+In your `plugin.json` you can specify an `update_url` that is fetched when checking for plugin updates.  
+When not set, there will be no update checking for the plugin.
+
+It needs to point directly to a json file with the following format:
+
+```json title="update.json"
+{
+    "panel_version_1": {
+        "version": "1.0.0",
+        "download_url": "..."
+    },
+    "panel_version_2": {
+        "version": "1.1.0",
+        "download_url": "..."
+    }
+}
+```
+
+If you don't have panel-version-specific plugin versions, you can also use `*` as panel version wildcard:
+
+```json title="update.json"
+{
+    "*": {
+        "version": "1.1.0",
+        "download_url": "..."
+    }
+}
+```
+
+You can also mix the wildcard with real panel versions. This way the wildcard will be used as fallback when the users panel version isn't specified in the update json.
+
+Example:
+
+```json title="update.json"
+{
+    "panel_version_1": {
+        "version": "1.0.0",
+        "download_url": "..."
+    },
+    "*": {
+        "version": "1.1.0",
+        "download_url": "..."
+    }
+}
+```
+
+#### Additional composer dependencies
+
+If you need additional composer packages as dependency for your plugin, you can add the package name to the `composer_packages` array in your `plugin.json`.
+
+Example:
+
+```json
+"composer_packages": {
+    "package/one": "^1.0",
+    "package/two": "^1.0"
+}
+```
+
+#### Panel version
+
+In your `plugin.json` you can specify a `panel_version` that is used for compatibility checks.   
+When not set, the plugin will be loaded regardless of the panel version.
+
+You can add a `^` in front of the version to turn the strict constraint into a range with the same semantics as composer's caret, e.g. `1.2.0` means "_only_ version 1.2.0" while `^1.2.0` means "version 1.2.0 or higher, but below 2.0.0". For `0.x` constraints the range caps at the next minor instead, e.g. `^0.3` allows 0.3.0 up to (but not including) 0.4.0, and `0.0.x` constraints cap at the next patch, e.g. `^0.0.3` only allows 0.0.3.
+
+#### Api version
+
+In your `plugin.json` you can specify an `api_version` that declares which version of the plugin api your plugin targets. The current plugin api version is **1**.
+
+When not set, version 1 is assumed and the plugin list shows a small warning under the plugin status. If a plugin declares a newer api version than the panel supports, the panel refuses to load it and marks it as incompatible. This way a future breaking change to the plugin api can't take down a panel that still runs older plugins.
+
+### Filament Resources
+
+To simply register Filament resources, pages or widgets you can add the following snippet to the `register` function in your main plugin file:
+
+```php {3-5}
+$id = str($panel->getId())->title();
+
+$panel->discoverPages(plugin_path($this->getId(), "src/Filament/$id/Pages"), "<namespace>\\Filament\\$id\\Pages");
+$panel->discoverResources(plugin_path($this->getId(), "src/Filament/$id/Resources"), "<namespace>\\Filament\\$id\\Resources");
+$panel->discoverWidgets(plugin_path($this->getId(), "src/Filament/$id/Widgets"), "<namespace>\\Filament\\$id\\Widgets");
+```
+
+Make sure to replace `<namespace>` with your actual namespace.
+
+### Filament Panels
+
+By default there are three Filament panels:
+
+1. `admin` (Admin Area)
+2. `app` (Server list)
+3. `server` (Client Area, with `Server` model as [tenant](https://filamentphp.com/docs/4.x/users/tenancy))
+
+#### App panel
+
+The `app` panel is solely used for the server list and has no navigation.  
+If you want to expand the `app` panel, you can re-enable the navigation by adding the following snippet to the `register` function in your main plugin file:
+
+```php
+if ($panel->getId() === 'app') {
+    // Optional: "Embed" the server list. This will add a Servers navigation item for the server list.
+    // ServerResource::embedServerList();
+
+    // Re-enable navigation
+    $panel->navigation(true);
+
+    // By default the topbar is always used. With proper navigation we want to conditionally enable it based on the users customization
+    $panel->topbar(function () {
+        $navigationType = user()?->getCustomization(CustomizationKey::TopNavigation);
+
+        return $navigationType === 'topbar' || $navigationType === 'mixed' || $navigationType === true;
+    });
+
+    // Rebuild component cache
+    $panel->clearCachedComponents();
+}
+```
+
+### Translations
+
+Normally, translations will be registered under the namespace of your plugin.  
+This means you need to prefix translation keys with your plugin id when using `trans()`, e.g. `trans('myplugin::strings.test')` would look for `test` inside `plugins/myplugin/lang/strings.php`.
+
+If your plugin adds new default languages to the panel you need to set the plugin category to `language`. This way translations will be registered without any namespace.
+
+### Views
+
+Views are automatically registered under the namespace of your plugin.  
+This means you need to prefix view-strings with your plugin id, e.g. `myplugin::my-view` would look for `plugins/myplugin/resources/views/my-view.blade.php`.
+
+### Seeder
+
+If present, a seeder with the name of your plugin will be automatically registered. It needs to be named `<plugin name>Seeder` (e.g. `MyPluginSeeder`) and put inside your plugins `database/Seeder` folder, e.g. `plugins/myplugin/database/Seeder/MyPluginSeeder.php`.
+This seeder will be automatically called when a user installs the plugin or when seeders are run in general, e.g. when using `php artisan db:seed` or `php artisan migrate --seed`.
+
+### Routes
+
+Routes need to be registered in a `RouteServiceProvider`. Example:
+
+```php
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
+
+class MyPluginRoutesProvider extends RouteServiceProvider
+{
+    public function boot(): void
+    {
+        $this->routes(function () {
+            // Single new endpoint with Controller
+            Route::get('test', [TestController::class, 'test'])->name('my-plugin.test');
+
+            // Load routes from file
+            Route::prefix('/my-plugin')->group(plugin_path('my-plugin', 'routes/web.php'));
+
+            // Add routes from file to existing client api
+            Route::middleware(['api', 'client-api', 'throttle:api.client'])
+                ->prefix('/api/client')
+                ->scopeBindings()
+                ->group(plugin_path('my-plugin', 'routes/api-client.php'));
+        });
+    }
+}
+```
+
+### Plugin Settings
+
+Your main plugin class can implement the `HasPluginSettings` interface to conveniently add a settings page to your plugin.  
+The settings page can be accessed on the plugin list on the panel. Your plugin needs to provide the form, the form data and how the data should be saved.
+
+If you want to save the settings in the `.env` file you can use the `EnvironmentWriterTrait`. Example:
+
+```php
+use EnvironmentWriterTrait;
+
+public function getSettingsFormData(): array
+{
+    return config('myplugin');
+}
+
+public function getSettingsForm(): array
+{
+    return [
+        TextInput::make('test_input')
+            ->required(),
+        Toggle::make('test_toggle')
+            ->inline(false),
+    ];
+}
+
+public function saveSettings(array $data): void
+{
+    $this->writeToEnvironment([
+        'MYPLUGIN_TEST_INPUT' => $data['test_input'],
+        'MYPLUGIN_TEST_TOGGLE' => $data['test_toggle'],
+    ]);
+
+    Notification::make()
+        ->title('Settings saved')
+        ->success()
+        ->send();
+}
+```
+
+<Admonition type="info" title="Naming Conventions">
+    When adding new environment variables make sure to prefix them with your plugin id, e.g. `MYPLUGIN_TEST_INPUT` and not just `TEST_INPUT`.
+</Admonition>
+
+### Modify existing resources
+
+Most of the default panel resources and pages have static methods to register custom classes or to change existing ones. You can call these static methods inside the `register` function of a service provider.
+
+Examples:
+
+```php title="MyPluginProvider.php"
+public function register(): void
+{
+    // Add new relation manager to UserResource
+    UserResource::registerCustomRelations(MyCustomRelationManager::class);
+
+    // Add new widget to Console page
+    Console::registerCustomWidgets(ConsoleWidgetPosition::AboveConsole, [MyCustomWidget::class]);
+
+    // Add new header action to Server list page
+    ListServers::registerCustomHeaderActions(HeaderActionPosition::Before, MyCustomAction::make());
+}
+```
+
+For more information you can check the ["CanModify" and "CanCustomize" traits in `./app/Traits/Filament`](https://github.com/pelican/panel/tree/main/app/Traits/Filament).
+
+### Add new permissions
+
+#### Admin Roles
+
+To add new admin role permissions you can use `Role::registerCustomPermissions` and `Role::registerCustomDefaultPermissions`.
+
+You can call these static methods inside the `register` function of a service provider. Examples:
+
+```php title="MyPluginProvider.php"
+public function register(): void
+{
+    // Register default permissions: viewList, view, create, update, delete
+    Role::registerCustomDefaultPermissions('myModel');
+
+    // Register custom permissions
+    Role::registerCustomPermissions([
+        'myModel' => [
+            'customPerm1',
+            'customPerm2'
+        ]
+    ]);
+
+    // Optionally, register an icon for a custom model
+    Role::registerCustomModelIcon('myModel', 'tabler-star');
+
+    // You can also add new permissions to existing models
+    Role::registerCustomPermissions([
+        'server' => [
+            'custom',
+        ]
+    ]);
+}
+```
+
+#### Subuser
+
+To add new subuser permissions you can use `Subuser::registerCustomPermissions`.
+
+You can call this static method inside the `register` function of a service provider. Examples:
+
+```php title="MyPluginProvider.php"
+public function register(): void
+{
+    // Register new subuser permissions (call with icon and hidden param)
+    Subuser::registerCustomPermissions('custom', ['customPerm1', 'customPerm2'], 'tabler-star', false);
+
+    // You can also add new permissions to existing permission groups (call without icon and hidden param)
+    Subuser::registerCustomPermissions('console', ['custom']);
+}
+```
+
+## Compatibility Policy
+
+The plugin api follows the panel's [semantic versioning](https://semver.org/). The stable surface plugins can rely on consists of:
+
+- The `plugin.json` schema documented on this page
+- The `HasPluginSettings` interface
+- Automatic discovery and registration of service providers, artisan commands, migrations, views, translations and seeders as described above
+- The `panel_version` compatibility semantics (strict and `^` range constraints)
+- The handling of `composer_packages`
+
+Breaking changes to this surface only happen with a new panel major version, and deprecations are announced at least one minor version ahead. The `api_version` field exists so the panel can detect plugins that target a newer, incompatible plugin api.
+
+Anything not listed above, in particular the panel's internal services, models, and Filament internals, can change in any release. The static registration hooks documented on this page (custom permissions, resource modification, etc.) are kept working on a best-effort basis.
+
+## Publish a Plugin
+
+<Admonition type="tip">
+    If possible, please make your plugins open source. Open plugins help others learn from them and help us improve the plugin system!
+</Admonition>
+
+To publish a plugin you only need to do two things:
+
+1. Open your `plugin.json` and remove the `meta` part.
+2. Zip up your whole plugin folder.
+
+And that's it! Now you can take the zip file and share it with the world!
+
+<Admonition type="info" title="Marketplace">
+    Publish your plugins on the [Hub plugin marketplcae](https://hub.pelican.dev/plugins)! This will allow users to easily install or download your plugin.  
+    You can also share them in the `#share-plugins` channel in our [Discord](https://discord.gg/pelican-panel).
+</Admonition>
+
+<Admonition type="info" title="License">
+    You can license your plugin code under whatever license you want. You do not have to use the same license as the panel!  
+    You also don't have to open source your plugin code. But if you do want to open source it we recommend [MIT](https://choosealicense.com/licenses/mit) or [GPL v3](https://choosealicense.com/licenses/gpl-3.0) as license.
+</Admonition>

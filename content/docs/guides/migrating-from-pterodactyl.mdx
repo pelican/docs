@@ -1,0 +1,147 @@
+---
+title: "Migrating from Pterodactyl"
+description: "Upgrade a Pterodactyl install to Pelican in place, keeping users, servers, nodes and eggs, with the Panel and Wings migration scripts or Docker."
+---
+
+Pelican upgrades your Pterodactyl database in place: users, servers, nodes, eggs, databases, backups, schedules, subusers and API keys all carry over.
+Your game servers keep running and keep their files.
+
+<Admonition type="danger" title="Back up first">
+    The migration changes your database and can't be undone. Back up your database, `/var/www/pterodactyl` and `/etc/pterodactyl` before you start.
+    If anything goes wrong, ask on [Discord](https://pelican.dev/discord).
+</Admonition>
+
+## Requirements
+
+- Pterodactyl 1.11.4 or newer. [Update Pterodactyl](https://docs.pterodactyl.io/v1/panel/updating) first if needed.
+- The [Panel dependencies](../panel/getting-started#dependencies), including PHP 8.4 or newer with PHP-FPM.
+
+## Migrate the Panel
+
+<Tabs>
+    <TabItem value="script" label="Script" default>
+        Download the script and run the checks. They change nothing and tell you exactly what to fix, like a PHP version that's too old or a missing extension.
+
+        ```sh
+        curl -fsSLo migrate-panel.sh https://pelican.dev/migrate-panel.sh
+        sudo bash migrate-panel.sh --check
+        ```
+
+        Once every check passes, run the migration:
+
+        ```sh
+        sudo bash migrate-panel.sh
+        ```
+
+        It installs Pelican in `/var/www/pelican`, copies your `.env` and upgrades the database. It also sets up the queue worker and cron job. Your old install stays untouched in `/var/www/pterodactyl`.
+
+        Last, [point your webserver](../panel/webserver-config) at `/var/www/pelican/public` and disable the Pterodactyl site.
+    </TabItem>
+    <TabItem value="docker" label="Docker">
+        Take Pterodactyl offline first, so nothing writes to the database:
+
+        ```sh
+        cd /var/www/pterodactyl
+        sudo php artisan down
+        sudo systemctl disable --now pteroq
+        ```
+
+        Then remove the Pterodactyl `schedule:run` line from `sudo crontab -e`.
+
+        Create the `compose.yml` from the [Docker guide](../panel/advanced/docker#create-composeyml) and add these to its `environment`:
+
+        ```yml
+        APP_INSTALLED: "true" # upgrade the database instead of opening the web installer
+        DB_CONNECTION: mysql # or mariadb on MariaDB. Without it Pelican falls back to SQLite
+        # Only if MySQL and Redis run on this machine:
+        DB_HOST: host.docker.internal
+        REDIS_HOST: host.docker.internal
+        ```
+
+        If you use `host.docker.internal`, MySQL and Redis must listen on the Docker network (not only `127.0.0.1`), and your database user must be allowed to connect from `172.20.0.0/16`.
+
+        Copy your Pterodactyl `.env` into the container before its first start:
+
+        ```sh
+        docker compose create
+        docker compose cp /var/www/pterodactyl/.env panel:/pelican-data/.env
+        ```
+
+        The container serves the Panel on ports 80 and 443, so stop the webserver that served Pterodactyl first (for example `sudo systemctl disable --now nginx`).
+
+        Start it. The database is upgraded on startup, so wait for that to finish before seeding:
+
+        ```sh
+        docker compose up -d
+        until docker compose logs panel | grep -q "Starting Supervisord"; do sleep 2; done
+        docker compose exec panel php artisan db:seed --force
+        ```
+
+        If the wait never ends, the upgrade failed. Check `docker compose logs panel`.
+    </TabItem>
+</Tabs>
+
+## Migrate Wings
+
+Run this on every node. It checks everything first, then swaps in Pelican Wings and keeps your existing config and server files.
+
+```sh
+curl -fsSLo migrate-wings.sh https://pelican.dev/migrate-wings.sh
+sudo bash migrate-wings.sh
+```
+
+## What changes
+
+- **Nests and locations become tags.** Eggs get a tag with their old nest name and nodes get one with their old location.
+- **API keys keep working**, including old `ptla_`/`ptlc_` keys. The nests and locations API endpoints are gone, see the [API docs](../panel/advanced/api-docs).
+- **Root admins** get the Root Admin role.
+- **Themes and panel modifications** don't carry over. Look for a [plugin](../panel/advanced/plugins) instead.
+
+<details>
+<summary>Migrating by hand</summary>
+
+Use this instead of the scripts if you want to run each step yourself.
+
+**Stop Pterodactyl and back up the database.**
+
+```sh
+cd /var/www/pterodactyl
+sudo php artisan down
+sudo systemctl disable --now pteroq
+sudo crontab -e   # remove the line running /var/www/pterodactyl/artisan schedule:run
+grep '^DB_' .env
+mysqldump -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p --single-transaction --no-tablespaces <DB_DATABASE> > ~/pterodactyl-backup.sql
+```
+
+**Install Pelican.** Follow [Getting Started](../panel/getting-started) up to (and including) **Install Composer**, but don't run the web installer. Then copy your `.env` and upgrade the database. Make sure `.env` has `DB_CONNECTION=mysql`, or `DB_CONNECTION=mariadb` on MariaDB: Pterodactyl didn't need it, but without it Pelican falls back to SQLite.
+
+```sh
+sudo cp /var/www/pterodactyl/.env /var/www/pelican/.env
+cd /var/www/pelican
+sudo php artisan optimize:clear
+sudo php artisan migrate --seed --force
+```
+
+`HASHIDS_SALT`, `HASHIDS_LENGTH`, `APP_THEME` and `APP_ENVIRONMENT_ONLY` are no longer used and can be removed from `.env`.
+
+**Finish the setup.** [Set permissions](../panel/panel-setup#setting-permissions) and [configure your webserver](../panel/webserver-config). Then set up the queue worker and cron job, and bring the Panel up:
+
+```sh
+sudo php artisan p:environment:queue-service
+(sudo crontab -l -u www-data 2>/dev/null; echo "* * * * * php /var/www/pelican/artisan schedule:run >> /dev/null 2>&1") | sudo crontab -u www-data -
+sudo php artisan up
+```
+
+**Wings**, on every node:
+
+```sh
+sudo systemctl stop wings
+sudo curl --fail -L -o /usr/local/bin/wings "https://github.com/pelican/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
+sudo chmod u+x /usr/local/bin/wings
+sudo mkdir -p /etc/pelican
+sudo cp /etc/pterodactyl/config.yml /etc/pelican/config.yml
+```
+
+Update `/etc/systemd/system/wings.service` to match the one in [Installing Wings](../wings/install#daemonizing-using-systemd) (the working directory is now `/etc/pelican`), then run `sudo systemctl daemon-reload` and `sudo systemctl start wings`.
+
+</details>

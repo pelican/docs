@@ -1,0 +1,66 @@
+---
+title: "Change Panel Domain"
+description: "Move the Pelican Panel to a new domain by updating the webserver config, APP_URL in .env and the remote URL in each node's Wings config."
+---
+
+## Webserver & Panel
+
+First you need to modify the server name in your web server config.
+
+<Tabs groupId="webserver">
+    <TabItem value="nginx" label="Nginx">
+        ```sh
+        sudo nano /etc/nginx/sites-available/pelican.conf
+        # Search for "server_name"
+        ```
+
+        <Admonition type="info" title="Using HTTPS?">
+            If you're using HTTPS, remember to also change the SSL paths in the config file to match your new domain and [generate a new certificate](./ssl).
+        </Admonition>
+    </TabItem>
+    <TabItem value="apache" label="Apache">
+        ```sh
+        sudo nano /etc/apache2/sites-available/pelican.conf
+        # Search for "ServerName"
+        ```
+
+        <Admonition type="info" title="Using HTTPS?">
+            If you're using HTTPS, remember to also change the SSL paths in the config file to match your new domain and [generate a new certificate](./ssl).
+        </Admonition>
+    </TabItem>
+    <TabItem value="caddy" label="Caddy">
+        ```sh
+        sudo nano /etc/caddy/Caddyfile
+        ```
+    </TabItem>
+</Tabs>
+
+Next, modify the `APP_URL` in the `.env` file located at `/var/www/pelican` by typing `sudo nano /var/www/pelican/.env`.
+
+Finally, restart your webserver to apply the changes.
+
+<Tabs groupId="webserver">
+    <TabItem value="nginx" label="Nginx">
+        ```sh
+        sudo systemctl restart nginx
+        ```
+    </TabItem>
+    <TabItem value="apache" label="Apache">
+        ```sh
+        sudo systemctl restart apache2
+        ```
+    </TabItem>
+    <TabItem value="caddy" label="Caddy">
+        ```sh
+        sudo systemctl restart caddy
+        ```
+    </TabItem>
+</Tabs>
+
+## Nodes
+
+The wings config file for each node must be updated to match the new Panel URL. (`remote` field)
+
+You can do it manually in the `config.yml` file located at `/etc/pelican` or overwrite it completely by copying it from the Panel.
+
+Make sure to restart wings (`sudo systemctl restart wings`) after updating the wings config file.

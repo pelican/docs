@@ -1,0 +1,103 @@
+# Build settings live here (in git) instead of only in the Netlify dashboard.
+[build]
+  command = "pnpm build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # The site is a static export (next.config.mjs), so Netlify's Next.js
+  # runtime isn't needed; serve out/ as plain files.
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+# ---- Short links (were client-side redirects on Docusaurus) --------------
+[[redirects]]
+  from = "/discord"
+  to = "https://discord.gg/pelican-panel"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/pelican/panel"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/hub"
+  to = "https://hub.pelican.dev"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/donate"
+  to = "/support/"
+  status = 301
+  force = true
+
+# ---- Old docs paths ------------------------------------------------------
+[[redirects]]
+  from = "/docs/about"
+  to = "/docs/contributors/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/glossary"
+  to = "/docs/#glossary"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/troubleshooting"
+  to = "/docs/guides/troubleshooting/"
+  status = 301
+  force = true
+
+# These pages existed but were empty; send readers to the overview.
+[[redirects]]
+  from = "/docs/guides/disk-quotas/btrfs"
+  to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/guides/disk-quotas/lvm"
+  to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/guides/disk-quotas/zfs"
+  to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+# ---- Markdown for AI tools (lib/llms.ts) ---------------------------------
+# /docs/panel/update.md is built to out/md/panel/update.md (the docs page route
+# owns every path under /docs). Not forced, so it only applies when no file
+# exists: the HTML pages under /docs are served as before. Keep it last.
+[[redirects]]
+  from = "/docs/*"
+  to = "/md/:splat"
+  status = 200
+
+[[headers]]
+  for = "/*.md"
+  [headers.values]
+    Content-Type = "text/markdown; charset=utf-8"
+
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+[[headers]]
+  for = "/llms-full.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+# The install scripts are fetched with curl; make sure they come back as text.
+[[headers]]
+  for = "/*.sh"
+  [headers.values]
+    Content-Type = "text/x-shellscript; charset=utf-8"

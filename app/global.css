@@ -1,0 +1,623 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* =========================================================================
+ * Site-wide theme, in the V12 "B v3" style: navy #04121C, sky #38BDF8,
+ * white and paper; Bricolage Grotesque headings, Instrument Sans text,
+ * thick navy borders and hard offset shadows. Fumadocs reads all of its
+ * colours from the --color-fd-* variables, so the docs chrome (sidebar,
+ * search, code blocks, callouts, tabs) follows them in light and dark.
+ * ====================================================================== */
+
+@theme {
+  --font-sans: var(--pl-font-text), 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--pl-font-display), 'Helvetica Neue', ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  --pl-ink: #04121c;
+  --pl-sky: #38bdf8;
+  --pl-sky-deep: #0b79ad;
+  --pl-white: #ffffff;
+  --pl-paper: #f3f7f9;
+  /* the thick edge and hard shadow used on cards, code and callouts */
+  --pl-edge: var(--pl-ink);
+  --pl-shadow: var(--pl-ink);
+
+  --color-fd-background: #f3f7f9;
+  --color-fd-foreground: #04121c;
+  --color-fd-muted: #e3edf2;
+  --color-fd-muted-foreground: #3c5866;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #04121c;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #04121c;
+  --color-fd-border: rgba(4, 18, 28, 0.16);
+  --color-fd-primary: #04121c;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #e3edf2;
+  --color-fd-secondary-foreground: #04121c;
+  --color-fd-accent: #c8ecfc;
+  --color-fd-accent-foreground: #04121c;
+  --color-fd-ring: #38bdf8;
+
+  --color-fd-info: #0b79ad;
+  --color-fd-warning: #b45309;
+  --color-fd-error: #be123c;
+  --color-fd-success: #15803d;
+  --color-fd-idea: #a16207;
+}
+
+.dark {
+  --pl-edge: #2e4756;
+  --pl-shadow: #38bdf8;
+
+  --color-fd-background: #04121c;
+  --color-fd-foreground: #f3f7f9;
+  --color-fd-muted: #0a1f2e;
+  --color-fd-muted-foreground: #b9ccd6;
+  --color-fd-popover: #0a1f2e;
+  --color-fd-popover-foreground: #f3f7f9;
+  --color-fd-card: #0a1f2e;
+  --color-fd-card-foreground: #f3f7f9;
+  --color-fd-border: rgba(185, 204, 214, 0.18);
+  --color-fd-primary: #38bdf8;
+  --color-fd-primary-foreground: #04121c;
+  --color-fd-secondary: #0f2a3c;
+  --color-fd-secondary-foreground: #f3f7f9;
+  --color-fd-accent: rgba(56, 189, 248, 0.16);
+  --color-fd-accent-foreground: #e0f2fe;
+  --color-fd-ring: #38bdf8;
+
+  --color-fd-info: #38bdf8;
+  --color-fd-warning: #fbbf24;
+  --color-fd-error: #fb7185;
+  --color-fd-success: #4ade80;
+  --color-fd-idea: #facc15;
+}
+
+@layer base {
+  :where(h1, h2, h3, h4) {
+    font-family: var(--font-display);
+  }
+}
+
+/* Values filled in from the reader's <SetupPanel /> are underlined, so it is
+   clear which parts of a config file came from them. */
+[data-setup][data-filled] {
+  text-decoration: underline dotted var(--pl-sky);
+  text-underline-offset: 3px;
+}
+
+/* =========================================================================
+ * Docs: top bar (tablet and desktop)
+ * ====================================================================== */
+.dt-root {
+  --dt-bar: 68px;
+}
+
+.dt-root #nd-docs-layout {
+  --fd-banner-height: var(--dt-bar);
+}
+
+.dt-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: var(--dt-bar);
+  padding: 0 24px;
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  border-bottom: 3px solid var(--pl-ink);
+}
+
+.dark .dt-bar {
+  background: var(--pl-ink);
+  color: #f3f7f9;
+  border-bottom-color: var(--pl-sky);
+}
+
+.dt-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.dt-bar__section {
+  padding: 2px 8px;
+  border: 2px solid currentColor;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.dt-bar__search {
+  flex: 0 1 340px;
+  border: 2px solid var(--pl-ink) !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  color: #3c5866 !important;
+  box-shadow: 3px 3px 0 var(--pl-ink);
+}
+
+.dark .dt-bar__search {
+  border-color: #2e4756 !important;
+  background: #0a1f2e !important;
+  color: #b9ccd6 !important;
+  box-shadow: 3px 3px 0 var(--pl-sky);
+}
+
+.dt-bar__links {
+  display: flex;
+  gap: 22px;
+  margin-left: auto;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.dt-bar__links a {
+  text-decoration: none;
+}
+
+.dt-bar__links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.dt-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dt-bar__theme {
+  border: 2px solid currentColor !important;
+  border-radius: 0 !important;
+}
+
+.dt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 2px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 var(--pl-ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.dt-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--pl-ink);
+}
+
+.dt-btn--ink {
+  background: var(--pl-ink);
+  color: #ffffff;
+  box-shadow: 3px 3px 0 #ffffff;
+}
+
+.dark .dt-btn {
+  border-color: #ffffff;
+  box-shadow: 3px 3px 0 var(--pl-sky);
+}
+
+.dark .dt-btn--ink {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  border-color: var(--pl-sky);
+  box-shadow: 3px 3px 0 #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .dt-bar__links {
+    display: none;
+  }
+  .dt-bar__search {
+    margin-left: auto;
+  }
+}
+
+/* Phones: Fumadocs' own bar takes over, restyled the same way. */
+@media (max-width: 767px) {
+  .dt-bar {
+    display: none;
+  }
+  .dt-root #nd-docs-layout {
+    --fd-banner-height: 0px;
+  }
+}
+
+#nd-subnav {
+  background: var(--pl-sky) !important;
+  color: var(--pl-ink);
+  border-bottom: 3px solid var(--pl-ink);
+  backdrop-filter: none;
+}
+
+.dark #nd-subnav {
+  background: var(--pl-ink) !important;
+  color: #f3f7f9;
+  border-bottom-color: var(--pl-sky);
+}
+
+.dt-navtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.04em;
+}
+
+.dt-navtitle span {
+  padding: 1px 6px;
+  border: 2px solid currentColor;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* The sidebar's own title and search duplicate the top bar on larger screens. */
+@media (min-width: 768px) {
+  #nd-sidebar [data-search-full],
+  #nd-sidebar a.dt-navtitle,
+  #nd-sidebar a:has(> .dt-navtitle) {
+    display: none;
+  }
+}
+
+/* =========================================================================
+ * Docs: sidebar, page, table of contents
+ * ====================================================================== */
+#nd-sidebar {
+  background: var(--color-fd-background);
+  border-inline-end: 3px solid var(--pl-edge);
+}
+
+#nd-sidebar a[data-active='true'] {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  font-weight: 600;
+  border-radius: 0;
+}
+
+.dark #nd-sidebar a[data-active='true'] {
+  background: rgba(56, 189, 248, 0.16);
+  color: #f3f7f9;
+  box-shadow: inset 3px 0 0 var(--pl-sky);
+}
+
+#nd-sidebar a:not([data-active='true']):hover {
+  background: var(--color-fd-accent);
+  border-radius: 0;
+}
+
+#nd-page > h1,
+#nd-page article > h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(36px, 4.2vw, 56px);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+}
+
+#nd-page > h1 + p {
+  font-size: 18px;
+}
+
+.prose :where(h2, h3, h4):not(.not-prose *) {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.prose :where(h2):not(.not-prose *) {
+  font-size: 1.75em;
+}
+
+.prose :where(a):not([data-card], .not-prose, .not-prose *) {
+  color: inherit;
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--pl-sky);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.prose :where(a):not([data-card], .not-prose, .not-prose *):hover {
+  text-decoration-color: currentColor;
+}
+
+.prose :where(code):not(pre code, .not-prose *) {
+  border: 1.5px solid var(--color-fd-border);
+  border-radius: 0;
+  background: var(--color-fd-card);
+}
+
+#nd-toc a[data-active='true'] {
+  color: var(--color-fd-foreground);
+  font-weight: 600;
+}
+
+/* Code blocks, callouts and tabs: square, thick edge, hard shadow. */
+figure.shiki {
+  border: 2px solid var(--pl-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: 5px 5px 0 var(--pl-shadow);
+}
+
+.dark figure.shiki {
+  box-shadow: 5px 5px 0 rgba(56, 189, 248, 0.55);
+}
+
+[style*='--callout-color'] {
+  border: 2px solid var(--pl-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 var(--callout-color);
+}
+
+[style*='--callout-color'] > div:first-child[role='none'] {
+  border-radius: 0;
+}
+
+#nd-page [data-orientation='horizontal'].border {
+  border: 2px solid var(--pl-edge);
+  border-radius: 0;
+}
+
+#nd-page [role='tab'][data-state='active'] {
+  font-weight: 700;
+}
+
+/* The docs' "Your setup" box and its controls follow the same edges. */
+#nd-page section.not-prose.rounded-xl {
+  border: 2px solid var(--pl-edge);
+  border-radius: 0;
+  box-shadow: 5px 5px 0 var(--pl-sky);
+}
+
+/* =========================================================================
+ * "You're leaving pelican.dev" dialog (every page)
+ * ====================================================================== */
+.xl-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-width: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.xl-dialog::backdrop {
+  background: rgba(4, 18, 28, 0.62);
+}
+
+.xl-dialog__box {
+  position: relative;
+  padding: 28px;
+  border: 3px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  box-shadow: 10px 10px 0 var(--pl-sky);
+  font-family: var(--font-sans);
+}
+
+.xl-dialog__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  cursor: pointer;
+}
+
+.xl-dialog__close:hover {
+  background: var(--pl-sky);
+}
+
+.xl-dialog__kicker {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--pl-ink);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.xl-dialog__title {
+  margin: 14px 40px 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.xl-dialog__desc {
+  margin-top: 12px;
+  font-size: 16px;
+  color: #33505f;
+}
+
+.xl-dialog__url {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: #f3f7f9;
+  border: 2px solid #d5e3ea;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.xl-dialog__remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.xl-dialog__remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pl-ink);
+}
+
+.xl-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.xl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 3px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  font: 600 16px var(--font-sans);
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--pl-ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.xl-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--pl-ink);
+}
+
+.xl-btn--go {
+  background: var(--pl-ink);
+  color: #ffffff;
+  box-shadow: 4px 4px 0 var(--pl-sky);
+}
+
+.xl-btn--go:hover {
+  box-shadow: 6px 6px 0 var(--pl-sky);
+}
+
+.xl-dialog__close:focus-visible,
+.xl-btn:focus-visible,
+.xl-dialog__remember input:focus-visible {
+  outline: 3px solid var(--pl-sky);
+  outline-offset: 3px;
+}
+
+/* Dark: the V3 night card (navy surface, white edge, sky shadow). */
+.dark .xl-dialog::backdrop {
+  background: rgba(0, 11, 18, 0.78);
+}
+
+.dark .xl-dialog__box {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+}
+
+.dark .xl-dialog__close {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+}
+
+.dark .xl-dialog__close:hover {
+  color: var(--pl-ink);
+}
+
+.dark .xl-dialog__kicker {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+}
+
+.dark .xl-dialog__desc {
+  color: #b9ccd6;
+}
+
+.dark .xl-dialog__url {
+  background: #04121c;
+  border-color: #2e4756;
+}
+
+.dark .xl-dialog__remember input {
+  accent-color: var(--pl-sky);
+}
+
+.dark .xl-btn {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 var(--pl-sky);
+}
+
+.dark .xl-btn:hover {
+  box-shadow: 6px 6px 0 var(--pl-sky);
+}
+
+.dark .xl-btn--go {
+  border-color: var(--pl-sky);
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  box-shadow: 4px 4px 0 #ffffff;
+}
+
+.dark .xl-btn--go:hover {
+  box-shadow: 6px 6px 0 #ffffff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xl-dialog[open] .xl-dialog__box {
+    animation: xl-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .xl-dialog[open]::backdrop {
+    animation: xl-fade 0.2s ease both;
+  }
+}
+
+@keyframes xl-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@keyframes xl-fade {
+  from {
+    opacity: 0;
+  }
+}

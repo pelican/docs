@@ -1,0 +1,39 @@
+---
+title: "Redis"
+description: "Install Redis from its official apt repository and switch an existing Pelican Panel to Redis with the p:redis:setup command."
+---
+
+## Install Redis
+
+To install Redis you first need add their repository.
+
+```sh
+sudo apt install -y lsb-release curl gpg
+curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+```
+
+Now you can install Redis by simply running the following commands.
+
+```sh
+sudo apt update -y
+sudo apt install -y redis-server
+```
+
+Also make sure to enable that redis will start on boot. You can do that by running the following command:
+
+```sh
+sudo systemctl enable --now redis-server
+```
+
+## Setup Pelican for Redis
+
+### Use Redis as driver
+
+If you are switching to Redis after installing the Panel you have to run the setup command below.  
+**You do not have to run this if this is the first time you are installing the Panel. You will provide the redis data via the Web Installer.**
+
+```sh
+cd /var/www/pelican
+php artisan p:redis:setup
+```
