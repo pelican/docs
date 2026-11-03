@@ -7,7 +7,6 @@
  * - Billing, cancelling, refunds: https://hub.pelican.dev/tos ("Donations & Sponsorships")
  * - Payments and the donor wall: https://hub.pelican.dev/privacy
  * - One-time gifts: https://github.com/sponsors/pelican
- * - Funding split: the project's published plan (also shown on the homepage)
  * - Bug bounty rules: https://github.com/pelican/panel/blob/main/bounties.md
  */
 
@@ -123,26 +122,31 @@ export const signupSteps: { title: string; body: string }[] = [
   },
 ];
 
-export type FundingShare = { pct: number; label: string; tone: 'sky' | 'white' | 'ink'; body: string };
+export type Sponsor = {
+  name: string;
+  href: string;
+  /** Light-on-dark logo: sponsors are shown on navy in both themes. */
+  logo: string;
+  /** The logo file's own size, so the browser can reserve its space. */
+  width: number;
+  height: number;
+};
 
-export const funding: FundingShare[] = [
+/** Company sponsors, shown large on the homepage and on /support. */
+export const sponsors: Sponsor[] = [
   {
-    pct: 75,
-    label: 'Contributors',
-    tone: 'sky',
-    body: 'The people who build and maintain Pelican and ship its releases.',
+    name: 'DataForest',
+    href: 'https://cloud.dataforest.net/?mtm_campaign=pelican&mtm_kwd=main',
+    logo: '/img/homepage/sponsor/df-cloud-logo-darkmode.svg',
+    width: 310,
+    height: 48,
   },
   {
-    pct: 15,
-    label: 'Bug bounties',
-    tone: 'white',
-    body: 'Paid rewards for fixing GitHub issues tagged with a bounty, once the fix is merged.',
-  },
-  {
-    pct: 10,
-    label: 'Moderators',
-    tone: 'ink',
-    body: 'The people who look after the community spaces where you ask for help.',
+    name: 'DreamHost',
+    href: 'https://www.dreamhost.com/hosting/vps/pelican/',
+    logo: '/img/homepage/sponsor/dreamhost-logo-darkmode.png',
+    width: 1088,
+    height: 233,
   },
 ];
 

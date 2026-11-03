@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import {
-  ArrowLeftRight,
   ArrowRight,
   BookOpen,
   Code,
@@ -19,18 +18,24 @@ import { HeroConsole } from './hero-console';
 import { EggFinder, type FinderGame } from './egg-finder';
 import { FeaturePanel } from './feature-panel';
 import { PluginStage } from './plugin-stage';
-import { ReleaseLog } from './release-log';
 import { DomainCta } from './domain-cta';
+import { GameIcon } from './game-art';
+import { SponsorWall } from './sponsor-wall';
 import { DiscordIcon, GitHubIcon } from '@/components/icons';
 import { links } from '@/lib/links';
-import { builtSinceFork, project, recentContributors } from '@/lib/home-data';
-import { eggCount, eggIndex, eggPageUrl, FEATURED, gameBySlug, gameCount, USUAL_PORTS } from '@/lib/eggs';
+import { highlights, project, topContributors } from '@/lib/home-data';
+import { eggCount, eggIndex, FEATURED, gameBySlug, gameCount } from '@/lib/eggs';
 
 const fmt = new Intl.NumberFormat('en');
 const repo = 'https://github.com/pelican/panel';
 const ICONS = { layers: Layers, plug: Plug, key: KeyRound, database: Database, code: Code, shield: ShieldCheck };
-// Eggs to show first for a game, when its alphabetical first three aren't the popular ones.
-const FIRST_EGGS: Record<string, string[]> = { minecraft: ['Paper', 'Vanilla Minecraft', 'Fabric'] };
+
+/** The example fleet in Features: one panel, three kinds of machine, a few game servers each (egg slugs). */
+const FLEET = [
+  { machine: 'Old PC', where: 'At home', games: ['minecraft', 'valheim'] },
+  { machine: 'Rented VPS', where: 'In the cloud', games: ['palworld', 'factorio'] },
+  { machine: 'Dedicated server', where: 'In a datacenter', games: ['rust', 'counter-strike-2', 'minecraft'] },
+];
 
 /* ---- Hero ------------------------------------------------------------------- */
 export function HeroSection() {
@@ -60,9 +65,6 @@ export function HeroSection() {
               <Play size={18} aria-hidden fill="currentColor" /> Try the live demo
             </a>
           </div>
-          <p className="pl-hero__migrate">
-            Coming from Pterodactyl? <Link href={links.migrate}>Read the migration guide</Link>
-          </p>
         </div>
 
         <div className="pl-hero__stage">
@@ -88,35 +90,10 @@ export function HeroSection() {
 
 /* ---- Games strip (navy) --------------------------------------------------------- */
 export function GamesSection() {
-  // Only the featured games (their first three eggs and the fields the strip
-  // shows) and the list of names go to the browser; the full catalogue lives on /eggs.
+  // The featured games' tiles; each opens that game's eggs on /eggs.
   const games: FinderGame[] = FEATURED.flatMap((slug) => {
     const game = gameBySlug(slug);
-    if (!game) return [];
-    const first = FIRST_EGGS[slug] ?? [];
-    const eggs = [...game.eggs]
-      .sort((a, b) => {
-        const ia = first.indexOf(a.name);
-        const ib = first.indexOf(b.name);
-        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-      })
-      .slice(0, 3);
-    return [
-      {
-        slug,
-        name: game.name,
-        icon: game.icon,
-        total: game.eggs.length,
-        port: USUAL_PORTS[slug],
-        eggs: eggs.map((e) => ({
-          name: e.name,
-          description: e.description,
-          url: e.url,
-          detailUrl: eggPageUrl(e.id),
-          image: e.image,
-        })),
-      },
-    ];
+    return game ? [{ slug, name: game.name, icon: game.icon, total: game.eggs.length }] : [];
   });
   const names = eggIndex.games.filter((g) => g.category === 'games' || g.category === 'minecraft').map((g) => g.name);
 
@@ -160,19 +137,19 @@ export function WhySection() {
         <div className="pl-why__copy pl-in">
           <p className="pl-kicker">01 · Why Pelican</p>
           <h2 id="why-title" className="d pl-why__title">
-            Not a reskin.
+            Built to last.
           </h2>
           <p className="pl-why__lede">
-            Pelican started as a fork of Pterodactyl, and we respect where it came from. Here&apos;s what we&apos;ve
-            built since. Each line links to the code.
+            A modern panel for how game servers are run today, and it keeps getting better. Each line links to the
+            change that shipped it.
           </p>
           <p className="pl-why__links">
-            <Link href="/docs/comparison/">Full comparison</Link>
-            <Link href="/faq/">Why we forked</Link>
+            <a href={links.demo}>Try the live demo</a>
+            <Link href="/faq/">Read the FAQ</Link>
           </p>
         </div>
         <ol className="pl-idx">
-          {builtSinceFork.map((item, i) => {
+          {highlights.map((item, i) => {
             const Icon = ICONS[item.icon as keyof typeof ICONS];
             return (
               <li key={item.title} className="pl-in" style={{ '--d': i } as CSSProperties}>
@@ -211,34 +188,46 @@ export function FeaturesSection() {
 
         <div className="pl-fleet">
           <h3 className="d pl-fleet__title">One box or a whole fleet.</h3>
-          <div className="pl-flow">
-            <div className="pl-flow__box pl-flow__box--sky">
+          <p className="pl-fleet__lede">
+            One panel runs every machine you have. Install Wings on a machine and it becomes a node; each game server
+            on it gets its own Docker container.
+          </p>
+          <div className="pl-fleet__map">
+            <div className="pl-fleet__panel">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/img/logo.png" alt="" width={40} height={40} />
+              <img src="/img/logo.png" alt="" width={44} height={44} />
               <span>
                 <strong>Panel</strong> Web UI + API
               </span>
             </div>
-            <ArrowRight className="pl-flow__arrow" size={32} strokeWidth={2.5} aria-hidden />
-            <div className="pl-flow__box">
-              <span>
-                <strong>Wings</strong> On every node
-              </span>
-            </div>
-            <ArrowRight className="pl-flow__arrow" size={32} strokeWidth={2.5} aria-hidden />
-            <div className="pl-flow__box pl-flow__box--ink">
-              <span className="pl-flow__grid" aria-hidden>
-                {Array.from({ length: 6 }, (_, i) => (
-                  <i key={i} />
-                ))}
-              </span>
-              <span>
-                <strong>Game servers</strong> One Docker container each
-              </span>
-            </div>
+            <ul className="pl-fleet__nodes" aria-label="Example nodes">
+              {FLEET.map((node) => (
+                <li key={node.machine} className="pl-node">
+                  <p className="pl-node__head">
+                    <strong>{node.machine}</strong>
+                    <span>{node.where}</span>
+                  </p>
+                  <p className="pl-node__wings">Wings</p>
+                  <ul className="pl-node__servers" aria-label={`Game servers on ${node.machine}`}>
+                    {node.games.flatMap((slug) => {
+                      const game = gameBySlug(slug);
+                      return game
+                        ? [
+                            <li key={slug}>
+                              <GameIcon name={game.name} icon={game.icon} size={24} />
+                              {game.name}
+                            </li>,
+                          ]
+                        : [];
+                    })}
+                  </ul>
+                </li>
+              ))}
+            </ul>
           </div>
           <p className="pl-fine">
-            Wings runs on any Linux machine with Docker, amd64 or arm64: a Raspberry Pi, an old PC, a rack of servers.
+            An example setup. Wings runs on any Linux machine with Docker, amd64 or arm64: a Raspberry Pi, an old PC, a
+            rack of servers.
           </p>
         </div>
       </div>
@@ -286,6 +275,7 @@ export function ActivitySection() {
     [String(project.releasesInYear), 'releases in 12 months'],
     [fmt.format(project.contributors), 'people have contributed'],
     [String(project.plugins), 'plugins on the Hub'],
+    [String(eggCount), 'eggs for games and apps'],
     [`${(project.stars / 1000).toFixed(1)}k`, 'GitHub stars'],
   ];
   return (
@@ -308,33 +298,41 @@ export function ActivitySection() {
             </div>
           ))}
         </dl>
-        <div className="pl-activity__grid">
-          <ReleaseLog />
-          <div className="pl-people on-ink pl-in">
-            <div className="pl-people__head">
-              <h3>Shipped by these people</h3>
-              <a href={`${repo}/graphs/contributors`}>All contributors</a>
+        <p className="pl-activity__latest">
+          Latest release:{' '}
+          <a href={`${repo}/releases/tag/v${project.version}`}>
+            {project.version}, {project.released}
+          </a>
+        </p>
+        <div className="pl-thanks pl-in">
+          <div className="pl-thanks__head">
+            <div>
+              <h3 className="d">Thank you to our top contributors</h3>
+              <p>By commits to the panel since Pelican began in March 2024.</p>
             </div>
-            <ul>
-              {recentContributors.map((login) => (
-                <li key={login}>
-                  <a href={`https://github.com/${login}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://avatars.githubusercontent.com/${login}?s=48`}
-                      alt=""
-                      width={22}
-                      height={22}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    {login}
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p>Everyone with code in beta36 to rc.2. Plus everyone who reports bugs, translates and reviews.</p>
+            <a href={`${repo}/graphs/contributors`}>Everyone who has contributed →</a>
           </div>
+          <ol className="pl-thanks__list">
+            {topContributors.map(({ login, commits }) => (
+              <li key={login}>
+                <a href={`https://github.com/${login}`} className="pl-thanks__person">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://avatars.githubusercontent.com/${login}?s=88`}
+                    alt=""
+                    width={44}
+                    height={44}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span>
+                    <strong>{login}</strong>
+                    <span>{fmt.format(commits)} commits</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>
@@ -393,14 +391,6 @@ export function InstallSection() {
           ))}
         </ol>
         <DomainCta />
-        <p className="pl-migrate">
-          <ArrowLeftRight size={22} aria-hidden />
-          <span>
-            <strong>Coming from Pterodactyl?</strong> There&apos;s a database migration path. Take backups and check
-            version requirements first.
-          </span>
-          <Link href={links.migrate}>Migration guide →</Link>
-        </p>
       </div>
     </section>
   );
@@ -423,8 +413,7 @@ export function CommunitySection() {
               Free to use. <span className="pl-sky">Kept alive by people who care.</span>
             </h2>
             <p className="pl-community__lede">
-              You never have to pay to run Pelican. Sponsors fund the people in the release log, plus bug bounties and
-              moderation.
+              You never have to pay to run Pelican. Sponsors and donors keep the project going.
             </p>
             <div className="pl-community__actions">
               <Link href="/support/" className="pl-btn pl-btn--sky pl-btn--on-ink">
@@ -435,34 +424,7 @@ export function CommunitySection() {
               </Link>
             </div>
           </div>
-          <div className="pl-fund">
-            <p className="pl-fund__label">Published funding plan</p>
-            <div className="pl-fund__bar">
-              <span className="is-sky" style={{ flexGrow: 75 }}>
-                <strong className="d">75%</strong> Contributors
-              </span>
-              <span className="is-white" style={{ flexGrow: 15 }}>
-                <strong className="d">15%</strong> Bounties
-              </span>
-              <span className="is-ink" style={{ flexGrow: 10 }}>
-                <strong className="d">10%</strong> Mods
-              </span>
-            </div>
-            <p className="pl-fund__note">
-              The project&apos;s published plan, not audited spending. <Link href="/support/">Source</Link>
-            </p>
-            <div className="pl-sponsors">
-              <p>Sponsored by</p>
-              <a href="https://cloud.dataforest.net/?mtm_campaign=pelican&mtm_kwd=main">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/img/homepage/sponsor/df-cloud-logo-darkmode.svg" alt="DataForest" height={32} />
-              </a>
-              <a href="https://www.dreamhost.com/hosting/vps/pelican/">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/img/homepage/sponsor/dreamhost-logo-darkmode.png" alt="DreamHost" height={28} />
-              </a>
-            </div>
-          </div>
+          <SponsorWall />
         </div>
         <ul className="pl-res">
           {cards.map(({ icon: Icon, title, body, href }) => (
@@ -475,29 +437,6 @@ export function CommunitySection() {
             </li>
           ))}
         </ul>
-      </div>
-    </section>
-  );
-}
-
-/* ---- Final call (sky) -------------------------------------------------------------------------- */
-export function FinalSection() {
-  return (
-    <section className="pl-final" aria-labelledby="final-title">
-      <div className="pl-wrap pl-final__inner">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/img/logo.png" alt="" width={72} height={72} className="pl-final__logo" />
-        <h2 id="final-title" className="d pl-final__title pl-in">
-          Run your servers. Help shape what&apos;s next.
-        </h2>
-        <div className="pl-final__actions">
-          <Link href={links.install} className="pl-btn pl-btn--ink pl-btn--big">
-            Install Pelican
-          </Link>
-          <a href={links.discord} className="pl-btn pl-btn--white pl-btn--big">
-            <DiscordIcon width={20} height={20} /> Join the Discord
-          </a>
-        </div>
       </div>
     </section>
   );

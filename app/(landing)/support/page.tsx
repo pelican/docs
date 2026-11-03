@@ -2,20 +2,21 @@ import type { Metadata } from 'next';
 import { ArrowRight, Bug, Check, Code, Egg, Heart, Languages, MessageCircle, Plug, Plus } from 'lucide-react';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooterNav } from '@/components/home/sections';
+import { SponsorWall } from '@/components/home/sponsor-wall';
 import { ogImage, pageMetadata } from '@/lib/og';
-import { compareRows, funding, helpWays, plans, signupSteps, supportFaq, supportLinks } from '@/lib/support';
+import { compareRows, helpWays, plans, signupSteps, supportFaq, supportLinks } from '@/lib/support';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Support Pelican',
   description:
-    'Pelican is free and always will be. See what each monthly plan costs and gives, where the money goes, how to give once, and how to help without paying.',
+    'Pelican is free and always will be. See what each monthly plan costs and gives, how to give once, and how to help without paying.',
   path: '/support/',
   image: ogImage.support,
 });
 
 const HELP_ICONS = [Code, Languages, Bug, Egg, Plug, MessageCircle];
 
-/** /support: why to sponsor, the three plans, where the money goes and how to help without paying. */
+/** /support: why to sponsor, the three plans, our sponsors and how to help without paying. */
 export default function SupportPage() {
   return (
     <>
@@ -205,73 +206,21 @@ export default function SupportPage() {
           </div>
         </section>
 
-        {/* ---- Where the money goes + sponsors (navy) ---- */}
-        <section id="money" className="pl-sup-money on-ink" aria-labelledby="money-title">
+        {/* ---- Sponsors (navy) ---- */}
+        <section id="sponsors" className="pl-sup-sponsors on-ink" aria-labelledby="sponsors-title">
           <div className="pl-wrap">
-            <div className="pl-sup-money__grid">
-              <div>
-                <p className="pl-kicker">Where the money goes</p>
-                <h2 id="money-title" className="d pl-h2">
-                  Split three ways.
-                </h2>
-                <p className="pl-sup-money__lede">
-                  Every plan and every one-time gift goes into the same pot, shared out like this. Using Pelican stays
-                  free either way.
-                </p>
-              </div>
-              <div className="pl-fund">
-                <p className="pl-fund__label">Published funding plan</p>
-                <div className="pl-fund__bar" aria-hidden>
-                  {funding.map((share) => (
-                    <span key={share.label} className={`is-${share.tone}`} style={{ flexGrow: share.pct }}>
-                      <strong className="d">{share.pct}%</strong> {share.label}
-                    </span>
-                  ))}
-                </div>
-                <dl className="pl-sup-money__list">
-                  {funding.map((share) => (
-                    <div key={share.label}>
-                      <dt>
-                        <span className={`pl-sup-money__swatch is-${share.tone}`} aria-hidden />
-                        <strong className="d">{share.pct}%</strong> {share.label}
-                      </dt>
-                      <dd>
-                        {share.body}
-                        {share.label === 'Bug bounties' && (
-                          <>
-                            {' '}
-                            <a href={supportLinks.bountyRules}>Bounty rules</a> ·{' '}
-                            <a href={supportLinks.bounties}>Open bounties</a>
-                          </>
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="pl-fund__note">This is the project&apos;s published plan, not audited spending.</p>
-              </div>
-            </div>
-
-            <div className="pl-sup-thanks">
-              <h3 className="d pl-sup-sub">Thank you to our sponsors</h3>
-              <div className="pl-sponsors">
-                <a href="https://cloud.dataforest.net/?mtm_campaign=pelican&mtm_kwd=main">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/img/homepage/sponsor/df-cloud-logo-darkmode.svg" alt="DataForest" height={32} />
-                </a>
-                <a href="https://www.dreamhost.com/hosting/vps/pelican/">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/img/homepage/sponsor/dreamhost-logo-darkmode.png" alt="DreamHost" height={28} />
-                </a>
-              </div>
-              <p className="pl-sup-thanks__wall">
-                And thank you to every community sponsor on the{' '}
-                <a href={supportLinks.wall} className="pl-textlink pl-textlink--ink">
-                  Wall of Awesome
-                </a>
-                .
-              </p>
-            </div>
+            <p className="pl-kicker">Our sponsors</p>
+            <h2 id="sponsors-title" className="d pl-h2">
+              Thank you to our sponsors.
+            </h2>
+            <SponsorWall label="Company sponsors" />
+            <p className="pl-sup-thanks__wall">
+              And thank you to every community sponsor on the{' '}
+              <a href={supportLinks.wall} className="pl-textlink pl-textlink--ink">
+                Wall of Awesome
+              </a>
+              .
+            </p>
           </div>
         </section>
 

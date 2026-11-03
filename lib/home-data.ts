@@ -20,110 +20,35 @@ export const project = {
   releasesInYear: 13,
 } as const;
 
-/* ---- What's been built since the fork --------------------------------------------
+/* ---- Top contributors since Pelican began ---------------------------------------------
+ * Commits on pelican/panel's main branch since the repository was created (19 March 2024),
+ * counted on 3 November 2026 with the GitHub API; bots left out. A squash-merged pull
+ * request counts once, for its author. All-time counts would include the history inherited
+ * at the fork, so they aren't used here.
+ */
+export const topContributors: { login: string; commits: number }[] = [
+  { login: 'lancepioch', commits: 695 },
+  { login: 'Boy132', commits: 491 },
+  { login: 'notAreYouScared', commits: 391 },
+  { login: 'rmartinoscar', commits: 231 },
+  { login: 'alexevladgabriel', commits: 45 },
+  { login: 'parkervcp', commits: 27 },
+  { login: 'JoanFo1456', commits: 23 },
+  { login: 'iamkubi', commits: 21 },
+  { login: 'QuintenQVD0', commits: 19 },
+  { login: 'Huguitis', commits: 17 },
+];
+
+/* ---- Why Pelican: highlights, each linked to the change that shipped it ------------------
  * Each pull request checked on GitHub (pelican/panel); release is where it shipped.
  */
-export const builtSinceFork: { title: string; ref: string; prs: number[]; icon: string }[] = [
-  { title: 'A rebuilt UI on Filament v5', ref: 'beta34', prs: [2315], icon: 'layers' },
+export const highlights: { title: string; ref: string; prs: number[]; icon: string }[] = [
+  { title: 'A modern UI on Filament v5', ref: 'beta34', prs: [2315], icon: 'layers' },
   { title: 'Plugins, without touching core', ref: 'beta30', prs: [1866], icon: 'plug' },
   { title: 'Passkeys. Passwords optional.', ref: 'beta35, 36', prs: [2192, 2318], icon: 'key' },
   { title: 'Backups, wherever you want them', ref: 'beta36', prs: [2125], icon: 'database' },
   { title: 'A real code editor, one-click SFTP', ref: 'beta30, 37', prs: [2013, 2500], icon: 'code' },
   { title: "Plugins can crash. The panel won't.", ref: 'rc.2', prs: [2640], icon: 'shield' },
-];
-
-/* ---- People in the last five releases (beta36 … rc.2), bots excluded ------------- */
-export const recentContributors = [
-  'lancepioch', 'Boy132', 'rmartinoscar', 'JoanFo1456', 'notAreYouScared', 'apple050620312', 'kazaminosuke',
-  'LegacyAngel2K9', 'xLaugh', 'wu-zuan', 'morbyne', 'lotus64yt', 'l1monenko', 'hardcorefactions', 'execsuroot',
-  'duckducktw', 'dualfroz', 'barnabehvrd', 'N7z', 'Fritztechnic', 'ByCoquito',
-];
-
-/* ---- Releases ----------------------------------------------------------------
- * From GitHub's compare view between consecutive tags of pelican/panel. Titles
- * are the commit titles, lightly shortened; `pr` is the pull request number.
- */
-export interface Change {
-  pr: number;
-  title: string;
-  area: string;
-  authors: string[];
-}
-
-export interface Release {
-  tag: string;
-  label: string;
-  date: string;
-  changes: Change[];
-  total: number;
-}
-
-export const releases: Release[] = [
-  {
-    tag: 'v1.0.0-rc.2',
-    label: 'rc.2',
-    date: '22 Oct',
-    total: 19,
-    changes: [
-      { pr: 2640, title: 'Keep a crashing plugin from taking down the panel', area: 'Plugins', authors: ['lancepioch'] },
-      { pr: 2663, title: 'Fire power webhooks for dashboard power actions', area: 'Webhooks', authors: ['lancepioch'] },
-      { pr: 2650, title: 'Always load themes and language packs on all panels', area: 'Themes', authors: ['Boy132'] },
-      { pr: 2661, title: 'Fix importing YAML egg files', area: 'Eggs', authors: ['lancepioch'] },
-      { pr: 2651, title: 'Fix keybinds in the file editor', area: 'Files', authors: ['Boy132'] },
-      { pr: 2672, title: 'Exclude suspended servers from node connectivity checks', area: 'Nodes', authors: ['notAreYouScared'] },
-    ],
-  },
-  {
-    tag: 'v1.0.0-rc.1',
-    label: 'rc.1',
-    date: '10 Oct',
-    total: 60,
-    changes: [
-      { pr: 2498, title: 'A plugin system for webhooks', area: 'Webhooks', authors: ['JoanFo1456'] },
-      { pr: 2510, title: 'Concurrent S3 part uploads for backups', area: 'Backups', authors: ['barnabehvrd'] },
-      { pr: 2514, title: 'Tighten passkey origin checks and log every failure', area: 'Security', authors: ['lancepioch'] },
-      { pr: 2511, title: 'An option to hide allocation ports', area: 'Network', authors: ['ByCoquito'] },
-      { pr: 2531, title: 'Queue health monitoring', area: 'Health', authors: ['LegacyAngel2K9'] },
-      { pr: 2563, title: 'Raise the support floor to PHP 8.4', area: 'Requirements', authors: ['lancepioch'] },
-    ],
-  },
-  {
-    tag: 'v1.0.0-beta38',
-    label: 'beta38',
-    date: '16 Aug',
-    total: 3,
-    changes: [
-      { pr: 2494, title: 'Generate API docs from the request rules with Scramble', area: 'API', authors: ['Fritztechnic'] },
-      { pr: 2516, title: 'Point the yolks references at the image that exists', area: 'Eggs', authors: ['lancepioch'] },
-      { pr: 2515, title: 'Rename pelican-dev references to pelican', area: 'Project', authors: ['lancepioch'] },
-    ],
-  },
-  {
-    tag: 'v1.0.0-beta37',
-    label: 'beta37',
-    date: '13 Aug',
-    total: 18,
-    changes: [
-      { pr: 2500, title: 'An SFTP button in the file list', area: 'Files', authors: ['Boy132'] },
-      { pr: 2462, title: 'Enable opcache and tune PHP in the Docker image', area: 'Docker', authors: ['lancepioch'] },
-      { pr: 2508, title: 'Fix "origin not allowed" for passkeys', area: 'Security', authors: ['JoanFo1456'] },
-      { pr: 2441, title: 'Fix the server grid card freezing', area: 'Interface', authors: ['apple050620312'] },
-      { pr: 2504, title: 'Lower the default backup part size to 128 MiB', area: 'Backups', authors: ['Boy132'] },
-    ],
-  },
-  {
-    tag: 'v1.0.0-beta36',
-    label: 'beta36',
-    date: '5 Aug',
-    total: 37,
-    changes: [
-      { pr: 2192, title: 'Passkeys', area: 'Security', authors: ['JoanFo1456'] },
-      { pr: 2125, title: 'Backup hosts', area: 'Backups', authors: ['Boy132'] },
-      { pr: 2449, title: 'DB_SCHEMA support for PostgreSQL', area: 'Database', authors: ['l1monenko'] },
-      { pr: 2419, title: 'Fix CPU pinning showing as disabled for thread 0', area: 'Admin', authors: ['wu-zuan'] },
-      { pr: 2425, title: 'Fix a stale plugin snapshot on install', area: 'Plugins', authors: ['kazaminosuke'] },
-    ],
-  },
 ];
 
 /* ---- Hub plugins ---------------------------------------------------------------

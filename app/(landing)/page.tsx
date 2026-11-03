@@ -12,7 +12,6 @@ import {
   ActivitySection,
   CommunitySection,
   FeaturesSection,
-  FinalSection,
   GamesSection,
   HeroSection,
   InstallSection,
@@ -51,7 +50,6 @@ export default function HomePage() {
         <ActivitySection />
         <InstallSection />
         <CommunitySection />
-        <FinalSection />
       </main>
       <SiteFooterNav />
     </>
