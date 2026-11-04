@@ -195,7 +195,7 @@ export function FeaturesSection() {
           <div className="pl-fleet__map">
             <div className="pl-fleet__panel">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/img/logo.png" alt="" width={44} height={44} />
+              <img src="/docs/img/logo.png" alt="" width={44} height={44} />
               <span>
                 <strong>Panel</strong> Web UI + API
               </span>
@@ -480,7 +480,7 @@ export function SiteFooterNav() {
           <div>
             <Link href="/" className="pl-nav__brand">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/img/logo.png" alt="" width={40} height={40} />
+              <img src="/docs/img/logo.png" alt="" width={40} height={40} />
               <span className="d">Pelican</span>
             </Link>
             <p className="pl-footer__tag">A free, open-source game server panel, built by its community.</p>

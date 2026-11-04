@@ -14,7 +14,7 @@ export function DocsTopBar() {
     <header className="dt-bar">
       <Link href="/" className="dt-bar__brand" aria-label="Pelican home">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/img/logo.png" alt="" width={34} height={34} />
+        <img src="/docs/img/logo.png" alt="" width={34} height={34} />
         <span>Pelican</span>
         <span className="dt-bar__section">Docs</span>
       </Link>

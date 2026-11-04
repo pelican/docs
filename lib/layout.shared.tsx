@@ -12,7 +12,7 @@ export function docsOptions(): BaseLayoutProps {
       title: (
         <span className="dt-navtitle">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/logo.png" alt="" width={28} height={28} />
+          <img src="/docs/img/logo.png" alt="" width={28} height={28} />
           Pelican <span>Docs</span>
         </span>
       ),

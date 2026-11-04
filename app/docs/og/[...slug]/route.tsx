@@ -7,7 +7,7 @@ import { checkedMotif } from '@/lib/og-motifs';
 import { source } from '@/lib/source';
 
 // Share images for the docs, written into out/ at build time:
-// /og/docs/image.png for /docs/ and /og/docs/<slug>/image.png for every other page.
+// /docs/og/image.png for /docs/ and /docs/og/<slug>/image.png for every other page.
 // The last segment is the file name, so a catch-all can stay the last part of the route.
 export const dynamic = 'force-static';
 export const dynamicParams = false;
@@ -32,7 +32,7 @@ function placeOf(url: string): { section: DocsSection; trail: string[] } {
   return section ? { section, trail } : { section: 'Project', trail: [] };
 }
 
-export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...slug]'>) {
+export async function GET(_req: Request, { params }: RouteContext<'/docs/og/[...slug]'>) {
   const { slug } = await params;
   if (slug.at(-1) !== FILE) notFound();
   const page = source.getPage(slug.slice(0, -1));

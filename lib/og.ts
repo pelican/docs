@@ -18,17 +18,18 @@ export const ASSET_URL = (!IS_PRODUCTION && process.env.DEPLOY_PRIME_URL) || SIT
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 
 /**
- * Social card (Open Graph) image paths. The routes under app/og build exactly these
- * 1200×630 PNGs at build time, so keep both sides in step.
+ * Social card (Open Graph) image paths. The routes under app/og (site pages) and
+ * app/docs/og (docs pages) build exactly these 1200×630 PNGs at build time, so keep
+ * both sides in step.
  */
 export const ogImage = {
   home: '/og/home.png',
   eggs: '/og/eggs.png',
   support: '/og/support.png',
   faq: '/og/faq.png',
-  /** `/og/docs/image.png` for /docs/, `/og/docs/<slug segments>/image.png` for the rest. */
+  /** `/docs/og/image.png` for /docs/, `/docs/og/<slug segments>/image.png` for the rest (app/docs/og). */
   docs(slugs: string[] = []): string {
-    return slugs.length === 0 ? '/og/docs/image.png' : `/og/docs/${slugs.join('/')}/image.png`;
+    return slugs.length === 0 ? '/docs/og/image.png' : `/docs/og/${slugs.join('/')}/image.png`;
   },
 } as const;
 
@@ -108,7 +109,7 @@ export function organizationJsonLd() {
     '@id': ORG_ID,
     name: SITE_NAME,
     url: `${SITE_URL}/`,
-    logo: `${SITE_URL}/img/logo.png`,
+    logo: `${SITE_URL}/docs/img/logo.png`,
     sameAs: ['https://github.com/pelican', links.discord],
   };
 }
@@ -181,7 +182,7 @@ export function techArticleJsonLd(page: {
     ...(page.section ? { articleSection: page.section } : {}),
     ...(page.lastModified ? { dateModified: page.lastModified.toISOString() } : {}),
     isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: `${SITE_URL}/` },
-    publisher: { '@type': 'Organization', name: SITE_NAME, url: `${SITE_URL}/`, logo: `${SITE_URL}/img/logo.png` },
+    publisher: { '@type': 'Organization', name: SITE_NAME, url: `${SITE_URL}/`, logo: `${SITE_URL}/docs/img/logo.png` },
   };
 }
 
