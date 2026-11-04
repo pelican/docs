@@ -27,8 +27,13 @@ jobs:
       - name: 'Install dependencies'
         run: pnpm install --frozen-lockfile
 
+      - name: 'Check content (no import, export or <script> in MDX)'
+        run: pnpm check:content
+
       - name: 'Typecheck'
         run: pnpm typecheck
 
+      # prebuild runs check:content again (Netlify builds run it there);
+      # postbuild runs check:paths on out/.
       - name: 'Build'
         run: pnpm build
