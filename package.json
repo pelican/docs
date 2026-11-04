@@ -12,6 +12,7 @@
     "check:paths": "node scripts/check-paths.mjs",
     "check:content": "node scripts/check-content.mjs",
     "start": "npx serve out",
+    "preview:site": "node router/dev-server.mjs",
     "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit",
     "postinstall": "fumadocs-mdx"
   },

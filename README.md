@@ -23,6 +23,9 @@ pnpm build      # the production site, written to out/
 | `app/(home)/page.tsx` | The homepage. |
 | `public/` | Files served as they are, including the `update-panel.sh` and `migrate-*.sh` scripts. |
 | `netlify.toml` | Build settings and redirects such as `/discord`. |
+| `ui/` | Design tokens (`tokens.css`) and site nav (`nav.json`) shared with the Hub; published at `/docs/ui/v1/`. |
+| `router/` | `dev-server.mjs`: pelican.dev as one site locally (docs from `out/`, the rest from the Hub). See its README. |
+| `scripts/check-*.mjs` | `check-content` (no `import`/`export`/`<script>` in MDX, runs before the build) and `check-paths` (everything under `/docs/`, runs after it). |
 
 ## Writing a page
 
