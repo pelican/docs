@@ -53,6 +53,27 @@
   status = 301
   force = true
 
+# INTERIM (remove after the switch, when the Hub owns these paths): the docs
+# nav uses the Hub's paths from ui/nav.json; while Netlify serves the whole
+# domain, send them where they live today. /eggs already resolves to /eggs/.
+[[redirects]]
+  from = "/plugins"
+  to = "https://hub.pelican.dev/plugins"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/plugins/*"
+  to = "https://hub.pelican.dev/plugins/:splat"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/sponsor"
+  to = "/support/"
+  status = 302
+  force = true
+
 # ---- Short links (were client-side redirects on Docusaurus) --------------
 [[redirects]]
   from = "/discord"
@@ -140,6 +161,12 @@
   for = "/llms-full.txt"
   [headers.values]
     Content-Type = "text/plain; charset=utf-8"
+
+# The design tokens and nav the Hub copies (ui/); readable from any origin.
+[[headers]]
+  for = "/docs/ui/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
 
 # The install scripts are fetched with curl; make sure they come back as text.
 [[headers]]
