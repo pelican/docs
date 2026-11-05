@@ -7,8 +7,21 @@ Pelican follows [semantic versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`)
 ## Panel and Wings
 
 The Panel and Wings are versioned **independently**. A Panel release does not mean there is a Wings release with the same number, and the other way around.
-Compatibility is guaranteed within a major version: any Panel `1.x` works with any Wings `1.x`.
+Compatibility is guaranteed within a major version: any Panel `1.x` works with any Wings `1.x` at or above the Panel's minimum Wings version.
 See [Updating the Panel](./panel/update) and [Updating Wings](./wings/update) for the current requirements.
+
+| Panel   | Minimum Wings |
+|---------|---------------|
+| `1.0.x` | `1.0.0`       |
+
+The minimum Wings version is only raised in a **minor** Panel release and is announced in the release notes.
+
+The Panel checks the Wings version of every node and shows two kinds of warnings:
+
+- **Outdated**: the node runs an older Wings than the latest release. It still works, but you should [update Wings](./wings/update).
+- **Incompatible**: the node runs a Wings older than the Panel's minimum. The node icon turns yellow, the node page shows the required version and the health check fails. Update Wings as soon as possible.
+
+The Panel never blocks a node because of its Wings version. An incompatible node keeps working, but features that need a newer Wings may fail.
 
 ## What semver covers
 
