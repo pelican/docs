@@ -105,3 +105,32 @@ Run the following command in your `/var/www/pelican` directory.
 ```sh
 php artisan p:user:disable2fa
 ```
+
+## Health Monitoring
+
+The Panel checks its database, cache, queue, schedule, disk space and versions every five minutes. Admins can see the results on the **Health** page in the admin area.
+
+### Health Endpoint
+
+To let an external monitor (Uptime Kuma, UptimeRobot, etc.) read these results, set a secret in the `.env` in `/var/www/pelican/` and run `php artisan config:clear`:
+
+```sh
+HEALTH_ENDPOINT_SECRET=a-long-random-string
+```
+
+The results are then available as JSON at `https://panel.example.com/health`. Send the secret as a bearer token:
+
+```sh
+curl -H "Authorization: Bearer a-long-random-string" https://panel.example.com/health
+```
+
+If your monitor can't send headers, use `https://panel.example.com/health?token=a-long-random-string` instead. Query strings can end up in access logs, so prefer the header.
+
+- `200`: every check is ok or only has a warning (for example, an update is available)
+- `503`: at least one check failed, or the checks haven't run yet
+- `403`: wrong or missing secret
+- `404`: `HEALTH_ENDPOINT_SECRET` isn't set
+
+The endpoint serves the results from the last scheduled run. Add `fresh` (`/health?fresh`) to run the checks first, which takes longer since it contacts every node.
+
+In Uptime Kuma, an **HTTP(s)** monitor pointed at the endpoint with the `Authorization` header set is enough, since a failing check returns `503`.
