@@ -127,7 +127,7 @@ curl -H "Authorization: Bearer a-long-random-string" https://panel.example.com/h
 If your monitor can't send headers, use `https://panel.example.com/health?token=a-long-random-string` instead. Query strings can end up in access logs, so prefer the header.
 
 - `200`: every check is ok or only has a warning (for example, an update is available)
-- `503`: at least one check failed, or the checks haven't run yet
+- `503`: at least one check failed, or the checks haven't run in the last 10 minutes (usually a stopped scheduler)
 - `403`: wrong or missing secret
 - `404`: `HEALTH_ENDPOINT_SECRET` isn't set
 
