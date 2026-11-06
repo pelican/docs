@@ -115,10 +115,11 @@ trap on_exit EXIT
 
 env_get() {
   # Read .env with the panel's own parser (phpdotenv), so values match what Laravel sees:
-  # quotes, escapes, inline comments, CRLF line endings and ${VAR} references.
-  if [[ -f "$install_dir/vendor/autoload.php" ]] && php -d display_errors=stderr -r 'require $argv[1] . "/vendor/autoload.php"; $env = Dotenv\Dotenv::createArrayBacked($argv[1])->load(); echo $env[$argv[2]] ?? "";' "$install_dir" "$1" 2>/dev/null; then
+  # quotes, escapes, inline comments, CRLF line endings, ${VAR} references and (empty)/(null).
+  if [[ -f "$install_dir/vendor/autoload.php" ]] && php -d display_errors=stderr -r 'require $argv[1] . "/vendor/autoload.php"; $env = Dotenv\Dotenv::createArrayBacked($argv[1])->load(); $value = $env[$argv[2]] ?? ""; echo in_array(strtolower($value), ["(empty)", "(null)"], true) ? "" : $value;' "$install_dir" "$1" 2>/dev/null; then
     return
   fi
+  [[ -f "$install_dir/vendor/autoload.php" ]] && echo "Warning: could not read $1 from .env with the panel's dotenv parser, using a simpler parser instead" >&2
   # Fallback without vendor/: strip only matching surrounding quotes, so quotes inside a value (e.g. a password) are kept.
   grep -E "^$1=" "$install_dir/.env" | tail -n1 | cut -d '=' -f 2- | sed -E -e 's/^"(.*)"$/\1/' -e t -e "s/^'(.*)'$/\1/" || true
 }
