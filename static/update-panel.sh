@@ -114,7 +114,12 @@ on_exit() {
 trap on_exit EXIT
 
 env_get() {
-  # Strip only matching surrounding quotes, so quotes inside a value (e.g. a password) are kept.
+  # Read .env with the panel's own parser (phpdotenv), so values match what Laravel sees:
+  # quotes, escapes, inline comments, CRLF line endings and ${VAR} references.
+  if [[ -f "$install_dir/vendor/autoload.php" ]] && php -d display_errors=stderr -r 'require $argv[1] . "/vendor/autoload.php"; $env = Dotenv\Dotenv::createArrayBacked($argv[1])->load(); echo $env[$argv[2]] ?? "";' "$install_dir" "$1" 2>/dev/null; then
+    return
+  fi
+  # Fallback without vendor/: strip only matching surrounding quotes, so quotes inside a value (e.g. a password) are kept.
   grep -E "^$1=" "$install_dir/.env" | tail -n1 | cut -d '=' -f 2- | sed -E -e 's/^"(.*)"$/\1/' -e t -e "s/^'(.*)'$/\1/" || true
 }
 
