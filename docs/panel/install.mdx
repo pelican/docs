@@ -2,6 +2,12 @@
 
 Pelican provides pre-built Docker images via GitHub Packages. `ghcr.io/pelican/panel:latest` is the current latest release, and `ghcr.io/pelican/panel:main` is built automatically from the current `main` branch. Docker is the recommended way to install the Panel. If you'd rather run it directly on your server, see the [standalone install](/docs/panel/standalone/getting-started).
 
+:::note
+
+The images used to be published as `ghcr.io/pelican-dev/panel`. That path no longer gets updates, so if your `compose.yml` still uses it, change `image:` to `ghcr.io/pelican/panel:latest`.
+
+:::
+
 This guide requires Docker CE. (Docker Compose has been included in the Docker CLI since v2. Docker Compose v1 is unsupported.) For instructions on installing and configuring Docker, see [Getting Started](/docs/getting-started).
 
 ## Basics
@@ -12,7 +18,7 @@ This configuration includes an integrated web server that will automatically obt
 
 ### Create compose.yml
 
-```yml {17,18} title="compose.yml"
+```yml {18,19} title="compose.yml"
 services:
   panel:
     image: ghcr.io/pelican/panel:latest
@@ -27,6 +33,7 @@ services:
     volumes:
       - pelican-data:/pelican-data
       - pelican-logs:/var/www/html/storage/logs
+      - pelican-plugins:/var/www/html/plugins
     environment:
       XDG_DATA_HOME: /pelican-data
       APP_URL: "http://localhost"
@@ -35,6 +42,7 @@ services:
 volumes:
   pelican-data:
   pelican-logs:
+  pelican-plugins:
 
 networks:
   default:
@@ -112,7 +120,7 @@ The default Caddyfile will work for standard installations. If you need to edit 
 
 This example assumes there is a Caddyfile in the same directory as the `compose.yml` file. 
 
-```yml {15} title="compose.yml"
+```yml {16} title="compose.yml"
 services:
   panel:
     image: ghcr.io/pelican/panel:latest
@@ -127,6 +135,7 @@ services:
     volumes:
       - pelican-data:/pelican-data
       - pelican-logs:/var/www/html/storage/logs
+      - pelican-plugins:/var/www/html/plugins
       - ./Caddyfile:/etc/caddy/Caddyfile
     environment:
       XDG_DATA_HOME: /pelican-data
@@ -136,6 +145,7 @@ services:
 volumes:
   pelican-data:
   pelican-logs:
+  pelican-plugins:
 
 networks:
   default:
@@ -197,7 +207,7 @@ When running the panel behind a reverse proxy that handles TLS (SSL), set the fo
 
 No custom Caddyfile is needed for this setup. An example `compose.yml` for hosting the panel behind a reverse proxy is shown below.
 
-```yml {8,16-18} title="compose.yml"
+```yml {8,17-19} title="compose.yml"
 services:
   panel:
     image: ghcr.io/pelican/panel:latest
@@ -211,6 +221,7 @@ services:
     volumes:
       - pelican-data:/pelican-data
       - pelican-logs:/var/www/html/storage/logs
+      - pelican-plugins:/var/www/html/plugins
     environment:
       XDG_DATA_HOME: /pelican-data
       APP_URL: "https://panel.example.com"
@@ -221,6 +232,7 @@ services:
 volumes:
   pelican-data:
   pelican-logs:
+  pelican-plugins:
 
 networks:
   default:
