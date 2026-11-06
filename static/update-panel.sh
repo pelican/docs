@@ -121,7 +121,10 @@ env_get() {
   fi
   [[ -f "$install_dir/vendor/autoload.php" ]] && echo "Warning: could not read $1 from .env with the panel's dotenv parser, using a simpler parser instead" >&2
   # Fallback without vendor/: strip only matching surrounding quotes, so quotes inside a value (e.g. a password) are kept.
-  grep -E "^$1=" "$install_dir/.env" | tail -n1 | cut -d '=' -f 2- | sed -E -e 's/^"(.*)"$/\1/' -e t -e "s/^'(.*)'$/\1/" || true
+  local value
+  value=$(grep -E "^$1=" "$install_dir/.env" | tail -n1 | cut -d '=' -f 2- | sed -E -e 's/^"(.*)"$/\1/' -e t -e "s/^'(.*)'$/\1/" || true)
+  case "${value,,}" in "(empty)" | "(null)") value="" ;; esac
+  printf '%s\n' "$value"
 }
 
 errors=()
