@@ -41,8 +41,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="en" className={`${display.variable} ${text.variable} ${mono.variable}`} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <RootProvider
-          // Follows the reader's system setting; the switch in the docs bar overrides it.
-          theme={{ defaultTheme: 'system' }}
+          // Dark until the reader picks a theme with the switch in the docs bar (the Hub does the same).
+          theme={{ defaultTheme: 'dark' }}
           // The search index is a static file built with the site (app/docs/search.json),
           // under /docs/ like everything else the docs load.
           search={{ options: { type: 'static', api: '/docs/search.json' } }}
