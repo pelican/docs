@@ -27,8 +27,11 @@ jobs:
       - name: 'Install dependencies'
         run: pnpm install --frozen-lockfile
 
-      - name: 'Check content (no import, export or <script> in MDX)'
+      - name: 'Check content (MDX that could run code)'
         run: pnpm check:content
+
+      - name: 'Test the content check'
+        run: pnpm test:content
 
       - name: 'Typecheck'
         run: pnpm typecheck

@@ -26,7 +26,7 @@ pnpm build      # the production site, written to out/
 | `netlify.toml` | Build settings and redirects such as `/discord`. |
 | `ui/` | Design tokens (`tokens.css`) and site nav (`nav.json`) shared with the Hub; published at `/docs/ui/v1/`. |
 | `router/` | `dev-server.mjs`: pelican.dev as one site locally (docs from `out/`, the rest from the Hub). See its README. |
-| `scripts/check-*.mjs` | `check-content` (no `import`/`export`/`<script>` in MDX, runs before the build) and `check-paths` (everything under `/docs/`, runs after it). |
+| `scripts/check-*.mjs` | `check-content` (parses every page as MDX and fails on anything that could run code: `import`/`export`, `{expressions}`, components outside `mdx-components.tsx`, handlers, unsafe URLs; runs before the build, tested by `pnpm test:content`) and `check-paths` (everything under `/docs/`, runs after it). |
 
 ## Writing a page
 
