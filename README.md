@@ -1,7 +1,7 @@
 # Pelican Docs
 
-The website and documentation at [pelican.dev](https://pelican.dev), built with
-[Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) and served by Netlify as a static site.
+The website and documentation at [pelican.dev](https://pelican.dev), covering [Pelican Panel](https://github.com/pelican/panel) and [Wings](https://github.com/pelican/wings).
+Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) and served by Netlify as a static site.
 
 ## Running it locally
 
