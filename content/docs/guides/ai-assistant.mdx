@@ -45,11 +45,13 @@ Read these pages first and follow them exactly:
 
 Before any command, ask me, one question at a time, and explain the choice in plain words:
 1. The output of `cat /etc/os-release` and `systemd-detect-virt`, to check the server can run Docker.
-2. The panel's domain, and whether its DNS A record already points at this server.
-3. The email for Let's Encrypt (a real address: example.com addresses are refused).
+2. Whether I have a domain for the panel with its DNS A record pointing at this server. Without one,
+   the panel is served over plain HTTP on the server's IP: fine to try it, but recommend adding a
+   domain (HTTPS) before real use. A domain can be added later by running the script again.
+3. If I use a domain: the email for Let's Encrypt (a real address: example.com addresses are refused).
 4. Which profile: "quick" (SQLite, the least to run: one server, a small community) or "production"
    (MariaDB and Redis: more users, servers and nodes). Recommend one from my answers.
-5. Whether Wings should run on this same server, and if so its own domain (e.g. node.example.com).
+5. Whether Wings should run on this same server, and with a panel domain, Wings' own domain (e.g. node.example.com).
 
 Then:
 - Write the exact command with my answers as options and --yes, and explain each option.
@@ -60,7 +62,7 @@ Then:
   /opt/pelican/pelican.env. Tell me where to look at them myself.
 
 This is a production server. Before we finish, check with me that:
-- https://<domain>/installer opens with a valid certificate, and I created the admin account there.
+- The installer page the script printed opens (with a valid certificate if I used a domain), and I created the admin account there.
 - I copied /opt/pelican/pelican.env (it holds the APP_KEY) somewhere safe, off the server.
 - My provider's firewall allows 80 and 443 (and 2022 plus my game server ports if Wings runs here).
 - If Wings runs here: the node is created in the Panel as the docs describe, /etc/pelican/config.yml

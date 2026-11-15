@@ -28,17 +28,17 @@ systemd-detect-virt
 
 If that command isn't available, `sudo dmidecode -s system-manufacturer` usually tells you as well.
 
-You also need a domain (or subdomain) for the Panel, such as `panel.example.com`, with an `A` record pointing at your server, so it can get an HTTPS certificate.
+A domain (or subdomain) for the Panel, such as `panel.example.com` with an `A` record pointing at your server, gives it HTTPS. It's optional to start with: without one the Panel is served on your server's IP address, and you can add the domain later.
 
 ## The quick way: one command
 
-On a fresh server, this installs Docker, sets up HTTPS with Let's Encrypt and starts the Panel. It asks for your domain and email, and whether you want the simple setup or the production one:
+On a fresh server, this installs Docker and starts the Panel on your server's IP address. Give it a domain and it sets up HTTPS with Let's Encrypt too. It asks whether you have one, and whether you want the simple setup or the production one:
 
 ```sh
 curl -fsSL https://pelican.dev/install.sh | sudo bash
 ```
 
-When it's done, open `https://<your domain>/installer` to finish. [Installing the Panel](./panel/install#the-install-script) explains every option, what the script sets up and how to change it later. Want an AI assistant to walk you through it? See [Installing with an AI Assistant](./guides/ai-assistant).
+When it's done, open the address it shows (`http://<your server's IP>/installer`, or `https://<your domain>/installer`) to finish. [Installing the Panel](./panel/install#the-install-script) explains every option, what the script sets up and how to change it later. Want an AI assistant to walk you through it? See [Installing with an AI Assistant](./guides/ai-assistant).
 
 The rest of this page sets up Docker by hand, for the [Docker Compose install](./panel/install#docker-compose) or for [Wings](./wings/install). The script does all of it for you.
 

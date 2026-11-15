@@ -11,7 +11,7 @@ The images used to be published as `ghcr.io/pelican-dev/panel`. That path no lon
 
 There are two ways to install it with Docker:
 
-- **[The install script](#the-install-script)** does everything with one command, HTTPS included, and is the quickest way to a working Panel.
+- **[The install script](#the-install-script)** does everything with one command, HTTPS included once you give it a domain, and is the quickest way to a working Panel.
 - **[Docker Compose](#docker-compose)** is the same Panel set up by hand, if you want to see and own every step.
 
 ## The install script
@@ -22,24 +22,36 @@ On a fresh Linux server (see [Getting Started](/docs/getting-started) for the re
 curl -fsSL https://pelican.dev/install.sh | sudo bash
 ```
 
-It asks for the Panel's domain, your email, a profile and whether to install Wings on the same server, then:
+It asks whether you have a domain for the Panel (and your email, if so), a profile and whether to install Wings on the same server, then:
 
-1. checks the server: Linux on x86_64 or arm64, a virtualization Docker works on, ports 80 and 443 free, and the domain pointing at this server;
+1. checks the server: Linux on x86_64 or arm64, a virtualization Docker works on, ports 80 and 443 free, and the domain pointing at this server if you gave one;
 2. installs Docker if it's missing;
 3. starts a one-node [Docker Swarm](https://docs.docker.com/engine/swarm/), on address ranges that leave room for Wings' network;
 4. deploys a stack named `pelican` from `/opt/pelican`:
-    - **Traefik** on ports 80 and 443. It sends HTTP to HTTPS and gets a Let's Encrypt certificate for your domain on the first visit, then renews it on its own.
+    - **Traefik** on ports 80 and 443. Without a domain it serves the Panel on `http://<your server's IP>`. With one, it sends HTTP to HTTPS and gets a Let's Encrypt certificate for the domain on the first visit, then renews it on its own.
     - **The Panel** behind it, in the `ghcr.io/pelican/panel` image.
     - With the production profile, **MariaDB** and **Redis** as well.
-5. with Wings, installs it [as in the Wings guide](/docs/wings/install) and routes its domain through Traefik, so Wings gets a certificate too.
+5. with Wings, installs it [as in the Wings guide](/docs/wings/install). With a domain, Traefik also serves Wings' own domain, so Wings gets a certificate too.
 
-When it finishes, open `https://<your domain>/installer` to create your admin account.
+When it finishes, open the address it shows (`http://<your server's IP>/installer`, or `https://<your domain>/installer`) to create your admin account.
 
 <Admonition type="warning" title="Before you run it">
-    - Point an `A` record for the Panel's domain (and Wings' domain, if you install Wings) at the server, and wait until it resolves.
-    - With Cloudflare, keep the record **DNS only** (grey cloud) so Let's Encrypt can reach the server. You can turn the proxy on once the certificate is there.
     - Nothing else may use ports 80 or 443 (an earlier NGINX or Apache, or a Panel installed with Docker Compose).
+    - Using a domain? Point its `A` record (and Wings' domain's, if you install Wings) at the server, and wait until it resolves.
+    - With Cloudflare, keep the record **DNS only** (grey cloud) so Let's Encrypt can reach the server. You can turn the proxy on once the certificate is there.
 </Admonition>
+
+### Without a domain
+
+Run the script without `--domain` (or leave the question empty) and the Panel is served on `http://<your server's IP>`, the external IPv4 address the script finds (pass `--ip` to choose another, such as a server behind NAT). It's the quickest way to try Pelican, but it's plain HTTP: logins and data cross the network unencrypted. Add a domain before you rely on it.
+
+To add one later, point its `A` record at the server and run the script again with the domain. It keeps your keys, passwords and data, switches the Panel to HTTPS and sends visitors of the old address to the new one:
+
+```sh
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com --email you@example.com --yes
+```
+
+Or set `PANEL_DOMAIN` and `LE_EMAIL` in `/opt/pelican/pelican.env` and run `sudo /opt/pelican/deploy.sh`.
 
 ### Profiles
 
@@ -55,16 +67,21 @@ You can't switch an install from one profile to the other by running the script 
 Everything the script asks can be given as an option, so it runs without questions. That's also how to hand it to automation or to an [AI assistant](/docs/guides/ai-assistant):
 
 ```sh
+# On the server's IP, with the defaults (the quick profile, no Wings)
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --yes
+
+# With a domain and HTTPS, MariaDB and Redis
 curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- \
   --domain panel.example.com --email you@example.com --profile production --yes
 ```
 
 | Option | What it does |
 |:-------|:-------------|
-| `--domain DOMAIN` | The Panel's address, e.g. `panel.example.com` |
-| `--email EMAIL` | Your email, for Let's Encrypt's certificate notices |
+| `--domain DOMAIN` | Serve the Panel at this domain with HTTPS, e.g. `panel.example.com`. Without it, the Panel is on `http://<server IP>` |
+| `--email EMAIL` | Your email, for Let's Encrypt's certificate notices (needed with `--domain`) |
+| `--ip IP` | The address the Panel is served on without a domain (default: the server's external IPv4 address) |
 | `--profile quick\|production` | Which [profile](#profiles) to run (asks, `quick` by default) |
-| `--wings`, `--wings-domain DOMAIN` | Also install Wings on this server, at its own domain such as `node.example.com` |
+| `--wings`, `--wings-domain DOMAIN` | Also install Wings on this server. With `--domain`, Wings needs its own domain such as `node.example.com`; without one, it's on `http://<server IP>:8080` |
 | `--no-wings` | Don't install Wings, without asking |
 | `--dir PATH` | Where the stack's files go (default `/opt/pelican`) |
 | `--image IMAGE` | Another Panel image, e.g. a fixed version |
@@ -91,7 +108,7 @@ Everything the script sets up is in `/opt/pelican`:
 | `pelican.env` | Your settings, the `APP_KEY` and the database passwords. Readable by root only. |
 | `stack.yml` | The services, with every value taken from `pelican.env` |
 | `deploy.sh` | Applies `pelican.env` and `stack.yml` to the running stack |
-| `traefik/` | Extra Traefik routes (Wings' route goes here) |
+| `traefik/pelican.yml` | Traefik's routes, written by `deploy.sh` from `pelican.env` (add your own files next to it) |
 
 <Admonition type="danger" title="Back up pelican.env">
     `APP_KEY` encrypts parts of your Panel's data. Copy `pelican.env` somewhere safe, off the server: if it's lost, that data can't be recovered, **even with database backups**.
@@ -106,7 +123,7 @@ sudo nano /opt/pelican/pelican.env
 sudo /opt/pelican/deploy.sh
 ```
 
-For example, a new `PANEL_DOMAIN` gets its certificate as soon as its DNS points at the server, and `PANEL_IMAGE=ghcr.io/pelican/panel:<version>` keeps the Panel on one version. Running the install script again also works: it keeps your keys and passwords and updates the stack.
+For example, a new `PANEL_DOMAIN` (with `LE_EMAIL`) switches the Panel to HTTPS and gets its certificate as soon as its DNS points at the server, and `PANEL_IMAGE=ghcr.io/pelican/panel:<version>` keeps the Panel on one version. Running the install script again also works: it keeps your keys and passwords and updates the stack.
 
 ### Updating
 
@@ -120,7 +137,11 @@ Database migrations run when the new Panel starts. See [Updating the Panel](/doc
 
 ### Wings on the same server
 
-With `--wings`, the script installs Wings and enables its service, and Traefik serves Wings' domain over HTTPS. Wings itself starts once it has a configuration from the Panel:
+With `--wings`, the script installs Wings and enables its service. Wings itself starts once it has a configuration from the Panel.
+
+Without a domain, Wings is reached directly on `http://<server IP>:8080`. In the Panel, create the node with the server's IP as the FQDN, **HTTP**, **Not Behind Proxy** and port `8080`; then copy its configuration to `/etc/pelican/config.yml` and start Wings. When you add a domain for the Panel later, Wings needs one too (HTTPS on the Panel means HTTPS on Wings): run the script again with `--wings-domain` and update the node.
+
+With a domain, Traefik serves Wings' domain over HTTPS:
 
 1. In the Panel, go to **Admin → Nodes → Create**. Use Wings' domain as the FQDN, choose **HTTPS** and **Behind Proxy**, and set the port the Panel connects to as `443` and the port Wings listens on as `8080`.
 2. Copy the node's configuration to `/etc/pelican/config.yml`, or run its **Auto Deploy** command. Traefik handles HTTPS, so in that file `api.port` is `8080` and `api.ssl.enabled` is `false`.

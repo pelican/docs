@@ -3,16 +3,18 @@
 # on the same server if you want it.
 #
 #   curl -fsSL https://pelican.dev/install.sh | sudo bash
+#   curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --yes      # on this server's IP
 #   curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com \
-#     --email you@example.com --profile production --yes
+#     --email you@example.com --profile production --yes                 # HTTPS on a domain
 #
 # Docs: https://pelican.dev/docs/panel/install/ (every option, and how to change things later)
 #
 # What it does: checks the server, installs Docker if it's missing, starts a one-node Docker
-# Swarm, and deploys a stack named "pelican" from /opt/pelican: Traefik on ports 80 and 443,
-# which gets a Let's Encrypt certificate for your domain on the first request, and the Panel
-# behind it. "production" adds MariaDB and Redis. With --wings it also installs Wings (the
-# binary and systemd service, as in the docs) and routes its domain through Traefik.
+# Swarm, and deploys a stack named "pelican" from /opt/pelican: Traefik on ports 80 and 443 and
+# the Panel behind it. Without a domain the Panel is served on http://<this server's IP>; with
+# --domain, Traefik gets a Let's Encrypt certificate on the first request and serves HTTPS (add
+# the domain later and it switches). "production" adds MariaDB and Redis. With --wings it also
+# installs Wings (the binary and systemd service, as in the docs).
 #
 # Settings live in /opt/pelican/pelican.env; change one and run /opt/pelican/deploy.sh. Running
 # this script again keeps your keys and passwords, and updates the stack.
@@ -38,6 +40,7 @@ PUBLIC_SUBNET="${PELICAN_PUBLIC_SUBNET:-10.203.250.0/24}"   # Traefik <-> Panel 
 # ---- Options -------------------------------------------------------------------------------
 domain=""
 email=""
+ip=""
 profile=""
 with_wings=""
 wings_domain=""
@@ -52,13 +55,18 @@ usage() {
   cat <<EOF
 Usage: install.sh [options]
 
-  --domain DOMAIN        The Panel's address, e.g. panel.example.com (its DNS must point here)
-  --email EMAIL          Email for Let's Encrypt (expiry notices)
+  --domain DOMAIN        Serve the Panel at this domain with HTTPS (Let's Encrypt), e.g.
+                         panel.example.com; its DNS must point here. Without it the Panel is
+                         served on http://<this server's IP>, and you can add a domain later.
+  --email EMAIL          Email for Let's Encrypt's notices (needed with --domain)
+  --ip IP                The IP the Panel is served on without a domain (default: this
+                         server's external IPv4 address, found automatically)
   --profile NAME         quick: SQLite, the least to run (one server, small installs)
                          production: MariaDB and Redis (more servers and users)
   --wings                Also install Wings on this server
   --no-wings             Don't install Wings on this server
-  --wings-domain DOMAIN  Wings' address, e.g. node.example.com (needs --wings)
+  --wings-domain DOMAIN  Wings' address with HTTPS, e.g. node.example.com (needs --wings and
+                         --domain; without them Wings is on http://<IP>:8080)
   --dir PATH             Where the stack's files go (default $DEFAULT_DIR)
   --image IMAGE          Panel image (default $PANEL_IMAGE_DEFAULT)
   --staging              Use Let's Encrypt's staging server (test certificates, no rate limits)
@@ -69,7 +77,8 @@ Usage: install.sh [options]
   -y, --yes              Don't ask: use the options given (and the defaults for the rest)
   -h, --help             Show this help
 
-Without --yes it asks for anything you didn't pass. With --yes, --domain and --email are needed.
+Without --yes it asks for anything you didn't pass. With --yes nothing else is needed: the Panel
+is served on this server's IP, with the quick profile.
 EOF
 }
 
@@ -77,6 +86,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --domain) domain="${2:?--domain needs a value}"; shift 2 ;;
     --email) email="${2:?--email needs a value}"; shift 2 ;;
+    --ip) ip="${2:?--ip needs a value}"; shift 2 ;;
     --profile) profile="${2:?--profile needs a value}"; shift 2 ;;
     --wings) with_wings=yes; shift ;;
     --no-wings) with_wings=no; shift ;;
@@ -153,6 +163,21 @@ confirm() {
 }
 
 valid_domain() { [[ "$1" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$ ]]; }
+valid_ip() {
+  local IFS=. part
+  [[ "$1" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
+  for part in $1; do (( part <= 255 )) || return 1; done
+}
+
+# This server's external IPv4 address: what the internet sees (an outside service says), else
+# the address of the interface that has the default route.
+detect_ip() {
+  local found
+  found="$(curl -4 -fsS --max-time 5 https://ipv4.icanhazip.com 2>/dev/null | tr -d '[:space:]' || true)"
+  valid_ip "$found" || found="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i < NF; i++) if ($i == "src") print $(i + 1)}' | head -1 || true)"
+  valid_ip "$found" && printf '%s' "$found"
+}
+
 valid_email() { [[ "$1" =~ ^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,63}$ ]]; }
 
 # secret LENGTH: letters and digits only, so it is safe in YAML, .env files and URLs.
@@ -204,21 +229,36 @@ wings_domain="${wings_domain:-$(setting WINGS_DOMAIN)}"
 panel_image="${panel_image:-$(setting PANEL_IMAGE)}"
 panel_image="${panel_image:-$PANEL_IMAGE_DEFAULT}"
 
-if [[ -z "$domain" ]]; then
-  $assume_yes && die "--domain is needed with --yes (the Panel's address, e.g. panel.example.com)."
-  ask domain "The Panel's domain (its DNS must point at this server), e.g. panel.example.com" ""
+if [[ -z "$domain" && -z "$(setting PANEL_IP)" ]]; then
+  if can_ask; then
+    info "With a domain (its DNS pointing here) the Panel gets HTTPS right away. Without one it's"
+    info "served on http://<this server's IP>, and you can add a domain later."
+  fi
+  ask domain "Domain for the Panel, e.g. panel.example.com (empty: use this server's IP)" ""
 fi
-valid_domain "$domain" || die "\"$domain\" isn't a domain name like panel.example.com."
+if [[ -n "$domain" ]]; then
+  valid_domain "$domain" || die "\"$domain\" isn't a domain name like panel.example.com."
+  if [[ -z "$email" ]]; then
+    $assume_yes && die "--email is needed with --domain (Let's Encrypt sends certificate notices to it)."
+    ask email "Your email, for Let's Encrypt" ""
+  fi
+  valid_email "$email" || die "\"$email\" isn't an email address."
+  case "${email##*@}" in
+    example.com | example.net | example.org | localhost)
+      die "Let's Encrypt refuses addresses at ${email##*@}: use a real email (it only sends certificate notices)." ;;
+  esac
+fi
 
-if [[ -z "$email" ]]; then
-  $assume_yes && die "--email is needed with --yes (Let's Encrypt sends certificate notices to it)."
-  ask email "Your email, for Let's Encrypt" ""
+# The IP the Panel is served on without a domain (kept, so adding a domain later is a small step).
+ip="${ip:-$(setting PANEL_IP)}"
+if [[ -z "$ip" ]] && ! $dry_run; then
+  ip="$(detect_ip || true)"
 fi
-valid_email "$email" || die "\"$email\" isn't an email address."
-case "${email##*@}" in
-  example.com | example.net | example.org | localhost)
-    die "Let's Encrypt refuses addresses at ${email##*@}: use a real email (it only sends certificate notices)." ;;
-esac
+if [[ -n "$ip" ]]; then
+  valid_ip "$ip" || die "\"$ip\" isn't an IPv4 address."
+elif [[ -z "$domain" ]]; then
+  $dry_run || die "Couldn't find this server's IP address: pass it with --ip."
+fi
 
 if [[ -z "$profile" ]]; then
   if can_ask; then
@@ -235,15 +275,18 @@ fi
 if [[ -z "$with_wings" ]]; then
   if confirm "Install Wings on this server too, to run game servers here?" "n"; then with_wings=yes; else with_wings=no; fi
 fi
-if [[ "$with_wings" == yes ]]; then
+if [[ "$with_wings" == yes && -n "$domain" ]]; then
+  # The Panel uses HTTPS, so Wings must too: it gets its own domain, through Traefik.
   if [[ -z "$wings_domain" ]]; then
-    $assume_yes && die "--wings-domain is needed with --wings and --yes (e.g. node.example.com)."
+    $assume_yes && die "--wings-domain is needed with --wings and --domain (e.g. node.example.com): with HTTPS, Wings needs its own domain."
     ask wings_domain "Wings' domain (its DNS must point here too), e.g. node.example.com" ""
   fi
   valid_domain "$wings_domain" || die "\"$wings_domain\" isn't a domain name like node.example.com."
   [[ "$wings_domain" != "$domain" ]] || die "Wings needs its own domain, not the Panel's ($domain)."
+elif [[ -n "$wings_domain" && -z "$domain" ]]; then
+  die "--wings-domain needs --domain: without a domain the Panel uses HTTP, and Wings is reached at http://<IP>:8080."
 else
-  wings_domain=""
+  [[ "$with_wings" == yes ]] || wings_domain=""
 fi
 
 le_server="$LE_PRODUCTION"
@@ -262,8 +305,16 @@ if [[ "$profile" == production ]]; then
   db_root_password="${db_root_password:-$(secret 32)}"
 fi
 
-info "Panel:    https://$domain ($profile profile)"
-[[ "$with_wings" == yes ]] && info "Wings:    https://$wings_domain (on this server)"
+if [[ -n "$domain" ]]; then
+  panel_url="https://$domain"
+else
+  panel_url="http://${ip:-<server IP>}"
+fi
+info "Panel:    $panel_url ($profile profile)"
+[[ -z "$domain" ]] && warn "No domain: the Panel is served over plain HTTP. Add a domain for HTTPS before you rely on it (see the summary)."
+if [[ "$with_wings" == yes ]]; then
+  if [[ -n "$wings_domain" ]]; then info "Wings:    https://$wings_domain (on this server)"; else info "Wings:    http://${ip:-<IP>}:8080 (on this server)"; fi
+fi
 info "Files:    $dir"
 $staging && warn "Let's Encrypt staging: browsers won't trust the certificate. Drop --staging for a real one."
 
@@ -318,7 +369,7 @@ else
   # DNS: Let's Encrypt can only issue a certificate if the domain reaches this server.
   $check_dns || info "DNS check skipped (--skip-dns-check)."
   $check_dns && public_ip="$(curl -4 -fsS --max-time 5 https://ipv4.icanhazip.com 2>/dev/null | tr -d '[:space:]' || true)"
-  for name in "$domain" ${wings_domain:+"$wings_domain"}; do
+  for name in ${domain:+"$domain"} ${wings_domain:+"$wings_domain"}; do
     $check_dns || break
     resolved="$(getent ahostsv4 "$name" 2>/dev/null | awk '{print $1; exit}' || true)"
     if [[ -z "$resolved" ]]; then
@@ -399,7 +450,10 @@ mkdir -p "$dir/traefik"
   echo "# Change a value, then run ./deploy.sh to apply it. Keep this file private and backed"
   echo "# up: APP_KEY decrypts your Panel's data, and nothing can recover it if it's lost."
   echo "PROFILE='$profile'"
+  echo "# PANEL_DOMAIN empty: the Panel is served on http://PANEL_IP. Set a domain (and LE_EMAIL)"
+  echo "# and run ./deploy.sh to switch to HTTPS."
   echo "PANEL_DOMAIN='$domain'"
+  echo "PANEL_IP='$ip'"
   echo "LE_EMAIL='$email'"
   echo "LE_CA_SERVER='$le_server'"
   echo "PANEL_IMAGE='$panel_image'"
@@ -425,17 +479,14 @@ services:
   traefik:
     image: ${TRAEFIK_IMAGE}
     command:
-      - --providers.swarm.endpoint=unix:///var/run/docker.sock
-      - --providers.swarm.exposedByDefault=false
-      - --providers.swarm.network=pelican_public
+      # The routes are in traefik/pelican.yml, which deploy.sh writes from pelican.env: the
+      # Panel on its domain with HTTPS, or on the server's IP over HTTP. No Docker socket needed.
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=true
       - --entryPoints.web.address=:80
-      - --entryPoints.web.http.redirections.entryPoint.to=websecure
-      - --entryPoints.web.http.redirections.entryPoint.scheme=https
       - --entryPoints.websecure.address=:443
-      - --entryPoints.websecure.http.tls.certResolver=letsencrypt
       # Uploads to the Panel and to Wings can take longer than Traefik's 60 second default.
+      - --entryPoints.web.transport.respondingTimeouts.readTimeout=600s
       - --entryPoints.websecure.transport.respondingTimeouts.readTimeout=600s
       - --certificatesResolvers.letsencrypt.acme.email=${LE_EMAIL}
       - --certificatesResolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
@@ -448,20 +499,18 @@ services:
       - { target: 80, published: 80, protocol: tcp, mode: host }
       - { target: 443, published: 443, protocol: tcp, mode: host }
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
       - ${PELICAN_DIR}/traefik:/etc/traefik/dynamic:ro
     networks:
       - public
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 30s
+      interval: 10s # counted as running once healthy: check often, so `docker service ls` says 1/1 soon
       timeout: 5s
       retries: 3
     deploy:
       placement:
         constraints:
-          - node.role == manager
           - "node.id == ${SWARM_NODE_ID}"
       restart_policy:
         condition: any
@@ -469,12 +518,12 @@ services:
   panel:
     image: ${PANEL_IMAGE}
     environment:
-      APP_URL: "https://${PANEL_DOMAIN}"
+      APP_URL: "${PANEL_URL}" # https://PANEL_DOMAIN, or http://PANEL_IP without one (deploy.sh)
       APP_KEY: "${APP_KEY}"
       APP_ENV: production
       APP_DEBUG: "false"
       XDG_DATA_HOME: /pelican-data
-      # Traefik terminates HTTPS and forwards from the public network.
+      # Traefik takes the requests (and terminates HTTPS) and forwards them over the public network.
       BEHIND_PROXY: "true"
       TRUSTED_PROXIES: "${PUBLIC_SUBNET}"
 #PRODUCTION_ENV
@@ -494,12 +543,6 @@ services:
         order: stop-first
       restart_policy:
         condition: any
-      labels:
-        traefik.enable: "true"
-        traefik.http.routers.pelican-panel.rule: "Host(`${PANEL_DOMAIN}`)"
-        traefik.http.routers.pelican-panel.entrypoints: websecure
-        traefik.http.routers.pelican-panel.tls.certresolver: letsencrypt
-        traefik.http.services.pelican-panel.loadbalancer.server.port: "80"
 #PRODUCTION_SERVICES
 
 volumes:
@@ -611,27 +654,87 @@ set -a
 set +a
 export PELICAN_DIR="$PWD"
 
-# Wings on this server: Traefik routes its domain to Wings on the host (file provider).
-if [[ -n "${WINGS_DOMAIN:-}" ]]; then
-  cat >traefik/wings.yml <<EOF
-# Written by deploy.sh from pelican.env (WINGS_DOMAIN, WINGS_UPSTREAM): change it there.
-http:
-  routers:
-    pelican-wings:
-      rule: "Host(\`${WINGS_DOMAIN}\`)"
-      entryPoints: [websecure]
-      service: pelican-wings
-      tls:
-        certResolver: letsencrypt
-  services:
-    pelican-wings:
-      loadBalancer:
-        servers:
-          - url: "${WINGS_UPSTREAM}"
-EOF
+# The Panel's address: its domain with HTTPS, or the server's IP over HTTP until it has one.
+if [[ -n "${PANEL_DOMAIN:-}" ]]; then
+  if [[ -z "${LE_EMAIL:-}" ]]; then
+    echo "PANEL_DOMAIN is set, so LE_EMAIL is needed too (Let's Encrypt's notices): add it to pelican.env." >&2
+    exit 1
+  fi
+  export PANEL_URL="https://$PANEL_DOMAIN"
+elif [[ -n "${PANEL_IP:-}" ]]; then
+  export PANEL_URL="http://$PANEL_IP"
 else
-  rm -f traefik/wings.yml
+  echo "Set PANEL_DOMAIN (or PANEL_IP) in pelican.env." >&2
+  exit 1
 fi
+
+# Traefik's routes (file provider, watched): rewritten from pelican.env on every deploy.
+mkdir -p traefik
+rm -f traefik/wings.yml # an older name of this file
+{
+  echo "# Written by deploy.sh from pelican.env: change the settings there, not here."
+  echo "http:"
+  echo "  routers:"
+  if [[ -n "${PANEL_DOMAIN:-}" ]]; then
+    echo "    pelican-panel:"
+    echo "      rule: \"Host(\`$PANEL_DOMAIN\`)\""
+    echo "      entryPoints: [websecure]"
+    echo "      service: pelican-panel"
+    echo "      tls:"
+    echo "        certResolver: letsencrypt"
+    if [[ -n "${WINGS_DOMAIN:-}" ]]; then
+      echo "    pelican-wings:"
+      echo "      rule: \"Host(\`$WINGS_DOMAIN\`)\""
+      echo "      entryPoints: [websecure]"
+      echo "      service: pelican-wings"
+      echo "      tls:"
+      echo "        certResolver: letsencrypt"
+    fi
+    # Plain HTTP goes to HTTPS (Let's Encrypt's own checks on port 80 still get through): the
+    # Panel's and Wings' names to themselves, anything else (the server's IP) to the Panel.
+    hosts="Host(\`$PANEL_DOMAIN\`)"
+    [[ -n "${WINGS_DOMAIN:-}" ]] && hosts+=" || Host(\`$WINGS_DOMAIN\`)"
+    echo "    pelican-to-https:"
+    echo "      rule: \"$hosts\""
+    echo "      entryPoints: [web]"
+    echo "      middlewares: [pelican-to-https]"
+    echo "      service: noop@internal"
+    echo "    pelican-to-domain:"
+    echo "      rule: \"PathPrefix(\`/\`)\""
+    echo "      priority: 1"
+    echo "      entryPoints: [web]"
+    echo "      middlewares: [pelican-to-domain]"
+    echo "      service: noop@internal"
+    echo "  middlewares:"
+    echo "    pelican-to-https:"
+    echo "      redirectScheme:"
+    echo "        scheme: https"
+    echo "        permanent: true"
+    echo "    pelican-to-domain:"
+    echo "      redirectRegex:"
+    echo "        regex: \"^https?://[^/]+(.*)\""
+    # shellcheck disable=SC2016 # ${1} is the regex group, for Traefik
+    echo "        replacement: \"https://$PANEL_DOMAIN"'${1}'"\""
+  else
+    # No domain yet: the Panel answers on port 80, whatever the address used.
+    echo "    pelican-panel:"
+    echo "      rule: \"PathPrefix(\`/\`)\""
+    echo "      priority: 1"
+    echo "      entryPoints: [web]"
+    echo "      service: pelican-panel"
+  fi
+  echo "  services:"
+  echo "    pelican-panel:"
+  echo "      loadBalancer:"
+  echo "        servers:"
+  echo "          - url: \"http://panel:80\""
+  if [[ -n "${PANEL_DOMAIN:-}" && -n "${WINGS_DOMAIN:-}" ]]; then
+    echo "    pelican-wings:"
+    echo "      loadBalancer:"
+    echo "        servers:"
+    echo "          - url: \"$WINGS_UPSTREAM\""
+  fi
+} >traefik/pelican.yml
 
 # --detach=true: start the update and return (newer Docker asks for it to be explicit).
 detach=()
@@ -686,10 +789,14 @@ if ! $dry_run && command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep
   ufw allow 443/tcp >/dev/null
   if [[ "$with_wings" == yes ]]; then
     ufw allow 2022/tcp >/dev/null # SFTP
-    # Traefik reaches Wings over docker_gwbridge.
-    ufw allow in on docker_gwbridge to any port 8080 proto tcp >/dev/null
+    if [[ -n "$wings_domain" ]]; then
+      # Traefik reaches Wings over docker_gwbridge; nothing else needs 8080.
+      ufw allow in on docker_gwbridge to any port 8080 proto tcp >/dev/null
+    else
+      ufw allow 8080/tcp >/dev/null # browsers and the Panel reach Wings directly
+    fi
   fi
-  ok "Allowed 80 and 443$([[ "$with_wings" == yes ]] && echo ", 2022 (SFTP) and Traefik to Wings on 8080")"
+  ok "Allowed 80 and 443$([[ "$with_wings" == yes ]] && echo ", 2022 (SFTP) and 8080 (Wings)")"
 fi
 
 # ---- Deploy --------------------------------------------------------------------------------
@@ -697,20 +804,44 @@ step "Starting the stack"
 run "$dir/deploy.sh"
 
 if ! $dry_run; then
-  info "Waiting for the Panel and its certificate (the first start runs for a minute or two)..."
+  # Wait for Swarm to start (or replace) every service first, so the check below reaches the new
+  # Panel, not the one being replaced (a changed setting restarts it).
+  info "Waiting for the services to start..."
+  sleep 3
+  for _ in $(seq 1 60); do
+    services="$(docker service ls --filter "label=com.docker.stack.namespace=$STACK" --format '{{.Name}} {{.Replicas}}')"
+    starting="$(awk '{ split($2, r, "/"); if (r[1] != r[2]) print $1 }' <<<"$services")"
+    updating="$(while read -r svc _; do
+      [[ -n "$svc" ]] && docker service inspect "$svc" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}'
+    done <<<"$services" | grep -c updating || true)"
+    [[ -z "$starting" && "$updating" == 0 ]] && break
+    sleep 5
+  done
+
   ready=false
   check=(curl -fsS --max-time 5 -o /dev/null)
-  $staging && check+=(-k) # the staging certificate isn't trusted, by design
+  if [[ -n "$domain" ]]; then
+    info "Waiting for the Panel and its certificate (the first start runs for a minute or two)..."
+    target="https://$domain/up"
+    $staging && check+=(-k) # the staging certificate isn't trusted, by design
+  else
+    info "Waiting for the Panel (the first start runs for a minute or two)..."
+    target="http://127.0.0.1/up" # Traefik serves the Panel on port 80 at any address
+  fi
   for _ in $(seq 1 60); do
-    if "${check[@]}" "https://$domain/up" 2>/dev/null; then
+    if "${check[@]}" "$target" 2>/dev/null; then
       ready=true
       break
     fi
     sleep 5
   done
   if $ready; then
-    ok "https://$domain answers$($staging || echo ", with a valid certificate")"
-  elif curl -kfsS --max-time 5 -o /dev/null --resolve "$domain:443:127.0.0.1" "https://$domain/up" 2>/dev/null; then
+    if [[ -n "$domain" ]]; then
+      ok "$panel_url answers$($staging || echo ", with a valid certificate")"
+    else
+      ok "$panel_url answers"
+    fi
+  elif [[ -n "$domain" ]] && curl -kfsS --max-time 5 -o /dev/null --resolve "$domain:443:127.0.0.1" "https://$domain/up" 2>/dev/null; then
     warn "The Panel runs, but the certificate isn't there yet. Check: docker service logs ${STACK}_traefik 2>&1 | grep -i acme"
   else
     warn "The Panel hasn't answered yet. Check: docker service ps ${STACK}_panel --no-trunc and docker service logs ${STACK}_panel"
@@ -719,7 +850,7 @@ fi
 
 # ---- Summary -------------------------------------------------------------------------------
 step "Done"
-info "Finish the setup in your browser:  https://$domain/installer"
+info "Finish the setup in your browser:  $panel_url/installer"
 [[ "$profile" == production ]] && info "(The database and cache are ready: MariaDB and Redis.)"
 cat <<EOF
 
@@ -733,7 +864,27 @@ cat <<EOF
       docker service logs -f ${STACK}_panel        the Panel's logs
       docker service logs ${STACK}_traefik         Traefik's (certificates)
 EOF
-if [[ "$with_wings" == yes ]]; then
+if [[ -z "$domain" ]]; then
+  cat <<EOF
+
+    No domain yet, so the Panel uses plain HTTP: logins cross the network unencrypted.
+    To switch to HTTPS, point a domain's A record at ${ip:-this server}, then run this script
+    again with --domain panel.example.com --email you@your-domain (it keeps everything else),
+    or set PANEL_DOMAIN and LE_EMAIL in $env_file and run $dir/deploy.sh.
+EOF
+fi
+if [[ "$with_wings" == yes && -z "$wings_domain" ]]; then
+  cat <<EOF
+
+    Wings is installed; it starts once it has a configuration:
+      1. In the Panel: Admin > Nodes > Create, with FQDN ${ip:-<server IP>}, HTTP (no SSL),
+         "Not Behind Proxy" and port 8080.
+      2. Copy the node's configuration to /etc/pelican/config.yml (or run its Auto Deploy
+         command), then: systemctl start wings
+      3. Wings (8080), SFTP (2022) and the ports you allocate to game servers must be open in
+         your provider's firewall too. When you add a domain for HTTPS, Wings needs one too.
+EOF
+elif [[ "$with_wings" == yes ]]; then
   cat <<EOF
 
     Wings is installed; it starts once it has a configuration:

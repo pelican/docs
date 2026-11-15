@@ -1,8 +1,8 @@
 // bun test scripts/install-sh.test.mjs
 // public/install.sh (pelican.dev/install.sh), run for real in --dry-run: the options and their
-// errors, the files it writes (pelican.env, stack.yml, deploy.sh) for each profile, that a second
-// run keeps the keys and passwords, and what deploy.sh hands to `docker stack deploy` (with a
-// stub docker). Also shellcheck, when it's installed. The script lives in public/ (served as it
+// errors, the files it writes (pelican.env, stack.yml, deploy.sh) for each profile, with and
+// without a domain, that a second run keeps the keys and passwords, and what deploy.sh writes
+// (Traefik's routes) and hands to `docker stack deploy` (with a stub docker). Also shellcheck, when it's installed. The script lives in public/ (served as it
 // is), so its test lives here.
 import { describe, expect, test } from 'bun:test';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -39,6 +39,7 @@ function dryRun(extra = [], dir = mkdtempSync(join(tmpdir(), 'pelican-install-')
 }
 
 const BASE = ['--domain', 'panel.example.com', '--email', 'admin@pelican.test'];
+const IP = ['--ip', '203.0.113.10']; // no domain: the Panel on the server's IP (given, as a dry run doesn't look it up)
 
 /** pelican.env as an object (KEY='value' lines). */
 function settings(dir) {
@@ -65,9 +66,11 @@ suite('install.sh options', () => {
     expect(install(['--nope']).code).toBe(2);
   });
 
-  test('--yes needs --domain and --email, and says so', () => {
-    expect(dryRun(['--email', 'admin@pelican.test']).out).toContain('--domain is needed with --yes');
-    expect(dryRun(['--domain', 'panel.example.com']).out).toContain('--email is needed with --yes');
+  test('--yes alone is enough: no domain means the Panel on the IP; a domain needs an email', () => {
+    const { code, dir } = dryRun(IP);
+    expect(code).toBe(0);
+    expect(settings(dir)).toMatchObject({ PANEL_DOMAIN: '', PANEL_IP: '203.0.113.10', LE_EMAIL: '', PROFILE: 'quick' });
+    expect(dryRun(['--domain', 'panel.example.com']).out).toContain('--email is needed with --domain');
   });
 
   test('bad values are refused before anything is written', () => {
@@ -78,13 +81,19 @@ suite('install.sh options', () => {
 
     expect(dryRun(['--domain', 'panel.example.com', '--email', "o'brien@example.com"]).out).toContain("isn't an email");
     expect(dryRun([...BASE, '--profile', 'enterprise']).out).toContain('--profile is quick or production');
+    expect(dryRun(['--ip', '300.1.2.3']).out).toContain("isn't an IPv4 address");
     // Let's Encrypt refuses contacts at example.com (seen on a real run), so it's caught up front.
     expect(dryRun(['--domain', 'panel.example.com', '--email', 'admin@example.com']).out).toContain("Let's Encrypt refuses addresses at example.com");
   });
 
-  test('--wings needs its own --wings-domain', () => {
+  test('with a domain, Wings needs its own; without one, it needs none (and may not have one)', () => {
     expect(dryRun([...BASE, '--wings']).out).toContain('--wings-domain is needed');
     expect(dryRun([...BASE, '--wings', '--wings-domain', 'panel.example.com']).out).toContain('Wings needs its own domain');
+    const ip = dryRun([...IP, '--wings']);
+    expect(ip.code).toBe(0);
+    expect(ip.out).toContain('http://203.0.113.10:8080');
+    expect(settings(ip.dir).WINGS_DOMAIN).toBe('');
+    expect(dryRun([...IP, '--wings', '--wings-domain', 'node.example.com']).out).toContain('--wings-domain needs --domain');
   });
 
   test('without a terminal and without --yes it asks for --yes instead of guessing', () => {
@@ -112,29 +121,30 @@ suite('install.sh files', () => {
     expect(Object.keys(file.services).sort()).toEqual(['panel', 'traefik']);
     expect(readFileSync(join(dir, 'stack.yml'), 'utf8')).not.toContain('#PRODUCTION');
 
-    // Traefik: real client IPs (host mode), redirect to HTTPS, Let's Encrypt from pelican.env.
+    // Traefik: real client IPs (host mode), routes from the file deploy.sh writes, Let's Encrypt
+    // from pelican.env, and no Docker socket (it doesn't need one).
     const traefik = file.services.traefik;
     expect(traefik.ports).toEqual([
       { target: 80, published: 80, protocol: 'tcp', mode: 'host' },
       { target: 443, published: 443, protocol: 'tcp', mode: 'host' },
     ]);
-    expect(traefik.command).toContain('--providers.swarm.network=pelican_public');
-    expect(traefik.command).toContain('--entryPoints.web.http.redirections.entryPoint.to=websecure');
+    expect(traefik.command).toContain('--providers.file.directory=/etc/traefik/dynamic');
     expect(traefik.command).toContain('--certificatesResolvers.letsencrypt.acme.caServer=${LE_CA_SERVER}');
-    expect(traefik.deploy.placement.constraints).toContain('node.id == ${SWARM_NODE_ID}');
+    expect(traefik.command.join(' ')).not.toContain('providers.swarm');
+    expect(traefik.volumes.join(' ')).not.toContain('docker.sock');
+    expect(traefik.deploy.placement.constraints).toEqual(['node.id == ${SWARM_NODE_ID}']);
 
     // The Panel: behind Traefik, trusting only the public network it shares with Traefik.
     const panel = file.services.panel;
     expect(panel.environment).toMatchObject({
-      APP_URL: 'https://${PANEL_DOMAIN}',
+      APP_URL: '${PANEL_URL}',
       APP_KEY: '${APP_KEY}',
       BEHIND_PROXY: 'true',
       TRUSTED_PROXIES: '${PUBLIC_SUBNET}',
     });
     expect(panel.environment.DB_CONNECTION).toBeUndefined();
     expect(panel.volumes).toContain('pelican-plugins:/var/www/html/plugins');
-    expect(panel.deploy.labels['traefik.http.routers.pelican-panel.rule']).toBe('Host(`${PANEL_DOMAIN}`)');
-    expect(panel.deploy.labels['traefik.http.services.pelican-panel.loadbalancer.server.port']).toBe('80');
+    expect(panel.deploy.labels).toBeUndefined();
     expect(file.networks.public.ipam.config[0].subnet).toBe('${PUBLIC_SUBNET}');
     expect(env.PUBLIC_SUBNET).toBe('10.203.250.0/24');
   });
@@ -206,37 +216,96 @@ suite('deploy.sh', () => {
     const record = join(bin, 'calls');
     writeFileSync(
       join(bin, 'docker'),
-      `#!/bin/sh\n{ echo "ARGS $*"; echo "PANEL_DOMAIN=$PANEL_DOMAIN"; echo "PELICAN_DIR=$PELICAN_DIR"; echo "APP_KEY_SET=\${APP_KEY:+yes}"; } >> "${record}"\n`,
+      `#!/bin/sh\n{ echo "ARGS $*"; echo "PANEL_URL=$PANEL_URL"; echo "PELICAN_DIR=$PELICAN_DIR"; echo "APP_KEY_SET=\${APP_KEY:+yes}"; } >> "${record}"\n`,
     );
     chmodSync(join(bin, 'docker'), 0o755);
     const result = Bun.spawnSync([BASH, join(dir, 'deploy.sh')], { env: { PATH: `${bin}:${process.env.PATH}` } });
-    return { code: result.exitCode, calls: existsSync(record) ? readFileSync(record, 'utf8') : '' };
+    return {
+      code: result.exitCode,
+      err: result.stderr.toString(),
+      calls: existsSync(record) ? readFileSync(record, 'utf8') : '',
+    };
   }
 
-  test('deploys the stack with pelican.env exported, and no Wings route without Wings', () => {
-    const { dir } = dryRun(BASE);
+  const routes = (dir) => parse(readFileSync(join(dir, 'traefik', 'pelican.yml'), 'utf8')).http;
+
+  test('without a domain: the Panel on http://<IP>, on port 80 at any address, no HTTPS', () => {
+    const { dir } = dryRun(IP);
     const { code, calls } = deploy(dir);
     expect(code).toBe(0);
     expect(calls).toMatch(/ARGS stack deploy (--detach=true )?--compose-file stack\.yml pelican/);
-    expect(calls).toContain('PANEL_DOMAIN=panel.example.com');
+    expect(calls).toContain('PANEL_URL=http://203.0.113.10');
     expect(calls).toContain(`PELICAN_DIR=${dir}`);
     expect(calls).toContain('APP_KEY_SET=yes');
-    expect(existsSync(join(dir, 'traefik', 'wings.yml'))).toBe(false);
+
+    const http = routes(dir);
+    expect(http.routers).toEqual({
+      'pelican-panel': { rule: 'PathPrefix(`/`)', priority: 1, entryPoints: ['web'], service: 'pelican-panel' },
+    });
+    expect(http.services['pelican-panel'].loadBalancer.servers).toEqual([{ url: 'http://panel:80' }]);
+    expect(http.middlewares).toBeUndefined();
   });
 
-  test('with Wings, it writes the Traefik route to Wings on the host', () => {
+  test('with a domain: HTTPS with Let\'s Encrypt, and plain HTTP sent to HTTPS', () => {
+    const { dir } = dryRun(BASE);
+    const { code, calls } = deploy(dir);
+    expect(code).toBe(0);
+    expect(calls).toContain('PANEL_URL=https://panel.example.com');
+
+    const http = routes(dir);
+    expect(http.routers['pelican-panel']).toEqual({
+      rule: 'Host(`panel.example.com`)',
+      entryPoints: ['websecure'],
+      service: 'pelican-panel',
+      tls: { certResolver: 'letsencrypt' },
+    });
+    // HTTP to the Panel's name goes to HTTPS; anything else on port 80 (the bare IP) to the Panel.
+    expect(http.routers['pelican-to-https']).toMatchObject({ rule: 'Host(`panel.example.com`)', entryPoints: ['web'], middlewares: ['pelican-to-https'] });
+    expect(http.middlewares['pelican-to-https']).toEqual({ redirectScheme: { scheme: 'https', permanent: true } });
+    expect(http.routers['pelican-to-domain']).toMatchObject({ rule: 'PathPrefix(`/`)', priority: 1, entryPoints: ['web'], middlewares: ['pelican-to-domain'] });
+    expect(http.middlewares['pelican-to-domain']).toEqual({ redirectRegex: { regex: '^https?://[^/]+(.*)', replacement: 'https://panel.example.com${1}' } });
+    expect(http.routers['pelican-wings']).toBeUndefined();
+  });
+
+  test('adding a domain later: set it in pelican.env and deploy again', () => {
+    const { dir } = dryRun(IP);
+    const file = join(dir, 'pelican.env');
+    writeFileSync(file, readFileSync(file, 'utf8').replace("PANEL_DOMAIN=''", "PANEL_DOMAIN='panel.example.com'"));
+
+    const missingEmail = deploy(dir);
+    expect(missingEmail.code).not.toBe(0);
+    expect(missingEmail.err).toContain('LE_EMAIL is needed');
+
+    writeFileSync(file, readFileSync(file, 'utf8').replace("LE_EMAIL=''", "LE_EMAIL='admin@pelican.test'"));
+    const { code, calls } = deploy(dir);
+    expect(code).toBe(0);
+    expect(calls).toContain('PANEL_URL=https://panel.example.com');
+    expect(routes(dir).routers['pelican-panel'].tls).toEqual({ certResolver: 'letsencrypt' });
+  });
+
+  test('adding a domain later by running the script again keeps everything else', () => {
+    const first = dryRun(IP);
+    const before = settings(first.dir);
+    const again = dryRun(BASE, first.dir);
+    expect(again.code).toBe(0);
+    const after = settings(first.dir);
+    expect(after).toMatchObject({ PANEL_DOMAIN: 'panel.example.com', PANEL_IP: '203.0.113.10', APP_KEY: before.APP_KEY });
+  });
+
+  test('with Wings on a domain, Traefik routes it to Wings on the host', () => {
     const { dir } = dryRun([...BASE, '--wings', '--wings-domain', 'node.example.com']);
     expect(settings(dir).WINGS_DOMAIN).toBe('node.example.com');
     expect(deploy(dir).code).toBe(0);
 
-    const route = parse(readFileSync(join(dir, 'traefik', 'wings.yml'), 'utf8'));
-    expect(route.http.routers['pelican-wings']).toEqual({
+    const http = routes(dir);
+    expect(http.routers['pelican-wings']).toEqual({
       rule: 'Host(`node.example.com`)',
       entryPoints: ['websecure'],
       service: 'pelican-wings',
       tls: { certResolver: 'letsencrypt' },
     });
-    expect(route.http.services['pelican-wings'].loadBalancer.servers).toEqual([{ url: 'http://10.204.0.1:8080' }]);
+    expect(http.services['pelican-wings'].loadBalancer.servers).toEqual([{ url: 'http://10.204.0.1:8080' }]);
+    expect(http.routers['pelican-to-https'].rule).toBe('Host(`panel.example.com`) || Host(`node.example.com`)');
   });
 });
 
