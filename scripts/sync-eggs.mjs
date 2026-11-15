@@ -32,7 +32,7 @@
  * install script), which /eggs loads only when someone opens that egg.
  *
  *   node scripts/sync-eggs.mjs            # refresh everything
- *   node scripts/sync-eggs.mjs --if-online # used by `pnpm build`: never fails the build
+ *   node scripts/sync-eggs.mjs --if-online # used by `bun run build`: never fails the build
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

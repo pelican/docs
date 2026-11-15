@@ -5,12 +5,12 @@ Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) an
 
 ## Running it locally
 
-You need Node.js 22 or newer and [pnpm](https://pnpm.io).
+You need Node.js 22 or newer (Next.js builds on Node) and [Bun](https://bun.com) 1.3 or newer (installs and runs the scripts).
 
 ```sh
-pnpm install
-pnpm dev        # http://localhost:3000, reloads as you edit
-pnpm build      # the production site, written to out/
+bun install
+bun run dev     # http://localhost:3000, reloads as you edit
+bun run build   # the production site, written to out/
 ```
 
 ## Where things are
