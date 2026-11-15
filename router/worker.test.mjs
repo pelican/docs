@@ -1,7 +1,6 @@
-// node --test router/worker.test.mjs (bun run test:router): the Worker's routing, with fetch
-// replaced by a recorder, so nothing leaves the machine.
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+// bun test router/worker.test.mjs  (all tests: bun test)
+// The Worker's routing, with fetch replaced by a recorder, so nothing leaves the machine.
+import { expect, test } from 'bun:test';
 import { isDocsPath, onOrigin, route } from './worker.mjs';
 
 const env = { DOCS_ORIGIN: 'https://pelica.netlify.app', HUB_ORIGIN: 'https://hub.pelican.dev' };
@@ -20,10 +19,10 @@ const visit = (path, init = {}) => new Request(`https://pelican.dev${path}`, ini
 
 test('docs paths and the five root files go to the docs build, everything else to the Hub', () => {
   for (const path of ['/docs', '/docs/', '/docs/panel/getting-started/', '/docs/_next/static/a.css', '/llms.txt', '/llms-full.txt', '/update-panel.sh', '/migrate-panel.sh', '/migrate-wings.sh']) {
-    assert.equal(isDocsPath(path), true, path);
+    expect({ path, docs: isDocsPath(path) }).toEqual({ path, docs: true });
   }
   for (const path of ['/', '/docsfoo', '/plugins', '/eggs/paper', '/faq', '/sitemap.xml', '/robots.txt', '/update-wings.sh']) {
-    assert.equal(isDocsPath(path), false, path);
+    expect({ path, docs: isDocsPath(path) }).toEqual({ path, docs: false });
   }
 });
 
@@ -32,15 +31,15 @@ test('a docs page is fetched from Netlify without the visitor\'s cookies, and se
 
   const response = await route(visit('/docs/panel/update/?ref=x', { headers: { cookie: 'pelican_session=abc', authorization: 'Bearer t', accept: 'text/html' } }), env, fetchImpl);
 
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'https://pelica.netlify.app/docs/panel/update/?ref=x');
-  assert.equal(calls[0].init.redirect, 'manual');
-  assert.equal(calls[0].headers.get('cookie'), null);
-  assert.equal(calls[0].headers.get('authorization'), null);
-  assert.equal(calls[0].headers.get('accept'), 'text/html');
-  assert.equal(response.headers.get('set-cookie'), null);
-  assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
-  assert.equal(await response.text(), '<html>');
+  expect(calls.length).toBe(1);
+  expect(calls[0].url).toBe('https://pelica.netlify.app/docs/panel/update/?ref=x');
+  expect(calls[0].init.redirect).toBe('manual');
+  expect(calls[0].headers.get('cookie')).toBe(null);
+  expect(calls[0].headers.get('authorization')).toBe(null);
+  expect(calls[0].headers.get('accept')).toBe('text/html');
+  expect(response.headers.get('set-cookie')).toBe(null);
+  expect(response.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+  expect(await response.text()).toBe('<html>');
 });
 
 test('Netlify\'s trailing-slash redirect stays on pelican.dev', async () => {
@@ -48,8 +47,8 @@ test('Netlify\'s trailing-slash redirect stays on pelican.dev', async () => {
 
   const response = await route(visit('/docs/panel/getting-started'), env, fetchImpl);
 
-  assert.equal(response.status, 301);
-  assert.equal(response.headers.get('location'), '/docs/panel/getting-started/');
+  expect(response.status).toBe(301);
+  expect(response.headers.get('location')).toBe('/docs/panel/getting-started/');
 });
 
 test('the docs answer only GET and HEAD', async () => {
@@ -57,9 +56,9 @@ test('the docs answer only GET and HEAD', async () => {
 
   const response = await route(visit('/docs/', { method: 'POST', body: 'x' }), env, fetchImpl);
 
-  assert.equal(response.status, 405);
-  assert.equal(response.headers.get('allow'), 'GET, HEAD');
-  assert.equal(calls.length, 0);
+  expect(response.status).toBe(405);
+  expect(response.headers.get('allow')).toBe('GET, HEAD');
+  expect(calls.length).toBe(0);
 });
 
 test('everything else goes to the Hub, which is told the visitor came to pelican.dev', async () => {
@@ -67,15 +66,15 @@ test('everything else goes to the Hub, which is told the visitor came to pelican
 
   const response = await route(visit('/plugins?q=backup', { headers: { cookie: 'pelican_session=abc', 'cf-connecting-ip': '203.0.113.7' } }), env, fetchImpl);
 
-  assert.equal(calls[0].url, 'https://hub.pelican.dev/plugins?q=backup');
-  assert.equal(calls[0].init.redirect, 'manual');
-  assert.equal(calls[0].headers.get('x-forwarded-host'), 'pelican.dev');
-  assert.equal(calls[0].headers.get('x-forwarded-proto'), 'https');
-  assert.equal(calls[0].headers.get('x-forwarded-port'), '443');
-  assert.equal(calls[0].headers.get('x-forwarded-for'), '203.0.113.7');
+  expect(calls[0].url).toBe('https://hub.pelican.dev/plugins?q=backup');
+  expect(calls[0].init.redirect).toBe('manual');
+  expect(calls[0].headers.get('x-forwarded-host')).toBe('pelican.dev');
+  expect(calls[0].headers.get('x-forwarded-proto')).toBe('https');
+  expect(calls[0].headers.get('x-forwarded-port')).toBe('443');
+  expect(calls[0].headers.get('x-forwarded-for')).toBe('203.0.113.7');
   // The Hub's own session: its cookie goes both ways.
-  assert.equal(calls[0].headers.get('cookie'), 'pelican_session=abc');
-  assert.equal(response.headers.get('set-cookie'), 'pelican_session=new; Domain=.pelican.dev');
+  expect(calls[0].headers.get('cookie')).toBe('pelican_session=abc');
+  expect(response.headers.get('set-cookie')).toBe('pelican_session=new; Domain=.pelican.dev');
 });
 
 test('a form post reaches the Hub with its body', async () => {
@@ -83,24 +82,24 @@ test('a form post reaches the Hub with its body', async () => {
 
   await route(visit('/livewire/update', { method: 'POST', body: '{"a":1}', headers: { 'content-type': 'application/json' } }), env, fetchImpl);
 
-  assert.equal(calls[0].init.method, 'POST');
-  assert.equal(await new Response(calls[0].init.body).text(), '{"a":1}');
+  expect(calls[0].init.method).toBe('POST');
+  expect(await new Response(calls[0].init.body).text()).toBe('{"a":1}');
 });
 
 test('a Hub redirect to its own address stays on pelican.dev; others are left alone', async () => {
   const own = recorder(() => new Response(null, { status: 302, headers: { location: 'https://hub.pelican.dev/dashboard' } }));
-  assert.equal((await route(visit('/login'), env, own.fetchImpl)).headers.get('location'), '/dashboard');
+  expect((await route(visit('/login'), env, own.fetchImpl)).headers.get('location')).toBe('/dashboard');
 
   const away = recorder(() => new Response(null, { status: 302, headers: { location: 'https://discord.com/oauth2/authorize?x=1' } }));
-  assert.equal((await route(visit('/login/discord'), env, away.fetchImpl)).headers.get('location'), 'https://discord.com/oauth2/authorize?x=1');
+  expect((await route(visit('/login/discord'), env, away.fetchImpl)).headers.get('location')).toBe('https://discord.com/oauth2/authorize?x=1');
 });
 
 test('Next.js prefetches of Hub pages are answered here, without a request to the Hub', async () => {
   const { calls, fetchImpl } = recorder();
 
-  assert.equal((await route(visit('/plugins', { headers: { rsc: '1' } }), env, fetchImpl)).status, 404);
-  assert.equal((await route(visit('/eggs?_rsc=abc'), env, fetchImpl)).status, 404);
-  assert.equal(calls.length, 0);
+  expect((await route(visit('/plugins', { headers: { rsc: '1' } }), env, fetchImpl)).status).toBe(404);
+  expect((await route(visit('/eggs?_rsc=abc'), env, fetchImpl)).status).toBe(404);
+  expect(calls.length).toBe(0);
 });
 
 test('dot segments are resolved before routing, so /docs/.. cannot reach the Hub as a docs path', async () => {
@@ -109,8 +108,8 @@ test('dot segments are resolved before routing, so /docs/.. cannot reach the Hub
   await route(visit('/docs/%2e%2e/plugins'), env, fetchImpl);
   await route(visit('/docs/../update-panel.sh'), env, fetchImpl);
 
-  assert.equal(calls[0].url, 'https://hub.pelican.dev/plugins');
-  assert.equal(calls[1].url, 'https://pelica.netlify.app/update-panel.sh');
+  expect(calls[0].url).toBe('https://hub.pelican.dev/plugins');
+  expect(calls[1].url).toBe('https://pelica.netlify.app/update-panel.sh');
 });
 
 test('a path starting with // never leaves the two origins (it would carry the visitor\'s cookies)', async () => {
@@ -120,18 +119,18 @@ test('a path starting with // never leaves the two origins (it would carry the v
   await route(visit('//attacker.example'), env, fetchImpl);
   await route(visit('/docs//attacker.example/x'), env, fetchImpl);
 
-  assert.equal(new URL(calls[0].url).host, 'hub.pelican.dev');
-  assert.equal(calls[0].url, 'https://hub.pelican.dev//attacker.example/steal?x=1');
-  assert.equal(new URL(calls[1].url).host, 'hub.pelican.dev');
-  assert.equal(new URL(calls[2].url).host, 'pelica.netlify.app');
-  assert.equal(calls[2].url, 'https://pelica.netlify.app/docs//attacker.example/x');
+  expect(new URL(calls[0].url).host).toBe('hub.pelican.dev');
+  expect(calls[0].url).toBe('https://hub.pelican.dev//attacker.example/steal?x=1');
+  expect(new URL(calls[1].url).host).toBe('hub.pelican.dev');
+  expect(new URL(calls[2].url).host).toBe('pelica.netlify.app');
+  expect(calls[2].url).toBe('https://pelica.netlify.app/docs//attacker.example/x');
 });
 
 test('the target keeps the origin and takes only the path and query', () => {
   const target = onOrigin(new URL('https://pelican.dev//evil.test:8080/a%2Fb?q=%2F%2Fx#frag'), 'https://hub.pelican.dev');
 
-  assert.equal(target.origin, 'https://hub.pelican.dev');
-  assert.equal(target.pathname, '//evil.test:8080/a%2Fb');
-  assert.equal(target.search, '?q=%2F%2Fx');
-  assert.equal(target.hash, '');
+  expect(target.origin).toBe('https://hub.pelican.dev');
+  expect(target.pathname).toBe('//evil.test:8080/a%2Fb');
+  expect(target.search).toBe('?q=%2F%2Fx');
+  expect(target.hash).toBe('');
 });

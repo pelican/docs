@@ -1,4 +1,5 @@
-// bun test scripts/pack-docs.test.mjs: which redirects the Hub gets from netlify.toml.
+// bun test scripts/pack-docs.test.mjs  (all tests: bun test)
+// Which redirects the Hub gets from netlify.toml.
 import { describe, expect, test } from 'bun:test';
 import { docsRedirects } from './pack-docs.mjs';
 

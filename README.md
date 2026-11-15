@@ -2,7 +2,7 @@
 
 The source for the documentation at [pelican.dev/docs](https://pelican.dev/docs), covering [Pelican Panel](https://github.com/pelican/panel) and [Wings](https://github.com/pelican/wings).
 
-Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) and served by Netlify as a static site.
+Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) as a static site. On pelican.dev the Pelican Hub serves it from Forge (see [router/README.md](router/README.md)); Netlify builds a preview for every pull request.
 
 ## Running it locally
 
@@ -11,8 +11,11 @@ You need Node.js 22 or newer (Next.js builds on Node) and [Bun](https://bun.com)
 ```sh
 bun install
 bun run dev     # http://localhost:3000, reloads as you edit
-bun run build   # the production site, written to out/
+bun run build   # the production site, written to out/ (checks the pages first, the paths after)
+bun test        # the tests for scripts/ and router/
 ```
+
+Every script in `scripts/` and `router/` runs on Bun and starts with the same header: what it does, when it runs, how to run it and where its tests are. [scripts/README.md](scripts/README.md) lists them all.
 
 ## Where things are
 
@@ -25,8 +28,8 @@ bun run build   # the production site, written to out/
 | `public/` | Files served as they are, including the `update-panel.sh` and `migrate-*.sh` scripts. |
 | `netlify.toml` | Build settings and redirects such as `/discord`. |
 | `ui/` | Design tokens (`tokens.css`) and site nav (`nav.json`) shared with the Hub; published at `/docs/ui/v1/`. |
-| `router/` | `dev-server.mjs`: pelican.dev as one site locally (docs from `out/`, the rest from the Hub). See its README. |
-| `scripts/check-*.mjs` | `check-content` (parses every page as MDX and fails on anything that could run code: `import`/`export`, `{expressions}`, components outside `mdx-components.tsx`, handlers, unsafe URLs; runs before the build, tested by `bun run test:content`) and `check-paths` (everything under `/docs/`, runs after it). |
+| `scripts/` | The build's checks, the egg data sync and the packing for the Hub. Listed in [scripts/README.md](scripts/README.md). |
+| `router/` | How pelican.dev is served: `dev-server.mjs` (one site on your machine) and `worker.mjs` (the Cloudflare option for later). See its README. |
 
 ## Writing a page
 

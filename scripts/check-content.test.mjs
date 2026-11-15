@@ -1,8 +1,7 @@
-// node --test scripts/check-content.test.mjs  (bun run test:content)
+// bun test scripts/check-content.test.mjs  (all tests: bun test)
 // Runs check-content.mjs on one-page folders: pages that could run code must fail, the
 // MDX the docs really use must pass.
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -43,8 +42,9 @@ const blocked = {
 for (const [name, page] of Object.entries(blocked)) {
   test(`fails on ${name}`, () => {
     const { ok, output } = check(page);
-    assert.equal(ok, false, output);
-    assert.match(output, /problem/);
+    // The output is in the comparison, so a failure shows what the check said.
+    expect({ ok, output }).toMatchObject({ ok: false });
+    expect(output).toMatch(/problem/);
   });
 }
 
@@ -75,6 +75,6 @@ const allowed = {
 for (const [name, page] of Object.entries(allowed)) {
   test(`passes ${name}`, () => {
     const { ok, output } = check(page);
-    assert.equal(ok, true, output);
+    expect({ ok, output }).toMatchObject({ ok: true });
   });
 }

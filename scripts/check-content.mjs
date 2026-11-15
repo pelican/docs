@@ -1,5 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
+ * Checks every page in content/ for anything that could run code.
+ *
+ * When:  before every build (prebuild), and in CI
+ * Run:   bun run check:content      (or: bun scripts/check-content.mjs [dir], default content/)
+ * Tests: bun test scripts/check-content.test.mjs
+ *
  * Fails if a page in content/ could run code. The docs take pull requests from anyone, and
  * MDX compiles every page into JavaScript that runs during the build and in readers'
  * browsers, so anything a page puts into JavaScript is code: `import`/`export`, `{...}`
@@ -18,8 +24,6 @@
  *   - Markdown links and images don't use those URL schemes either.
  * Code blocks and `inline code` are text to the parser, so a snippet like
  * `export CF_Token=...` is fine.
- *
- *   node scripts/check-content.mjs [dir]     (default: content)
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';

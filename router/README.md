@@ -22,11 +22,11 @@ docs origin, so you can see pelican.dev as one site:
 
 ```sh
 bun run build                  # writes out/
-node router/dev-server.mjs     # http://127.0.0.1:8020/ (or: bun run preview:site)
+bun run dev:site               # http://127.0.0.1:8020/ (bun router/dev-server.mjs)
 ```
 
 Env: `PORT` (default `8020`), `HUB` (default `http://127.0.0.1:8010`), `OUT`
-(default `out`). Node 22, no dependencies. Every request is logged as
+(default `out`). Runs on Bun, no dependencies. Every request is logged as
 `status docs|hub|edge METHOD url`.
 
 ## The paths this build serves
@@ -104,7 +104,7 @@ Both fetches use `redirect: 'manual'`, so redirects reach the browser. A
 `pelica.netlify.app`) becomes a path, so they stay on pelican.dev.
 
 ```sh
-bun run test:router   # node --test router/worker.test.mjs: the routing, with fetch recorded
+bun test router/worker.test.mjs   # the routing, with fetch recorded
 cd router && bunx wrangler deploy --route "next.pelican.dev/*"   # try it on a spare hostname
 ```
 

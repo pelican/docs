@@ -39,12 +39,8 @@ jobs:
       - name: 'Check content (MDX that could run code)'
         run: bun run check:content
 
-      - name: 'Test the content check'
-        run: bun run test:content
-      - name: 'Test the router'
-        run: bun run test:router
-      - name: 'Test the docs packing'
-        run: bun run test:pack
+      - name: 'Test the scripts (bun test)'
+        run: bun test
 
       - name: 'Typecheck'
         run: bun run typecheck

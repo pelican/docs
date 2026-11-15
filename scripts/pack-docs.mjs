@@ -1,6 +1,12 @@
 #!/usr/bin/env bun
 /**
- * Packs the built site (out/) into the folder the Pelican Hub serves on pelican.dev:
+ * Packs the built site (out/) into the folder the Pelican Hub serves on pelican.dev.
+ *
+ * When:  in CI, after the build ("Publish docs build" workflow); by hand to look at the result
+ * Run:   bun run pack:docs          (or: bun scripts/pack-docs.mjs [folder], default dist-docs/)
+ * Tests: bun test scripts/pack-docs.test.mjs
+ *
+ * What the folder holds:
  *
  *   index.html, panel/, md/, search.json …   the docs, served under /docs/
  *   _next/                                    their scripts and styles
@@ -8,8 +14,6 @@
  *   404.html                                  the docs' not-found page
  *   redirects.json                            netlify.toml's redirects under /docs
  *   BUILD.json                                which commit this is
- *
- * Run it after the build:  bun scripts/pack-docs.mjs [folder]   (default: dist-docs)
  */
 import { existsSync } from 'node:fs';
 import { cp, mkdir, rm } from 'node:fs/promises';

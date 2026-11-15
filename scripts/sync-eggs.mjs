@@ -1,5 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
+ * Refreshes the egg data for the interim /eggs page and the homepage games strip.
+ *
+ * When:  before every build (prebuild, with --if-online: never fails the build); by hand to refresh
+ * Run:   bun run sync:eggs          (or: bun scripts/sync-eggs.mjs [--if-online])
+ * Tests: none
+ *
  * Builds data/eggs.json for the /eggs page and the homepage games strip.
  *
  * Source: the egg index that pelican-eggs regenerates every day from its egg
@@ -30,9 +36,6 @@
  * Each egg gets an id ("minecraft/paper") and a small detail file,
  * public/data/eggs/<id>.json (images, startup and stop commands, variables,
  * install script), which /eggs loads only when someone opens that egg.
- *
- *   node scripts/sync-eggs.mjs            # refresh everything
- *   node scripts/sync-eggs.mjs --if-online # used by `bun run build`: never fails the build
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

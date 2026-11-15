@@ -1,16 +1,20 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
- * After `next build`: every file in out/ must be under out/docs/, unless it is
- * listed below. pelican.dev will send only /docs/* and the five root files to
- * this build (a Cloudflare route; see router/README.md); the Hub serves every
+ * Checks that the build only puts files where pelican.dev serves them.
+ *
+ * When:  after every build (postbuild), and in CI
+ * Run:   bun run check:paths        (or: bun scripts/check-paths.mjs [outDir], default out/)
+ * Tests: none (it runs on every build)
+ *
+ * Every file in out/ must be under out/docs/, unless it is listed below.
+ * pelican.dev serves only /docs/* and the five root files from this build
+ * (the Hub serves them from Forge; see router/README.md); the Hub serves every
  * other path. A file outside out/docs/ that isn't listed would be unreachable
  * on pelican.dev, or would mean a docs page depends on a path the Hub owns.
  *
  * It also reads every docs page (every .html file under out/docs/) and fails if one loads
  * something (script, stylesheet, font, icon, image, share image) from outside
  * /docs/: after the switch those paths are the Hub's.
- *
- *   node scripts/check-paths.mjs [outDir]     (default: out)
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';

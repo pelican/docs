@@ -1,7 +1,13 @@
 /**
- * The Cloudflare Worker in front of pelican.dev (route `pelican.dev/*`): the docs
- * build on Netlify for /docs/* and the five root files, the Pelican Hub for
- * everything else. `dev-server.mjs` makes the same split on your machine with
+ * Splits pelican.dev between the docs on Netlify and the Hub, as a Cloudflare Worker.
+ *
+ * When:  not deployed: production serves the docs from the Hub on Forge. This is the
+ *        option for later (router/README.md, "Switching to the Worker").
+ * Run:   cd router && bunx wrangler deploy --route "next.pelican.dev/*"   (to try it)
+ * Tests: bun test router/worker.test.mjs
+ *
+ * As a Worker on `pelican.dev/*`: the docs build on Netlify for /docs/* and the five root
+ * files, the Pelican Hub for everything else. `dev-server.mjs` makes the same split on your machine with
  * out/ in place of Netlify; README.md has the paths and the reasons.
  *
  * Env (wrangler.toml [vars]):
