@@ -79,6 +79,22 @@ function isLiteralData(node) {
   }
 }
 
+/** Every string in literal data, nested ones included, so `{'javascript:...'}` is checked like a quoted value. */
+function literalStrings(node) {
+  switch (node?.type) {
+    case 'Literal':
+      return typeof node.value === 'string' ? [node.value] : [];
+    case 'TemplateLiteral':
+      return node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw);
+    case 'ArrayExpression':
+      return node.elements.flatMap(literalStrings);
+    case 'ObjectExpression':
+      return node.properties.flatMap((property) => literalStrings(property.value));
+    default:
+      return [];
+  }
+}
+
 /** The single expression in an attribute value's `{...}`, or null if there isn't exactly one. */
 function attributeExpression(value) {
   const body = value.data?.estree?.body;
@@ -128,8 +144,14 @@ function checkElement(node, report) {
     const value = attribute.value;
     if (typeof value === 'string') {
       if (isUnsafeUrl(value)) report(node, `${where}: unsafe URL ${value.slice(0, 60)}`);
-    } else if (value !== null && value !== undefined && !isLiteralData(attributeExpression(value))) {
-      report(node, `${where}: {${value.value.trim().slice(0, 60)}} is code; only literal data is allowed`);
+    } else if (value !== null && value !== undefined) {
+      const expression = attributeExpression(value);
+      if (!isLiteralData(expression)) {
+        report(node, `${where}: {${value.value.trim().slice(0, 60)}} is code; only literal data is allowed`);
+      } else {
+        const unsafe = literalStrings(expression).find(isUnsafeUrl);
+        if (unsafe !== undefined) report(node, `${where}: unsafe URL ${unsafe.slice(0, 60)}`);
+      }
     }
   }
 }
