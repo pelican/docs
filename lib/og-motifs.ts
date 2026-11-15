@@ -35,7 +35,7 @@ export const DOCS_MOTIFS: Record<string, Motif> = {
   },
 
   /* ---- Panel ---- */
-  'panel/getting-started': {
+  'panel/standalone/getting-started': {
     kind: 'code',
     label: 'sh',
     lang: 'sh',
@@ -45,13 +45,13 @@ export const DOCS_MOTIFS: Record<string, Motif> = {
       'curl -L https://github.com/pelican/panel/releases/latest/download/panel.tar.gz | sudo tar -xzv',
     ],
   },
-  'panel/webserver-config': {
+  'panel/standalone/webserver-config': {
     kind: 'code',
     label: 'pelican.conf',
     lang: 'file',
     lines: ['server {', '    listen 443 ssl;', '    http2 on;', '    server_name <domain>;', '    root /var/www/pelican/public;', '    index index.php;'],
   },
-  'panel/panel-setup': {
+  'panel/standalone/panel-setup': {
     kind: 'code',
     label: 'sh',
     lang: 'sh',
@@ -61,7 +61,7 @@ export const DOCS_MOTIFS: Record<string, Motif> = {
       'sudo chown -R www-data:www-data /var/www/pelican',
     ],
   },
-  'panel/optional-config': {
+  'panel/standalone/optional-config': {
     kind: 'code',
     label: '.env',
     lang: 'file',
@@ -94,12 +94,17 @@ export const DOCS_MOTIFS: Record<string, Motif> = {
     lang: 'sh',
     lines: ['php artisan p:info', 'php artisan p:user:make [options]', 'php artisan p:node:make [options]'],
   },
-  'panel/advanced/docker': {
+  'panel/install': {
     kind: 'code',
-    label: 'compose.yml',
-    lang: 'file',
-    lines: ['services:', '  panel:', '    image: ghcr.io/pelican/panel:latest', '    restart: always'],
+    label: 'sh',
+    lang: 'sh',
+    lines: [
+      'curl -fsSL https://pelican.dev/install.sh | sudo bash',
+      '==> Docker Swarm, Traefik (HTTPS) and the Panel',
+      'Finish the setup: https://panel.example.com/installer',
+    ],
   },
+
   'panel/advanced/podman': {
     kind: 'code',
     label: 'pelican.yaml',
@@ -168,7 +173,7 @@ export const DOCS_MOTIFS: Record<string, Motif> = {
   },
 
   /* ---- Guides ---- */
-  'guides/docker': {
+  'getting-started': {
     kind: 'code',
     label: 'sh',
     lang: 'sh',

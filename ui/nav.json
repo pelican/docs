@@ -11,7 +11,7 @@
       "title": "Product",
       "items": [
         { "label": "Documentation", "href": "/docs/" },
-        { "label": "Install guide", "href": "/docs/panel/getting-started/" },
+        { "label": "Install guide", "href": "/docs/getting-started/" },
         { "label": "Live demo", "href": "https://demo.pelican.dev" },
         { "label": "Plugin Hub", "href": "/plugins" }
       ]
@@ -35,5 +35,5 @@
       ]
     }
   ],
-  "cta": { "label": "Get started", "href": "/docs/panel/getting-started/" }
+  "cta": { "label": "Get started", "href": "/docs/getting-started/" }
 }

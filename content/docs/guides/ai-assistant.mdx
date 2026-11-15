@@ -26,44 +26,46 @@ Assistants that can read the web can fetch these themselves:
 |:-----|:-----------|
 | `https://pelican.dev/llms.txt` | An index of every docs page, with links to their Markdown versions |
 | `https://pelican.dev/llms-full.txt` | Every docs page in one Markdown file |
-| `https://pelican.dev/docs/<page>.md` | One page as Markdown, e.g. `https://pelican.dev/docs/panel/getting-started.md` |
+| `https://pelican.dev/docs/<page>.md` | One page as Markdown, e.g. `https://pelican.dev/docs/getting-started.md` |
 
 ## Recommended prompt: a production install
 
-Copy this into a new conversation. It makes the assistant ask about your server first, go one step at a time and finish with the things a production panel needs.
+Copy this into a new conversation. The assistant asks what your install needs, picks the options for the [install script](/docs/panel/install#the-install-script), shows you the plan with a dry run and then walks you through the real run and the checks a production panel needs.
 
-```text title="Prompt: install the Pelican Panel for production" wrap
-You are helping me install the Pelican Panel (https://pelican.dev) on a production server.
-Pelican is a fork of Pterodactyl, but its paths, commands and requirements are different:
-follow only the Pelican documentation, never Pterodactyl's.
+```text title="Prompt: install the Pelican Panel with the install script" wrap
+You are helping me install the Pelican Panel (https://pelican.dev) on a production server, with its
+official install script (Docker Swarm, Traefik with Let's Encrypt, the Panel). Pelican is a fork of
+Pterodactyl, but its paths, commands and requirements are different: follow only the Pelican
+documentation, never Pterodactyl's.
 
 Read these pages first and follow them exactly:
 - https://pelican.dev/llms.txt (an index of every docs page as Markdown)
-- https://pelican.dev/docs/panel/getting-started.md
-- https://pelican.dev/docs/panel/webserver-config.md
-- https://pelican.dev/docs/panel/panel-setup.md
-- https://pelican.dev/docs/guides/ssl.md
+- https://pelican.dev/docs/getting-started.md
+- https://pelican.dev/docs/panel/install.md (the section "The install script" lists every option)
 
-Before any command, ask me:
-1. The operating system and version (the output of `cat /etc/os-release`).
-2. The panel's domain, and whether its DNS already points at this server.
-3. Which web server I want: NGINX, Apache or Caddy.
-4. Which database: SQLite (the default), MySQL/MariaDB or PostgreSQL.
-5. Whether Wings will run on this server too, or on another one.
+Before any command, ask me, one question at a time, and explain the choice in plain words:
+1. The output of `cat /etc/os-release` and `systemd-detect-virt`, to check the server can run Docker.
+2. The panel's domain, and whether its DNS A record already points at this server.
+3. The email for Let's Encrypt (a real address: example.com addresses are refused).
+4. Which profile: "quick" (SQLite, the least to run: one server, a small community) or "production"
+   (MariaDB and Redis: more users, servers and nodes). Recommend one from my answers.
+5. Whether Wings should run on this same server, and if so its own domain (e.g. node.example.com).
 
-Then guide me one step at a time:
-- Give me one short block of commands, say what each line does, and wait for me to paste the output before you continue.
-- Use the versions and commands from the docs: PHP 8.5 or 8.4 with the listed extensions, the panel in /var/www/pelican.
-- Never ask me for passwords, API keys, the APP_KEY or other secrets. Tell me where to enter them myself.
-- If something fails, ask for the exact error and the relevant log instead of guessing.
+Then:
+- Write the exact command with my answers as options and --yes, and explain each option.
+- Have me run it with --dry-run first and paste the output, so we both see the plan. Only then the real run.
+- Wait for me to paste the output of each step. If something fails, ask for the exact error and the
+  logs the docs name (docker service ls, docker service logs pelican_panel, pelican_traefik) instead of guessing.
+- Never ask me for passwords, API keys, the APP_KEY or other secrets, and don't ask me to paste
+  /opt/pelican/pelican.env. Tell me where to look at them myself.
 
 This is a production server. Before we finish, check with me that:
-- The panel is served over HTTPS, and the certificate renews automatically.
-- The firewall only opens what is needed: SSH, 80 and 443 for the panel, and if Wings runs here, its port (8080), SFTP (2022) and the game server ports I plan to allocate.
-- The queue worker (systemctl status pelican-queue) is running and the schedule:run cron entry from the docs is installed for the web server user.
-- File permissions match the Panel Setup page.
-- I have stored the APP_KEY from /var/www/pelican/.env somewhere safe, off the server.
-- I know how to back up the panel and its database, and how to update it (https://pelican.dev/docs/panel/update.md).
+- https://<domain>/installer opens with a valid certificate, and I created the admin account there.
+- I copied /opt/pelican/pelican.env (it holds the APP_KEY) somewhere safe, off the server.
+- My provider's firewall allows 80 and 443 (and 2022 plus my game server ports if Wings runs here).
+- If Wings runs here: the node is created in the Panel as the docs describe, /etc/pelican/config.yml
+  is in place, and `systemctl status wings` is active.
+- I know how to change settings (edit pelican.env, run deploy.sh), update and back up, as the page says.
 
 End with a short summary of what we installed and where each part lives.
 ```
@@ -71,10 +73,48 @@ End with a short summary of what we installed and where each part lives.
 ## More prompts
 
 <Tabs>
+    <TabItem value="standalone" label="Standalone install">
+        ```text title="Prompt: install the Pelican Panel without Docker" wrap
+        You are helping me install the Pelican Panel (https://pelican.dev) on a production server,
+        directly on the server (the standalone install, without Docker).
+        Pelican is a fork of Pterodactyl, but its paths, commands and requirements are different:
+        follow only the Pelican documentation, never Pterodactyl's.
+        
+        Read these pages first and follow them exactly:
+        - https://pelican.dev/llms.txt (an index of every docs page as Markdown)
+        - https://pelican.dev/docs/panel/standalone/getting-started.md
+        - https://pelican.dev/docs/panel/standalone/webserver-config.md
+        - https://pelican.dev/docs/panel/standalone/panel-setup.md
+        - https://pelican.dev/docs/guides/ssl.md
+        
+        Before any command, ask me:
+        1. The operating system and version (the output of `cat /etc/os-release`).
+        2. The panel's domain, and whether its DNS already points at this server.
+        3. Which web server I want: NGINX, Apache or Caddy.
+        4. Which database: SQLite (the default), MySQL/MariaDB or PostgreSQL.
+        5. Whether Wings will run on this server too, or on another one.
+        
+        Then guide me one step at a time:
+        - Give me one short block of commands, say what each line does, and wait for me to paste the output before you continue.
+        - Use the versions and commands from the docs: PHP 8.5 or 8.4 with the listed extensions, the panel in /var/www/pelican.
+        - Never ask me for passwords, API keys, the APP_KEY or other secrets. Tell me where to enter them myself.
+        - If something fails, ask for the exact error and the relevant log instead of guessing.
+        
+        This is a production server. Before we finish, check with me that:
+        - The panel is served over HTTPS, and the certificate renews automatically.
+        - The firewall only opens what is needed: SSH, 80 and 443 for the panel, and if Wings runs here, its port (8080), SFTP (2022) and the game server ports I plan to allocate.
+        - The queue worker (systemctl status pelican-queue) is running and the schedule:run cron entry from the docs is installed for the web server user.
+        - File permissions match the Panel Setup page.
+        - I have stored the APP_KEY from /var/www/pelican/.env somewhere safe, off the server.
+        - I know how to back up the panel and its database, and how to update it (https://pelican.dev/docs/panel/update.md).
+        
+        End with a short summary of what we installed and where each part lives.
+        ```
+    </TabItem>
     <TabItem value="wings" label="Add Wings">
         ```text title="Prompt: install Wings and connect it to the panel" wrap
         Help me install Wings for the Pelican Panel, following only
-        https://pelican.dev/docs/wings/install.md and https://pelican.dev/docs/guides/docker.md.
+        https://pelican.dev/docs/wings/install.md and https://pelican.dev/docs/getting-started.md.
 
         First check with me that this server can run Docker: ask for the output of
         `systemd-detect-virt` and `uname -r` and compare them with the System Requirements section.
@@ -94,7 +134,9 @@ End with a short summary of what we installed and where each part lives.
         What happens: <describe it, and what you changed last>
 
         Ask me for the output you need, one command at a time, from this list first:
-        - tail -n 100 /var/www/pelican/storage/logs/laravel-$(date +%F).log
+        - installed with the install script: docker service ls, then docker service logs pelican_panel
+          (and pelican_traefik for certificate problems)
+        - installed directly on the server: tail -n 100 /var/www/pelican/storage/logs/laravel-$(date +%F).log
         - systemctl status pelican-queue
         - systemctl status wings, or sudo wings --debug on the node
         - php -v
@@ -105,7 +147,8 @@ End with a short summary of what we installed and where each part lives.
     <TabItem value="update" label="Update">
         ```text title="Prompt: update the panel safely" wrap
         Help me update my Pelican Panel, following https://pelican.dev/docs/panel/update.md.
-        Ask me how it was installed (Docker, or directly on the server) and which version runs now.
+        Ask me how it was installed (the install script, Docker Compose, or directly on the server)
+        and which version runs now. An install-script install updates with: sudo /opt/pelican/deploy.sh
         Before anything else, have me back up the panel folder, the database and the APP_KEY.
         Check the Version Requirements on that page for the PHP and Wings versions the new release needs.
         Prefer the update script the docs recommend, and go one step at a time, waiting for my output.
