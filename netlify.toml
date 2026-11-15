@@ -101,6 +101,20 @@
   status = 301
   force = true
 
+# The Docusaurus blog has no page in the new site: its address goes to the homepage for now
+# (302, not for good). The Hub does the same once it serves pelican.dev (pelican/hub#285).
+[[redirects]]
+  from = "/blog"
+  to = "/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/blog/*"
+  to = "/"
+  status = 302
+  force = true
+
 # ---- Old docs paths ------------------------------------------------------
 [[redirects]]
   from = "/docs/about"
