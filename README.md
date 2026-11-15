@@ -33,7 +33,7 @@ bun test && bun run typecheck && bun run build
 | `content/docs/**/meta.json` | Sidebar order and section names for that folder. |
 | `content/pages/` | Stand-alone pages: `/support` and `/faq`. |
 | `app/(home)/page.tsx` | The homepage. |
-| `public/` | Files served as they are, including the `update-panel.sh` and `migrate-*.sh` scripts. |
+| `public/` | Files served as they are, including the `install.sh`, `update-panel.sh` and `migrate-*.sh` scripts (`install.sh` is tested in `scripts/install-sh.test.mjs`). |
 | `netlify.toml` | Build settings and redirects such as `/discord`. |
 | `ui/` | Design tokens (`tokens.css`) and site nav (`nav.json`) shared with the Hub; published at `/docs/ui/v1/`. |
 | `scripts/` | The build's checks, the egg data sync and the packing for the Hub. Listed in [scripts/README.md](scripts/README.md). |

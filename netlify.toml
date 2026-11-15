@@ -13,7 +13,7 @@
 
 # ---- pelican.dev/docs next to the Hub ------------------------------------
 # After the switch a Cloudflare route sends only /docs/*, /llms.txt,
-# /llms-full.txt and the three install scripts here; the Hub serves the rest.
+# /llms-full.txt and the four install scripts here; the Hub serves the rest.
 # So everything the docs load is under /docs/ (see scripts/check-paths.mjs).
 
 # The JS, CSS and fonts. next.config.mjs sets assetPrefix '/docs', so pages ask
@@ -150,6 +150,45 @@
 [[redirects]]
   from = "/docs/guides/disk-quotas/zfs"
   to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+# Docker became the recommended install (pelican/docs#226): the Docker guide is now
+# panel/install, guides/docker is the top-level Getting Started, and the install without
+# Docker moved under panel/standalone/.
+[[redirects]]
+  from = "/docs/guides/docker"
+  to = "/docs/getting-started/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/advanced/docker"
+  to = "/docs/panel/install/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/getting-started"
+  to = "/docs/panel/standalone/getting-started/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/webserver-config"
+  to = "/docs/panel/standalone/webserver-config/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/panel-setup"
+  to = "/docs/panel/standalone/panel-setup/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/optional-config"
+  to = "/docs/panel/standalone/optional-config/"
   status = 301
   force = true
 

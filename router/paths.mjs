@@ -11,7 +11,7 @@
  */
 
 /** Files served at pelican.dev's root from this build (out/<name>). The Hub has the same list. */
-export const ROOT_FILES = ['llms.txt', 'llms-full.txt', 'update-panel.sh', 'migrate-panel.sh', 'migrate-wings.sh'];
+export const ROOT_FILES = ['llms.txt', 'llms-full.txt', 'install.sh', 'update-panel.sh', 'migrate-panel.sh', 'migrate-wings.sh'];
 
 /**
  * Whether a URL path is this build's to answer. Pass `new URL(...).pathname`: already free of

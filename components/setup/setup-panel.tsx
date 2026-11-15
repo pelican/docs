@@ -30,15 +30,16 @@ export function SetupPanel({ fields = ['domain', 'webserver', 'ssl', 'php', 'pat
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="not-prose my-6 rounded-xl border bg-fd-card p-4 shadow-sm md:p-5"
+      // The Hub's card: the dt-setup* rules in app/global.css.
+      className="dt-setup not-prose my-6"
     >
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 id={`${id}-title`} className="flex items-center gap-2 text-base font-semibold">
-            <SlidersHorizontal className="size-4 text-fd-primary" aria-hidden />
+          <h2 id={`${id}-title`} className="dt-setup__title flex items-center gap-2">
+            <SlidersHorizontal className="size-5" aria-hidden />
             Your setup
           </h2>
-          <p className="mt-1 text-sm text-fd-muted-foreground">
+          <p className="dt-setup__lede">
             Fill this in and the commands and config files on this page use your values. It&apos;s
             saved in this browser only.
           </p>
@@ -46,7 +47,7 @@ export function SetupPanel({ fields = ['domain', 'webserver', 'ssl', 'php', 'pat
         <button
           type="button"
           onClick={reset}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
+          className="dt-setup__reset inline-flex shrink-0 items-center gap-1.5"
         >
           <RotateCcw className="size-3.5" aria-hidden />
           Reset
@@ -127,8 +128,7 @@ export function SetupPanel({ fields = ['domain', 'webserver', 'ssl', 'php', 'pat
   );
 }
 
-const inputClass =
-  'w-full rounded-md border bg-fd-background px-3 py-2 font-mono text-sm text-fd-foreground placeholder:text-fd-muted-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring';
+const inputClass = 'dt-setup__input w-full';
 
 function Field({
   label,
@@ -144,11 +144,11 @@ function Field({
   const Label = htmlFor ? 'label' : 'span';
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor} className="text-xs font-medium uppercase tracking-wide text-fd-muted-foreground">
+      <Label htmlFor={htmlFor} className="dt-setup__label">
         {label}
       </Label>
       {children}
-      {hint && <p className="text-xs text-fd-muted-foreground">{hint}</p>}
+      {hint && <p className="dt-setup__hint">{hint}</p>}
     </div>
   );
 }
@@ -165,17 +165,14 @@ function Segmented({
   onChange: (value: string) => void;
 }) {
   return (
-    <div role="radiogroup" className="inline-flex w-full rounded-md border bg-fd-background p-0.5">
+    <div role="radiogroup" className="dt-seg inline-flex w-full">
       {options.map((option) => {
         const checked = option.value === value;
         return (
           <label
             key={option.value}
-            className={`flex-1 cursor-pointer rounded px-2.5 py-1.5 text-center text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-fd-ring ${
-              checked
-                ? 'bg-fd-primary font-medium text-fd-primary-foreground'
-                : 'text-fd-muted-foreground hover:text-fd-foreground'
-            }`}
+            className="dt-seg__option flex-1 cursor-pointer text-center"
+            data-checked={checked || undefined}
           >
             <input
               type="radio"

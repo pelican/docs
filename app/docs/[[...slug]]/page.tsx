@@ -13,6 +13,8 @@ import type { Metadata } from 'next';
 import { githubEditUrl, source } from '@/lib/source';
 import { docsBreadcrumbJsonLd, jsonLdScript, ogImage, pageMetadata, techArticleJsonLd } from '@/lib/og';
 import { getMDXComponents } from '@/mdx-components';
+import { PageActions } from '@/components/docs/page-actions';
+import { markdownPath } from '@/lib/llms';
 
 export const dynamicParams = false;
 
@@ -35,10 +37,21 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   );
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      // Hooks for the Hub look in app/global.css ("Docs: page").
+      breadcrumb={{ className: 'dt-crumbs' }}
+      footer={{ className: 'dt-pager' }}
+    >
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
+      <PageActions
+        // The built file (out/docs/md/…): served as-is everywhere, unlike the /docs/<page>.md rewrite.
+        markdownUrl={markdownPath(page).replace(/^\/docs\//, '/docs/md/')}
+        githubUrl={githubEditUrl('docs', page.path)}
+      />
       <DocsBody>
         <MDX
           components={getMDXComponents({
@@ -47,8 +60,8 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           })}
         />
       </DocsBody>
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <EditOnGitHub href={githubEditUrl('docs', page.path)} />
+      <div className="dt-pagefoot flex flex-wrap items-center justify-between gap-4 border-t pt-6">
+        <EditOnGitHub className="dt-edit" href={githubEditUrl('docs', page.path)} />
         {page.data.lastModified && <PageLastUpdate date={page.data.lastModified} />}
       </div>
     </DocsPage>

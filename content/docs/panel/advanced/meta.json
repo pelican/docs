@@ -1,4 +1,12 @@
 {
   "title": "Advanced",
-  "pages": ["redis", "mysql", "artisan", "docker", "podman", "cloudflare-tunnel", "api-docs", "plugins"]
+  "pages": [
+    "redis",
+    "mysql",
+    "artisan",
+    "podman",
+    "cloudflare-tunnel",
+    "api-docs",
+    "plugins"
+  ]
 }

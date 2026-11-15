@@ -27,7 +27,9 @@ You have two options for updating: use the automatic update script (recommended)
 
 <Tabs>
     <TabItem value="Docker">
-        A [Docker install](./advanced/docker) updates by pulling the new image. From the directory containing your `compose.yml`, run:
+        Installed with the [install script](./install#the-install-script)? Run `sudo /opt/pelican/deploy.sh`: it pulls the new image and restarts the Panel.
+
+        A [Docker Compose install](./install#docker-compose) updates by pulling the new image. From the directory containing your `compose.yml`, run:
 
         ```sh
         docker compose pull

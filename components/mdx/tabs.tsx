@@ -58,7 +58,8 @@ export function Tabs({
         setLocal(value);
         if (groupId) setStoredValue(`tabs:${groupId}`, value);
       }}
-      className="my-4 flex flex-col overflow-hidden rounded-xl border bg-fd-secondary"
+      // dt-tabs: the docs restyle it (app/global.css); the interim /faq page keeps these classes.
+      className="dt-tabs my-4 flex flex-col overflow-hidden rounded-xl border bg-fd-secondary"
     >
       <TabsList>
         {items.map((item) => (

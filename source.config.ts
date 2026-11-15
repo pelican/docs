@@ -6,7 +6,7 @@ import { transformerMetaHighlight } from '@shikijs/transformers';
 import lastModified from 'fumadocs-mdx/plugins/last-modified';
 import type { Paragraph, PhrasingContent, Root } from 'mdast';
 import { visit } from 'unist-util-visit';
-import { transformerSetup } from './lib/shiki-setup';
+import { transformerSetup, transformerWrap } from './lib/shiki-setup';
 
 // The documentation under /docs.
 export const docs = defineDocs({
@@ -132,6 +132,8 @@ export default defineConfig({
         transformerMetaHighlight(),
         // ```nginx setup fills the reader's own values in (see components/setup).
         transformerSetup(),
+        // ```text wrap wraps long lines (prompts and other text that is read, not run).
+        transformerWrap(),
       ],
     },
   },

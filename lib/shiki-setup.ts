@@ -43,3 +43,22 @@ export function transformerSetup(): ShikiTransformer {
     },
   };
 }
+
+/**
+ * ```text wrap: long lines wrap instead of scrolling sideways, for blocks that are read
+ * rather than run, such as the prompts in guides/ai-assistant. Adds `dt-wrap` to the <pre>,
+ * which Fumadocs moves to the code block's <figure> (styled in app/global.css).
+ */
+export function hasWrapFlag(meta: string | undefined): boolean {
+  return /(^|\s)wrap(\s|$)/.test(meta ?? '');
+}
+
+export function transformerWrap(): ShikiTransformer {
+  return {
+    name: 'pelican:wrap',
+    pre(node) {
+      const meta = (this.options.meta as { __raw?: string } | undefined)?.__raw;
+      if (hasWrapFlag(meta)) this.addClassToHast(node, 'dt-wrap');
+    },
+  };
+}
