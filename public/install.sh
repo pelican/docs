@@ -2,10 +2,15 @@
 # Pelican one-command install: Docker Swarm, Traefik (automatic HTTPS) and the Panel, and Wings
 # on the same server if you want it.
 #
-#   curl -fsSL https://pelican.dev/install.sh | sudo bash
-#   curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --yes      # on this server's IP
+#   curl -fsSL https://pelican.dev/install.sh | sudo bash                   # on this server's IP
 #   curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com \
-#     --email you@example.com --profile production --yes                 # HTTPS on a domain
+#     --email you@example.com --profile production                        # HTTPS on a domain
+#   curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --interactive  # asks you
+#
+# It asks nothing unless you pass --interactive: what you don't pass takes its default. Every
+# option can also be an environment variable (PELICAN_DOMAIN, PELICAN_EMAIL, ... see --help),
+# e.g. curl -fsSL https://pelican.dev/install.sh | sudo PELICAN_DOMAIN=panel.example.com \
+#        PELICAN_EMAIL=you@example.com bash
 #
 # Docs: https://pelican.dev/docs/panel/install/ (every option, and how to change things later)
 #
@@ -25,7 +30,7 @@ VERSION="1"
 STACK="pelican"
 DEFAULT_DIR="/opt/pelican"
 PANEL_IMAGE_DEFAULT="ghcr.io/pelican/panel:latest"
-TRAEFIK_IMAGE_DEFAULT="traefik:v3"
+TRAEFIK_IMAGE_DEFAULT="traefik:v3.7.19" # an exact version: updates are a change to this line
 LE_PRODUCTION="https://acme-v02.api.letsencrypt.org/directory"
 LE_STAGING="https://acme-staging-v02.api.letsencrypt.org/directory"
 WINGS_RELEASES="https://github.com/pelican/wings/releases/latest/download"
@@ -38,47 +43,66 @@ GWBRIDGE_SUBNET="${PELICAN_GWBRIDGE_SUBNET:-10.204.0.0/24}" # docker_gwbridge: c
 PUBLIC_SUBNET="${PELICAN_PUBLIC_SUBNET:-10.203.250.0/24}"   # Traefik <-> Panel (TRUSTED_PROXIES)
 
 # ---- Options -------------------------------------------------------------------------------
-domain=""
-email=""
-ip=""
-profile=""
+# Each starts from its PELICAN_* environment variable (for cloud-init and other tools); the
+# command-line option wins over it.
+truthy() { [[ "${1,,}" =~ ^(1|true|yes|y|on)$ ]]; }
+falsy() { [[ "${1,,}" =~ ^(0|false|no|n|off)$ ]]; }
+
+domain="${PELICAN_DOMAIN:-}"
+email="${PELICAN_EMAIL:-}"
+ip="${PELICAN_IP:-}"
+profile="${PELICAN_PROFILE:-}"
 with_wings=""
-wings_domain=""
-dir="$DEFAULT_DIR"
-panel_image=""
+truthy "${PELICAN_WINGS:-}" && with_wings=yes
+falsy "${PELICAN_WINGS:-}" && with_wings=no
+wings_domain="${PELICAN_WINGS_DOMAIN:-}"
+dir="${PELICAN_DIR:-$DEFAULT_DIR}"
+panel_image="${PELICAN_IMAGE:-}"
 staging=false
+truthy "${PELICAN_STAGING:-}" && staging=true
 check_dns=true
-assume_yes=false
+truthy "${PELICAN_SKIP_DNS_CHECK:-}" && check_dns=false
+interactive=false
+truthy "${PELICAN_INTERACTIVE:-}" && interactive=true
 dry_run=false
+truthy "${PELICAN_DRY_RUN:-}" && dry_run=true
 
 usage() {
   cat <<EOF
 Usage: install.sh [options]
 
+It asks nothing unless you pass --interactive: what you don't pass takes its default (the Panel
+on this server's IP, the quick profile, no Wings). Each option can also be set with the
+environment variable in brackets; the option wins if both are set.
+
+  --interactive          Ask for each choice, with explanations  [PELICAN_INTERACTIVE=1]
   --domain DOMAIN        Serve the Panel at this domain with HTTPS (Let's Encrypt), e.g.
                          panel.example.com; its DNS must point here. Without it the Panel is
                          served on http://<this server's IP>, and you can add a domain later.
-  --email EMAIL          Email for Let's Encrypt's notices (needed with --domain)
+                         [PELICAN_DOMAIN]
+  --email EMAIL          Email for Let's Encrypt's notices (needed with --domain)  [PELICAN_EMAIL]
   --ip IP                The IP the Panel is served on without a domain (default: this
-                         server's external IPv4 address, found automatically)
+                         server's external IPv4 address, found automatically)  [PELICAN_IP]
   --profile NAME         quick: SQLite, the least to run (one server, small installs)
                          production: MariaDB and Redis (more servers and users)
-  --wings                Also install Wings on this server
-  --no-wings             Don't install Wings on this server
+                         (default quick)  [PELICAN_PROFILE]
+  --wings, --no-wings    Install Wings on this server too, or not (default not)
+                         [PELICAN_WINGS=1/0]
   --wings-domain DOMAIN  Wings' address with HTTPS, e.g. node.example.com (needs --wings and
                          --domain; without them Wings is on http://<IP>:8080)
-  --dir PATH             Where the stack's files go (default $DEFAULT_DIR)
-  --image IMAGE          Panel image (default $PANEL_IMAGE_DEFAULT)
-  --staging              Use Let's Encrypt's staging server (test certificates, no rate limits)
+                         [PELICAN_WINGS_DOMAIN]
+  --dir PATH             Where the stack's files go (default $DEFAULT_DIR)  [PELICAN_DIR]
+  --image IMAGE          Panel image (default $PANEL_IMAGE_DEFAULT)  [PELICAN_IMAGE]
+  --staging              Use Let's Encrypt's staging server (test certificates, no rate
+                         limits)  [PELICAN_STAGING=1]
   --skip-dns-check       Don't check that the domains point at this server (behind NAT, or
                          DNS that you set up afterwards: the certificate waits for it)
+                         [PELICAN_SKIP_DNS_CHECK=1]
   --dry-run              Write the files to --dir (a temp folder by default) and show the plan;
-                         change nothing on this server. No root needed.
-  -y, --yes              Don't ask: use the options given (and the defaults for the rest)
+                         change nothing on this server. No root needed.  [PELICAN_DRY_RUN=1]
   -h, --help             Show this help
 
-Without --yes it asks for anything you didn't pass. With --yes nothing else is needed: the Panel
-is served on this server's IP, with the quick profile.
+With sudo, put the variables after it: curl ... | sudo PELICAN_DOMAIN=panel.example.com bash
 EOF
 }
 
@@ -96,7 +120,8 @@ while [[ $# -gt 0 ]]; do
     --staging) staging=true; shift ;;
     --skip-dns-check) check_dns=false; shift ;;
     --dry-run) dry_run=true; shift ;;
-    -y|--yes) assume_yes=true; shift ;;
+    --interactive | -i) interactive=true; shift ;;
+    -y|--yes) shift ;; # not asking is the default now; still accepted
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -144,7 +169,7 @@ quietly() {
 trap 'die "line $LINENO: \"$BASH_COMMAND\" failed. Nothing after this step ran; fix the cause and run the script again (it picks up where it stopped)."' ERR
 
 # ---- Asking --------------------------------------------------------------------------------
-can_ask() { ! $assume_yes && { : </dev/tty; } 2>/dev/null; }
+can_ask() { $interactive && { : </dev/tty; } 2>/dev/null; }
 
 # ask VAR "Question" default: prompts on the terminal (also under curl | bash).
 ask() {
@@ -189,8 +214,8 @@ secret() {
   printf '%s' "${out:0:$1}"
 }
 
-if ! $assume_yes && ! { : </dev/tty; } 2>/dev/null; then
-  die "No terminal for questions: pass the options and --yes (see --help)."
+if $interactive && ! { : </dev/tty; } 2>/dev/null; then
+  die "--interactive needs a terminal to ask on: pass the options instead (see --help)."
 fi
 
 # ---- Saved settings ------------------------------------------------------------------------
@@ -239,7 +264,7 @@ fi
 if [[ -n "$domain" ]]; then
   valid_domain "$domain" || die "\"$domain\" isn't a domain name like panel.example.com."
   if [[ -z "$email" ]]; then
-    $assume_yes && die "--email is needed with --domain (Let's Encrypt sends certificate notices to it)."
+    $interactive || die "--email (or PELICAN_EMAIL) is needed with --domain: Let's Encrypt sends certificate notices to it."
     ask email "Your email, for Let's Encrypt" ""
   fi
   valid_email "$email" || die "\"$email\" isn't an email address."
@@ -278,7 +303,7 @@ fi
 if [[ "$with_wings" == yes && -n "$domain" ]]; then
   # The Panel uses HTTPS, so Wings must too: it gets its own domain, through Traefik.
   if [[ -z "$wings_domain" ]]; then
-    $assume_yes && die "--wings-domain is needed with --wings and --domain (e.g. node.example.com): with HTTPS, Wings needs its own domain."
+    $interactive || die "--wings-domain (or PELICAN_WINGS_DOMAIN) is needed with --wings and --domain (e.g. node.example.com): with HTTPS, Wings needs its own domain."
     ask wings_domain "Wings' domain (its DNS must point here too), e.g. node.example.com" ""
   fi
   valid_domain "$wings_domain" || die "\"$wings_domain\" isn't a domain name like node.example.com."
@@ -457,7 +482,8 @@ mkdir -p "$dir/traefik"
   echo "LE_EMAIL='$email'"
   echo "LE_CA_SERVER='$le_server'"
   echo "PANEL_IMAGE='$panel_image'"
-  echo "TRAEFIK_IMAGE='$(setting TRAEFIK_IMAGE | grep . || echo "$TRAEFIK_IMAGE_DEFAULT")'"
+  # The version this script pins (a new script moves Traefik along); PELICAN_TRAEFIK_IMAGE for another.
+  echo "TRAEFIK_IMAGE='${PELICAN_TRAEFIK_IMAGE:-$TRAEFIK_IMAGE_DEFAULT}'"
   echo "PUBLIC_SUBNET='$PUBLIC_SUBNET'"
   echo "SWARM_NODE_ID='$node_id'"
   echo "APP_KEY='$app_key'"

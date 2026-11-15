@@ -33,8 +33,8 @@ function install(args, env = {}) {
   return { code: result.exitCode, out: result.stdout.toString() + result.stderr.toString() };
 }
 
-function dryRun(extra = [], dir = mkdtempSync(join(tmpdir(), 'pelican-install-'))) {
-  const result = install(['--dry-run', '--yes', '--dir', dir, ...extra]);
+function dryRun(extra = [], dir = mkdtempSync(join(tmpdir(), 'pelican-install-')), env = {}) {
+  const result = install(['--dry-run', '--dir', dir, ...extra], env);
   return { ...result, dir };
 }
 
@@ -54,23 +54,55 @@ function settings(dir) {
 const stack = (dir) => parse(readFileSync(join(dir, 'stack.yml'), 'utf8'));
 
 suite('install.sh options', () => {
-  test('--help lists the options and exits 0', () => {
+  test('--help lists the options and their environment variables, and exits 0', () => {
     const { code, out } = install(['--help']);
     expect(code).toBe(0);
-    for (const flag of ['--domain', '--email', '--profile', '--wings', '--wings-domain', '--dry-run', '--yes', '--staging']) {
+    for (const flag of ['--interactive', '--domain', '--email', '--ip', '--profile', '--wings', '--wings-domain', '--dry-run', '--staging']) {
       expect(out).toContain(flag);
     }
+    for (const name of ['PELICAN_DOMAIN', 'PELICAN_EMAIL', 'PELICAN_PROFILE', 'PELICAN_WINGS', 'PELICAN_IP', 'PELICAN_INTERACTIVE']) {
+      expect(out).toContain(name);
+    }
+    expect(out).not.toContain('--yes'); // not asking is the default; there's nothing to say yes to
   });
 
   test('an unknown option fails with exit 2', () => {
     expect(install(['--nope']).code).toBe(2);
   });
 
-  test('--yes alone is enough: no domain means the Panel on the IP; a domain needs an email', () => {
-    const { code, dir } = dryRun(IP);
+  test('it asks nothing by default: no options means the Panel on the IP, quick, no Wings', () => {
+    const { code, out, dir } = dryRun(IP);
     expect(code).toBe(0);
-    expect(settings(dir)).toMatchObject({ PANEL_DOMAIN: '', PANEL_IP: '203.0.113.10', LE_EMAIL: '', PROFILE: 'quick' });
-    expect(dryRun(['--domain', 'panel.example.com']).out).toContain('--email is needed with --domain');
+    expect(settings(dir)).toMatchObject({ PANEL_DOMAIN: '', PANEL_IP: '203.0.113.10', LE_EMAIL: '', PROFILE: 'quick', WINGS_DOMAIN: '' });
+    expect(out).not.toContain('Wings:');
+    // A domain needs an email; without --interactive that's an error naming both ways to give it.
+    expect(dryRun(['--domain', 'panel.example.com']).out).toContain('--email (or PELICAN_EMAIL) is needed with --domain');
+  });
+
+  test('--yes from older instructions is still accepted', () => {
+    expect(dryRun([...IP, '--yes']).code).toBe(0);
+  });
+
+  test('every option can be an environment variable, and the option wins over it', () => {
+    const fromEnv = dryRun([], undefined, {
+      PELICAN_DOMAIN: 'panel.example.com',
+      PELICAN_EMAIL: 'admin@pelican.test',
+      PELICAN_PROFILE: 'production',
+      PELICAN_WINGS: 'yes',
+      PELICAN_WINGS_DOMAIN: 'node.example.com',
+      PELICAN_STAGING: '1',
+    });
+    expect(fromEnv.code).toBe(0);
+    expect(settings(fromEnv.dir)).toMatchObject({
+      PANEL_DOMAIN: 'panel.example.com',
+      LE_EMAIL: 'admin@pelican.test',
+      PROFILE: 'production',
+      WINGS_DOMAIN: 'node.example.com',
+      LE_CA_SERVER: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+    });
+
+    const overridden = dryRun(['--profile', 'quick', '--no-wings'], undefined, { PELICAN_PROFILE: 'production', PELICAN_WINGS: '1', PELICAN_IP: '203.0.113.10' });
+    expect(settings(overridden.dir)).toMatchObject({ PROFILE: 'quick', WINGS_DOMAIN: '', PANEL_IP: '203.0.113.10' });
   });
 
   test('bad values are refused before anything is written', () => {
@@ -87,7 +119,7 @@ suite('install.sh options', () => {
   });
 
   test('with a domain, Wings needs its own; without one, it needs none (and may not have one)', () => {
-    expect(dryRun([...BASE, '--wings']).out).toContain('--wings-domain is needed');
+    expect(dryRun([...BASE, '--wings']).out).toContain('--wings-domain (or PELICAN_WINGS_DOMAIN) is needed');
     expect(dryRun([...BASE, '--wings', '--wings-domain', 'panel.example.com']).out).toContain('Wings needs its own domain');
     const ip = dryRun([...IP, '--wings']);
     expect(ip.code).toBe(0);
@@ -96,10 +128,11 @@ suite('install.sh options', () => {
     expect(dryRun([...IP, '--wings', '--wings-domain', 'node.example.com']).out).toContain('--wings-domain needs --domain');
   });
 
-  test('without a terminal and without --yes it asks for --yes instead of guessing', () => {
-    const { code, out } = install(['--dry-run', ...BASE]);
+  test('--interactive without a terminal stops and says to pass the options instead', () => {
+    const { code, out } = install(['--dry-run', '--interactive', ...BASE]);
     expect(code).not.toBe(0);
-    expect(out).toContain('No terminal for questions');
+    expect(out).toContain('--interactive needs a terminal');
+    expect(install(['--dry-run', ...BASE], { PELICAN_INTERACTIVE: '1' }).out).toContain('--interactive needs a terminal');
   });
 });
 
@@ -147,6 +180,9 @@ suite('install.sh files', () => {
     expect(panel.deploy.labels).toBeUndefined();
     expect(file.networks.public.ipam.config[0].subnet).toBe('${PUBLIC_SUBNET}');
     expect(env.PUBLIC_SUBNET).toBe('10.203.250.0/24');
+    // Traefik is pinned to an exact version (updates are deliberate), unless asked otherwise.
+    expect(env.TRAEFIK_IMAGE).toMatch(/^traefik:v\d+\.\d+\.\d+$/);
+    expect(settings(dryRun(BASE, undefined, { PELICAN_TRAEFIK_IMAGE: 'traefik:v3.6.25' }).dir).TRAEFIK_IMAGE).toBe('traefik:v3.6.25');
   });
 
   test('production: MariaDB and Redis on an internal network, with generated passwords', () => {
@@ -198,7 +234,7 @@ suite('install.sh files', () => {
 
   test('the address ranges can be changed for networks that clash', () => {
     const dir = mkdtempSync(join(tmpdir(), 'pelican-install-'));
-    const result = install(['--dry-run', '--yes', '--dir', dir, ...BASE], {
+    const result = install(['--dry-run', '--dir', dir, ...BASE], {
       PELICAN_PUBLIC_SUBNET: '10.99.1.0/24',
       PELICAN_GWBRIDGE_SUBNET: '10.99.2.0/24',
     });

@@ -22,7 +22,7 @@ On a fresh Linux server (see [Getting Started](/docs/getting-started) for the re
 curl -fsSL https://pelican.dev/install.sh | sudo bash
 ```
 
-It asks whether you have a domain for the Panel (and your email, if so), a profile and whether to install Wings on the same server, then:
+It asks nothing: with no options it installs the Panel on your server's IP, with the [quick profile](#profiles) and without Wings. To choose, pass [options](#options) (a domain, a profile, Wings), or add `--interactive` to be asked. Then it:
 
 1. checks the server: Linux on x86_64 or arm64, a virtualization Docker works on, ports 80 and 443 free, and the domain pointing at this server if you gave one;
 2. installs Docker if it's missing;
@@ -43,12 +43,12 @@ When it finishes, open the address it shows (`http://<your server's IP>/installe
 
 ### Without a domain
 
-Run the script without `--domain` (or leave the question empty) and the Panel is served on `http://<your server's IP>`, the external IPv4 address the script finds (pass `--ip` to choose another, such as a server behind NAT). It's the quickest way to try Pelican, but it's plain HTTP: logins and data cross the network unencrypted. Add a domain before you rely on it.
+Run the script without `--domain` and the Panel is served on `http://<your server's IP>`, the external IPv4 address the script finds (pass `--ip` to choose another, such as a server behind NAT). It's the quickest way to try Pelican, but it's plain HTTP: logins and data cross the network unencrypted. Add a domain before you rely on it.
 
 To add one later, point its `A` record at the server and run the script again with the domain. It keeps your keys, passwords and data, switches the Panel to HTTPS and sends visitors of the old address to the new one:
 
 ```sh
-curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com --email you@example.com --yes
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com --email you@example.com
 ```
 
 Or set `PANEL_DOMAIN` and `LE_EMAIL` in `/opt/pelican/pelican.env` and run `sudo /opt/pelican/deploy.sh`.
@@ -64,39 +64,48 @@ You can't switch an install from one profile to the other by running the script 
 
 ### Options
 
-Everything the script asks can be given as an option, so it runs without questions. That's also how to hand it to automation or to an [AI assistant](/docs/guides/ai-assistant):
+The script never asks unless you pass `--interactive`: anything you don't give takes its default. Give your choices as options after `bash -s --`, or as environment variables, which suits cloud-init and other provisioning tools. That's also how to hand it to an [AI assistant](/docs/guides/ai-assistant):
 
 ```sh
 # On the server's IP, with the defaults (the quick profile, no Wings)
-curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --yes
+curl -fsSL https://pelican.dev/install.sh | sudo bash
 
 # With a domain and HTTPS, MariaDB and Redis
 curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- \
-  --domain panel.example.com --email you@example.com --profile production --yes
+  --domain panel.example.com --email you@example.com --profile production
+
+# The same with environment variables (with sudo, put them after it)
+curl -fsSL https://pelican.dev/install.sh | sudo PELICAN_DOMAIN=panel.example.com \
+  PELICAN_EMAIL=you@example.com PELICAN_PROFILE=production bash
+
+# Asked one question at a time, with explanations
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --interactive
 ```
 
-| Option | What it does |
-|:-------|:-------------|
-| `--domain DOMAIN` | Serve the Panel at this domain with HTTPS, e.g. `panel.example.com`. Without it, the Panel is on `http://<server IP>` |
-| `--email EMAIL` | Your email, for Let's Encrypt's certificate notices (needed with `--domain`) |
-| `--ip IP` | The address the Panel is served on without a domain (default: the server's external IPv4 address) |
-| `--profile quick\|production` | Which [profile](#profiles) to run (asks, `quick` by default) |
-| `--wings`, `--wings-domain DOMAIN` | Also install Wings on this server. With `--domain`, Wings needs its own domain such as `node.example.com`; without one, it's on `http://<server IP>:8080` |
-| `--no-wings` | Don't install Wings, without asking |
-| `--dir PATH` | Where the stack's files go (default `/opt/pelican`) |
-| `--image IMAGE` | Another Panel image, e.g. a fixed version |
-| `--staging` | Use Let's Encrypt's staging server: test certificates, without its rate limits |
-| `--skip-dns-check` | Don't check the domains point here (behind NAT, or DNS set up afterwards) |
-| `--dry-run` | Show what it would do and write the files to a temp folder, changing nothing. Needs no root, so you can try it anywhere |
-| `--yes` | Don't ask anything: use the options given and the defaults for the rest |
+| Option | Variable | What it does |
+|:-------|:---------|:-------------|
+| `--domain DOMAIN` | `PELICAN_DOMAIN` | Serve the Panel at this domain with HTTPS, e.g. `panel.example.com`. Without it, the Panel is on `http://<server IP>` |
+| `--email EMAIL` | `PELICAN_EMAIL` | Your email, for Let's Encrypt's certificate notices (needed with a domain) |
+| `--ip IP` | `PELICAN_IP` | The address the Panel is served on without a domain (default: the server's external IPv4 address) |
+| `--profile quick\|production` | `PELICAN_PROFILE` | Which [profile](#profiles) to run (default `quick`) |
+| `--wings`, `--no-wings` | `PELICAN_WINGS=1` or `0` | Also install Wings on this server (default: no). Without a domain it's on `http://<server IP>:8080` |
+| `--wings-domain DOMAIN` | `PELICAN_WINGS_DOMAIN` | Wings' own domain, such as `node.example.com`: needed for Wings when the Panel has a domain |
+| `--dir PATH` | `PELICAN_DIR` | Where the stack's files go (default `/opt/pelican`) |
+| `--image IMAGE` | `PELICAN_IMAGE` | Another Panel image, e.g. a fixed version |
+| `--staging` | `PELICAN_STAGING=1` | Use Let's Encrypt's staging server: test certificates, without its rate limits |
+| `--skip-dns-check` | `PELICAN_SKIP_DNS_CHECK=1` | Don't check the domains point here (behind NAT, or DNS set up afterwards). Without it, a domain that doesn't point here stops the install |
+| `--dry-run` | `PELICAN_DRY_RUN=1` | Show what it would do and write the files to a temp folder, changing nothing. Needs no root, so you can try it anywhere |
+| `--interactive` | `PELICAN_INTERACTIVE=1` | Ask for each choice instead, with explanations |
+
+When both are set, the option wins. `PELICAN_TRAEFIK_IMAGE` runs another Traefik than the exact version the script pins.
 
 To read the script before running it, download it first:
 
 ```sh
 curl -fsSL -o install.sh https://pelican.dev/install.sh
 less install.sh
-bash install.sh --dry-run --domain panel.example.com --email you@example.com --yes
-sudo bash install.sh
+bash install.sh --dry-run --domain panel.example.com --email you@example.com
+sudo bash install.sh --domain panel.example.com --email you@example.com
 ```
 
 ### Your files
@@ -123,7 +132,7 @@ sudo nano /opt/pelican/pelican.env
 sudo /opt/pelican/deploy.sh
 ```
 
-For example, a new `PANEL_DOMAIN` (with `LE_EMAIL`) switches the Panel to HTTPS and gets its certificate as soon as its DNS points at the server, and `PANEL_IMAGE=ghcr.io/pelican/panel:<version>` keeps the Panel on one version. Running the install script again also works: it keeps your keys and passwords and updates the stack.
+For example, a new `PANEL_DOMAIN` (with `LE_EMAIL`) switches the Panel to HTTPS and gets its certificate as soon as its DNS points at the server, and `PANEL_IMAGE=ghcr.io/pelican/panel:<version>` keeps the Panel on one version. Running the install script again also works: it keeps your keys and passwords, updates the stack and moves Traefik to the version it pins.
 
 ### Updating
 

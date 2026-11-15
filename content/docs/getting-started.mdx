@@ -32,11 +32,17 @@ A domain (or subdomain) for the Panel, such as `panel.example.com` with an `A` r
 
 ## The quick way: one command
 
-On a fresh server, this installs Docker and starts the Panel on your server's IP address. Give it a domain and it sets up HTTPS with Let's Encrypt too. It asks whether you have one, and whether you want the simple setup or the production one:
+On a fresh server, this installs Docker and starts the Panel on your server's IP address. Give it a domain and it sets up HTTPS with Let's Encrypt too:
 
 ```sh
+# On your server's IP
 curl -fsSL https://pelican.dev/install.sh | sudo bash
+
+# On your domain, with HTTPS
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com --email you@example.com
 ```
+
+It asks nothing; add `--interactive` to be asked about each choice (a domain, the simple or the production setup, Wings).
 
 When it's done, open the address it shows (`http://<your server's IP>/installer`, or `https://<your domain>/installer`) to finish. [Installing the Panel](./panel/install#the-install-script) explains every option, what the script sets up and how to change it later. Want an AI assistant to walk you through it? See [Installing with an AI Assistant](./guides/ai-assistant).
 

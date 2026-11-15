@@ -54,7 +54,8 @@ Before any command, ask me, one question at a time, and explain the choice in pl
 5. Whether Wings should run on this same server, and with a panel domain, Wings' own domain (e.g. node.example.com).
 
 Then:
-- Write the exact command with my answers as options and --yes, and explain each option.
+- Write the exact command with my answers as options (the script asks nothing itself; anything
+  left out takes its default), and explain each option.
 - Have me run it with --dry-run first and paste the output, so we both see the plan. Only then the real run.
 - Wait for me to paste the output of each step. If something fails, ask for the exact error and the
   logs the docs name (docker service ls, docker service logs pelican_panel, pelican_traefik) instead of guessing.
