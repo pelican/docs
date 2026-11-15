@@ -86,7 +86,9 @@ function sendFile(res, method, status, { full, size }) {
     'X-Served-By': 'docs (out/)',
   });
   if (method === 'HEAD') return res.end();
-  createReadStream(full).pipe(res);
+  // pipeline, not pipe: a file that fails to open after stat() ends this response instead
+  // of crashing the router with an unhandled stream error.
+  pipeline(createReadStream(full), res, () => {});
 }
 
 async function serveDocs(req, res, path) {
@@ -151,7 +153,7 @@ function proxyToHub(req, res) {
     res.writeHead(502, { 'Content-Type': 'text/plain' });
     res.end(`The Hub at ${HUB.origin} did not answer: ${error.message}\n`);
   });
-  req.pipe(upstream);
+  pipeline(req, upstream, () => {});
 }
 
 const server = http.createServer(async (req, res) => {
