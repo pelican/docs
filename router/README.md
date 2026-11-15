@@ -2,9 +2,9 @@
 
 pelican.dev is two apps on one domain: the **Pelican Hub** (Laravel) serves
 almost every path, and this repo's static build (Netlify) serves the docs.
-In production a Cloudflare Worker on `pelican.dev/*` picks the origin per
-request. `dev-server.mjs` makes the same split on your machine, so you can see
-pelican.dev as one site before the Worker exists.
+In production a Cloudflare Worker on `pelican.dev/*` (`worker.mjs`) picks the
+origin per request. `dev-server.mjs` makes the same split on your machine, with
+`out/` in place of Netlify.
 
 ```sh
 bun run build                  # writes out/
@@ -49,36 +49,55 @@ only, a directory without its trailing slash gets a 301, a missing file gets
   on click Next.js falls back to a normal page load. This keeps a Laravel boot
   off every docs page view.
 
-## Mapping to the Cloudflare Worker
+## The Cloudflare Worker (`worker.mjs`)
 
-The Worker is the same three branches, with Netlify instead of `out/`:
+The same three branches as the dev server, with Netlify instead of `out/`:
 
-```js
-const ROOT_FILES = new Set(['/llms.txt', '/llms-full.txt', '/update-panel.sh', '/migrate-panel.sh', '/migrate-wings.sh']);
-const isDocs = (p) => p === '/docs' || p.startsWith('/docs/') || ROOT_FILES.has(p);
+- **Docs paths** are fetched from `DOCS_ORIGIN` (the Netlify production site,
+  `https://pelica.netlify.app`) without `Cookie` or `Authorization`, and any
+  `Set-Cookie` is dropped on the way back. Netlify does the `/docs/_next` and
+  `.md` rewrites itself (`netlify.toml`). Only `GET`/`HEAD`; anything else is 405.
+- **Everything else** is fetched from `HUB_ORIGIN` (`https://hub.pelican.dev`)
+  with its method, headers, body and cookies, plus `X-Forwarded-Host`,
+  `-Proto`, `-Port` and `-For` (from `CF-Connecting-IP`). The Hub trusts those
+  once `TRUSTED_PROXIES` is set, and then builds `https://pelican.dev/...` URLs.
+- **Next.js payload requests outside the docs** are answered with 404 here.
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url); // WHATWG URL: already normalised
-    if (isDocs(url.pathname)) {
-      const headers = new Headers(request.headers);
-      headers.delete('cookie');
-      headers.delete('authorization');
-      // Netlify does the /docs/_next and .md rewrites itself (netlify.toml).
-      return fetch(new URL(url.pathname + url.search, env.DOCS_ORIGIN), { method: request.method, headers });
-    }
-    if (request.headers.get('rsc') === '1' || url.searchParams.has('_rsc')) {
-      return new Response('Not a docs page\n', { status: 404 });
-    }
-    return fetch(new Request(new URL(url.pathname + url.search, env.HUB_ORIGIN), request));
-  },
-};
+Both fetches use `redirect: 'manual'`, so redirects reach the browser. A
+`Location` on the origin's own address (Netlify's trailing-slash 301s point at
+`pelica.netlify.app`) becomes a path, so they stay on pelican.dev.
+
+```sh
+bun run test:router   # node --test router/worker.test.mjs: the routing, with fetch recorded
+cd router && bunx wrangler deploy --route "next.pelican.dev/*"   # try it on a spare hostname
 ```
 
-- `DOCS_ORIGIN` is the Netlify production site (e.g. `https://pelican-docs.netlify.app`);
-  PR previews keep their own Netlify URLs and don't go through the Worker.
-- Set `X-Forwarded-Host: pelican.dev` towards the Hub (and trust the Worker in
-  Laravel's TrustProxies) so it builds `https://pelican.dev/...` URLs.
-- Strip any `Set-Cookie` from Netlify responses on the way back.
-- Keep this file, `dev-server.mjs` and `scripts/check-paths.mjs` in step when the
-  list changes.
+`wrangler.toml` holds the two origins and, commented out, the `pelican.dev/*`
+route for the switch. Keep `worker.mjs`, `dev-server.mjs` and
+`scripts/check-paths.mjs` in step when the list of paths changes.
+
+## Switching pelican.dev over
+
+In this order, so nothing points at something that isn't there yet:
+
+1. **Docs**: merge to `main` so Netlify production builds this site. Until the
+   Worker is on, its interim landing pages keep `pelican.dev/` working.
+2. **Hub** (Forge, production): deploy the redesign with `SITE_REDESIGN=true`,
+   `APP_URL=https://pelican.dev`, `HUB_MACHINE_URL=https://hub.pelican.dev`
+   (panels' update.json, downloads and the API stay there),
+   `HUB_SITE_URL=https://pelican.dev`, `TRUSTED_PROXIES=*` and
+   `SESSION_DOMAIN=.pelican.dev` (sign-in callbacks stay on hub.pelican.dev, so
+   the session cookie must cover both). Then `php artisan config:cache`.
+3. **Try the Worker** on a spare proxied hostname (`next.pelican.dev`): pages,
+   a docs page and an old docs URL, `/update-panel.sh`, signing in.
+4. **Switch**: proxy the `pelican.dev` DNS record (orange cloud) and add the
+   `pelican.dev/*` route to the Worker.
+5. **Then** set `HUB_REDIRECT_HUMANS=true`, so page visits on hub.pelican.dev
+   move to pelican.dev. Not before `TRUSTED_PROXIES`: without it the Hub sees
+   every Worker request as hub.pelican.dev and would redirect it in a loop.
+6. **Clean up**: drop the INTERIM pages from the build (`scripts/check-paths.mjs`).
+
+**Rollback**: remove the Worker route (or un-proxy the DNS record).
+pelican.dev goes straight to Netlify again, which still serves the interim
+pages and the docs; hub.pelican.dev never stopped working. Unset
+`HUB_REDIRECT_HUMANS` if it was on.

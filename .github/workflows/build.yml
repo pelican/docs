@@ -41,6 +41,8 @@ jobs:
 
       - name: 'Test the content check'
         run: bun run test:content
+      - name: 'Test the router'
+        run: bun run test:router
 
       - name: 'Typecheck'
         run: bun run typecheck
