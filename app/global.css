@@ -721,6 +721,11 @@ figure.shiki {
   overflow-wrap: anywhere;
 }
 
+/* Shown in full: no 600px cap with a scroll inside. */
+.dt-root figure.shiki.dt-wrap [role='region'] {
+  max-height: none;
+}
+
 .dt-root figure.shiki .highlighted {
   background: rgb(56 189 248 / 0.16);
 }
