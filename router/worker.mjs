@@ -23,6 +23,18 @@ const isNextPayload = (request, url) => request.headers.get('rsc') === '1' || ur
 const hasBody = (method) => method !== 'GET' && method !== 'HEAD';
 
 /**
+ * The visitor's path and query on `origin`. Built from the origin with the path set on it, never
+ * by resolving the path against the origin: `new URL('//attacker.example/', origin)` would be
+ * attacker.example, and the visitor's cookies would go with it.
+ */
+export function onOrigin(url, origin) {
+  const target = new URL(origin);
+  target.pathname = url.pathname;
+  target.search = url.search;
+  return target;
+}
+
+/**
  * A response we can change: fetch() hands back immutable headers.
  */
 function editable(response) {
@@ -54,7 +66,7 @@ async function toDocs(request, url, env, fetchImpl) {
 
   const origin = env.DOCS_ORIGIN.replace(/\/+$/, '');
   // Netlify does the /docs/_next and .md rewrites itself (netlify.toml).
-  const upstream = await fetchImpl(new URL(url.pathname + url.search, origin), { method: request.method, headers, redirect: 'manual' });
+  const upstream = await fetchImpl(onOrigin(url, origin), { method: request.method, headers, redirect: 'manual' });
 
   const response = editable(upstream);
   response.headers.delete('set-cookie');
@@ -80,7 +92,7 @@ async function toHub(request, url, env, fetchImpl) {
     init.duplex = 'half'; // a streamed body (Node needs it; Workers accept it)
   }
 
-  const upstream = await fetchImpl(new URL(url.pathname + url.search, origin), init);
+  const upstream = await fetchImpl(onOrigin(url, origin), init);
 
   return keepLocationHere(editable(upstream), origin);
 }

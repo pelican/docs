@@ -2,7 +2,7 @@
 // replaced by a recorder, so nothing leaves the machine.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isDocsPath, route } from './worker.mjs';
+import { isDocsPath, onOrigin, route } from './worker.mjs';
 
 const env = { DOCS_ORIGIN: 'https://pelica.netlify.app', HUB_ORIGIN: 'https://hub.pelican.dev' };
 
@@ -111,4 +111,27 @@ test('dot segments are resolved before routing, so /docs/.. cannot reach the Hub
 
   assert.equal(calls[0].url, 'https://hub.pelican.dev/plugins');
   assert.equal(calls[1].url, 'https://pelica.netlify.app/update-panel.sh');
+});
+
+test('a path starting with // never leaves the two origins (it would carry the visitor\'s cookies)', async () => {
+  const { calls, fetchImpl } = recorder();
+
+  await route(visit('//attacker.example/steal?x=1', { headers: { cookie: 'pelican_session=abc' } }), env, fetchImpl);
+  await route(visit('//attacker.example'), env, fetchImpl);
+  await route(visit('/docs//attacker.example/x'), env, fetchImpl);
+
+  assert.equal(new URL(calls[0].url).host, 'hub.pelican.dev');
+  assert.equal(calls[0].url, 'https://hub.pelican.dev//attacker.example/steal?x=1');
+  assert.equal(new URL(calls[1].url).host, 'hub.pelican.dev');
+  assert.equal(new URL(calls[2].url).host, 'pelica.netlify.app');
+  assert.equal(calls[2].url, 'https://pelica.netlify.app/docs//attacker.example/x');
+});
+
+test('the target keeps the origin and takes only the path and query', () => {
+  const target = onOrigin(new URL('https://pelican.dev//evil.test:8080/a%2Fb?q=%2F%2Fx#frag'), 'https://hub.pelican.dev');
+
+  assert.equal(target.origin, 'https://hub.pelican.dev');
+  assert.equal(target.pathname, '//evil.test:8080/a%2Fb');
+  assert.equal(target.search, '?q=%2F%2Fx');
+  assert.equal(target.hash, '');
 });

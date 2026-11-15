@@ -160,7 +160,9 @@ const server = http.createServer(async (req, res) => {
   let path;
   try {
     // Decoded and with ./.. resolved, so /docs/%2e%2e/x can't reach out/ outside docs/.
-    path = posix.normalize(decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname));
+    // Appended to an origin, not resolved against one: a path like //host/x stays a path (as in
+    // worker.mjs), instead of becoming another host.
+    path = posix.normalize(decodeURIComponent(new URL(`http://x${req.url ?? '/'}`).pathname));
   } catch {
     res.writeHead(400);
     return res.end();
