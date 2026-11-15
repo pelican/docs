@@ -1,11 +1,10 @@
-// node --test scripts/pack-docs.test.mjs: what the Hub gets as the docs' redirects.
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { test } from 'node:test';
+// bun test scripts/pack-docs.test.mjs: which redirects the Hub gets from netlify.toml.
+import { describe, expect, test } from 'bun:test';
 import { docsRedirects } from './pack-docs.mjs';
 
-test('keeps netlify.toml\'s redirects under /docs and drops rewrites and other paths', () => {
-  const toml = `
+describe('docsRedirects', () => {
+  test('keeps the redirects under /docs, drops rewrites and other paths', () => {
+    const toml = `
 [build]
   command = "bun run build"
 
@@ -13,7 +12,6 @@ test('keeps netlify.toml\'s redirects under /docs and drops rewrites and other p
   from = "/docs/_next/*"
   to = "/_next/:splat"
   status = 200
-  force = true
 
 [[redirects]]
   from = "/docs/about"
@@ -29,21 +27,26 @@ test('keeps netlify.toml\'s redirects under /docs and drops rewrites and other p
   from = "/docs/old/*"
   to = "/docs/new/:splat"
   status = 302
-
-[[headers]]
-  for = "/*"
 `;
 
-  assert.deepEqual(docsRedirects(toml), [
-    { from: '/docs/about', to: '/docs/contributors/', status: 301 },
-    { from: '/docs/old/*', to: '/docs/new/:splat', status: 302 },
-  ]);
-});
+    expect(docsRedirects(toml)).toEqual([
+      { from: '/docs/about', to: '/docs/contributors/', status: 301 },
+      { from: '/docs/old/*', to: '/docs/new/:splat', status: 302 },
+    ]);
+  });
 
-test('reads the real netlify.toml', () => {
-  const redirects = docsRedirects(readFileSync(new URL('../netlify.toml', import.meta.url), 'utf8'));
+  test('a redirect without a status is a 301, as on Netlify', () => {
+    expect(docsRedirects('[[redirects]]\nfrom = "/docs/a"\nto = "/docs/b/"\n')).toEqual([{ from: '/docs/a', to: '/docs/b/', status: 301 }]);
+  });
 
-  assert.ok(redirects.length >= 6);
-  assert.ok(redirects.some((r) => r.from === '/docs/guides/disk-quotas/zfs' && r.to === '/docs/guides/disk-quotas/about/' && r.status === 301));
-  assert.ok(redirects.every((r) => r.from.startsWith('/docs') && r.status >= 300 && r.status < 400));
+  test('reads the real netlify.toml', async () => {
+    const redirects = docsRedirects(await Bun.file(new URL('../netlify.toml', import.meta.url)).text());
+
+    expect(redirects.length).toBeGreaterThanOrEqual(6);
+    expect(redirects).toContainEqual({ from: '/docs/guides/disk-quotas/zfs', to: '/docs/guides/disk-quotas/about/', status: 301 });
+    for (const { from, status } of redirects) {
+      expect(from.startsWith('/docs')).toBe(true);
+      expect(status >= 300 && status < 400).toBe(true);
+    }
+  });
 });

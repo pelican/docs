@@ -56,7 +56,7 @@ jobs:
         run: bun run build
 
       - name: 'Pack the docs for the Hub'
-        run: node scripts/pack-docs.mjs dist-docs
+        run: bun scripts/pack-docs.mjs dist-docs
 
       - name: 'Pick the target'
         id: target
