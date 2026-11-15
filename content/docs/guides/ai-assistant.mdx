@@ -1,0 +1,127 @@
+---
+title: "Installing with an AI Assistant"
+description: "Give an AI assistant the Pelican docs and a tested prompt to guide a production install of the Panel and Wings step by step, safely."
+---
+
+An AI assistant (ChatGPT, Claude, Cursor and the like) can walk you through an install, explain each command and read your error messages with you.
+This page gives it the right material: the Pelican docs as plain Markdown, and prompts that keep it on the documented path.
+
+<Admonition type="danger" title="You stay in charge of your server">
+    Assistants make mistakes, and they often mix Pelican up with Pterodactyl, which it was forked from: other paths, commands and versions.
+    **Read every command before you run it**, and never paste passwords, API keys, tokens or your `APP_KEY` into a chat.
+    Try a new install on a fresh server or a snapshot first.
+</Admonition>
+
+## Give the assistant the docs
+
+Every docs page has three buttons under its title:
+
+- **Copy page** copies the page as Markdown, ready to paste into a chat. If you filled in **Your setup** on an install page, a line with your domain, web server, HTTPS choice, PHP version and install folder is added at the top, so the answers fit your install.
+- **Copy all docs** copies every page in one file (about 60,000 tokens). Paste it at the start of a conversation and the assistant has the whole manual.
+- **Open** opens the page in ChatGPT, Claude, Cursor or Scira, or shows it as Markdown.
+
+Assistants that can read the web can fetch these themselves:
+
+| File | What it is |
+|:-----|:-----------|
+| `https://pelican.dev/llms.txt` | An index of every docs page, with links to their Markdown versions |
+| `https://pelican.dev/llms-full.txt` | Every docs page in one Markdown file |
+| `https://pelican.dev/docs/<page>.md` | One page as Markdown, e.g. `https://pelican.dev/docs/panel/getting-started.md` |
+
+## Recommended prompt: a production install
+
+Copy this into a new conversation. It makes the assistant ask about your server first, go one step at a time and finish with the things a production panel needs.
+
+```text title="Prompt: install the Pelican Panel for production" wrap
+You are helping me install the Pelican Panel (https://pelican.dev) on a production server.
+Pelican is a fork of Pterodactyl, but its paths, commands and requirements are different:
+follow only the Pelican documentation, never Pterodactyl's.
+
+Read these pages first and follow them exactly:
+- https://pelican.dev/llms.txt (an index of every docs page as Markdown)
+- https://pelican.dev/docs/panel/getting-started.md
+- https://pelican.dev/docs/panel/webserver-config.md
+- https://pelican.dev/docs/panel/panel-setup.md
+- https://pelican.dev/docs/guides/ssl.md
+
+Before any command, ask me:
+1. The operating system and version (the output of `cat /etc/os-release`).
+2. The panel's domain, and whether its DNS already points at this server.
+3. Which web server I want: NGINX, Apache or Caddy.
+4. Which database: SQLite (the default), MySQL/MariaDB or PostgreSQL.
+5. Whether Wings will run on this server too, or on another one.
+
+Then guide me one step at a time:
+- Give me one short block of commands, say what each line does, and wait for me to paste the output before you continue.
+- Use the versions and commands from the docs: PHP 8.5 or 8.4 with the listed extensions, the panel in /var/www/pelican.
+- Never ask me for passwords, API keys, the APP_KEY or other secrets. Tell me where to enter them myself.
+- If something fails, ask for the exact error and the relevant log instead of guessing.
+
+This is a production server. Before we finish, check with me that:
+- The panel is served over HTTPS, and the certificate renews automatically.
+- The firewall only opens what is needed: SSH, 80 and 443 for the panel, and if Wings runs here, its port (8080), SFTP (2022) and the game server ports I plan to allocate.
+- The queue worker (systemctl status pelican-queue) is running and the schedule:run cron entry from the docs is installed for the web server user.
+- File permissions match the Panel Setup page.
+- I have stored the APP_KEY from /var/www/pelican/.env somewhere safe, off the server.
+- I know how to back up the panel and its database, and how to update it (https://pelican.dev/docs/panel/update.md).
+
+End with a short summary of what we installed and where each part lives.
+```
+
+## More prompts
+
+<Tabs>
+    <TabItem value="wings" label="Add Wings">
+        ```text title="Prompt: install Wings and connect it to the panel" wrap
+        Help me install Wings for the Pelican Panel, following only
+        https://pelican.dev/docs/wings/install.md and https://pelican.dev/docs/guides/docker.md.
+
+        First check with me that this server can run Docker: ask for the output of
+        `systemd-detect-virt` and `uname -r` and compare them with the System Requirements section.
+        Then guide me one step at a time, waiting for my output after each step:
+        install Docker, install Wings, create the node in the panel, copy its configuration,
+        test with `sudo wings --debug`, then run Wings as the systemd service from the docs.
+        Make sure ports 8080 and 2022 are reachable from the panel and from players' browsers,
+        and that the node uses HTTPS if the panel does (https://pelican.dev/docs/guides/ssl.md).
+        Never ask me to paste the node's token or other secrets into the chat.
+        ```
+    </TabItem>
+    <TabItem value="troubleshoot" label="Fix a problem">
+        ```text title="Prompt: find out why something is broken" wrap
+        My Pelican Panel has a problem. Use https://pelican.dev/docs/guides/troubleshooting.md
+        and the other pages on https://pelican.dev/llms.txt, not Pterodactyl's docs.
+
+        What happens: <describe it, and what you changed last>
+
+        Ask me for the output you need, one command at a time, from this list first:
+        - tail -n 100 /var/www/pelican/storage/logs/laravel-$(date +%F).log
+        - systemctl status pelican-queue
+        - systemctl status wings, or sudo wings --debug on the node
+        - php -v
+        Explain what the output means before you suggest a fix, and tell me how to undo the fix.
+        Remind me to remove passwords, tokens and keys from logs before I paste them.
+        ```
+    </TabItem>
+    <TabItem value="update" label="Update">
+        ```text title="Prompt: update the panel safely" wrap
+        Help me update my Pelican Panel, following https://pelican.dev/docs/panel/update.md.
+        Ask me how it was installed (Docker, or directly on the server) and which version runs now.
+        Before anything else, have me back up the panel folder, the database and the APP_KEY.
+        Check the Version Requirements on that page for the PHP and Wings versions the new release needs.
+        Prefer the update script the docs recommend, and go one step at a time, waiting for my output.
+        ```
+    </TabItem>
+</Tabs>
+
+## Coding agents on your server
+
+Agents that run commands themselves (Claude Code, Codex, Cursor's agent and others) can do the install for you. If you let one on a server:
+
+- Have it **ask before every command** that changes something, rather than run without approval.
+- Give it a normal user with `sudo`, not the `root` login, and don't put secrets in its instructions or files.
+- Point it at `https://pelican.dev/llms.txt` and the pages above, and give it the production prompt as its task.
+- Afterwards, go through the checklist in the prompt yourself.
+
+## Help it can't give
+
+If you're stuck, the community on [Discord](https://discord.gg/pelican-panel) can help. Say which steps an assistant suggested, so others can spot where it went off the documented path.

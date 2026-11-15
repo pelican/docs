@@ -1,6 +1,7 @@
 {
   "title": "Guides",
   "pages": [
+    "ai-assistant",
     "docker",
     "mounts",
     "ssl",

@@ -705,6 +705,22 @@ figure.shiki {
   outline-offset: -3px;
 }
 
+/* Every line keeps its height, also the empty ones Shiki gives an inner <span> (plain text). */
+.dt-root figure.shiki .line {
+  min-height: 1lh;
+}
+
+/* ```text wrap (lib/shiki-setup.ts; Fumadocs moves the class to the figure): long lines
+   wrap, for prompts that are read before use. */
+.dt-root figure.shiki.dt-wrap pre {
+  width: auto;
+}
+
+.dt-root figure.shiki.dt-wrap code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .dt-root figure.shiki .highlighted {
   background: rgb(56 189 248 / 0.16);
 }
@@ -889,6 +905,62 @@ figure.shiki {
 .dt-seg__option:has(:focus-visible) {
   outline: 3px solid var(--pl-sky);
   outline-offset: -3px;
+}
+
+/* ---- Page actions (Copy page, Copy all docs, Open in): the Hub's small buttons ---- */
+.dt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: -8px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--pl-rule);
+}
+
+.dt-root .dt-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--pl-edge);
+  border-radius: 0;
+  background: var(--pl-card);
+  color: var(--pl-fg);
+  font: 600 14px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.dt-root .dt-action svg {
+  width: 16px;
+  height: 16px;
+  color: var(--pl-kicker);
+}
+
+.dt-root .dt-action:hover {
+  background: var(--pl-hover);
+}
+
+.dt-root .dt-action:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* The "Open" menu (Fumadocs' popover, portalled out of the layout). */
+:root:has(.dt-root) [data-radix-popper-content-wrapper] > [role='dialog'] {
+  padding: 4px;
+  border: 3px solid var(--pl-edge);
+  border-radius: 0;
+  background: var(--pl-card);
+  box-shadow: none;
+}
+
+:root:has(.dt-root) [data-radix-popper-content-wrapper] > [role='dialog'] a {
+  border-radius: 0;
+}
+
+:root:has(.dt-root) [data-radix-popper-content-wrapper] > [role='dialog'] a:hover {
+  background: var(--pl-hover);
 }
 
 /* ---- Page footer: the Hub's small button and cards ------------------------ */
