@@ -16,7 +16,8 @@
  * allowlist rather than searched for bad words:
  *   - no `import` or `export`;
  *   - no `{expression}`, except a comment (`{/* ... *\/}`);
- *   - only the components mdx-components.tsx gives pages, and a short list of HTML tags;
+ *   - only the components in COMPONENTS below (the ones mdx-components.tsx gives pages: add a
+ *     new one in both places; a test fails if they differ), and a short list of HTML tags;
  *   - attributes are plain: no spread, no `on*` handlers, no `dangerouslySetInnerHTML`,
  *     no `javascript:`, `vbscript:` or `data:` URLs, and a `{value}` may only be literal
  *     data (strings, numbers, booleans, null, and arrays or objects of those), as in
@@ -25,16 +26,17 @@
  * Code blocks and `inline code` are text to the parser, so a snippet like
  * `export CF_Token=...` is fine.
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { mdxFromMarkdown } from 'mdast-util-mdx';
 import { mdxjs } from 'micromark-extension-mdxjs';
 
-const root = process.argv[2] ?? 'content';
-
-/** The components mdx-components.tsx gives pages (its own and Fumadocs' defaults). */
-const COMPONENTS = new Set(['Admonition', 'Tabs', 'TabItem', 'Link', 'Mermaid', 'SetupPanel', 'Card', 'Cards', 'Callout']);
+/**
+ * The components mdx-components.tsx gives pages: its own, and Fumadocs' Card, Cards and Callout.
+ * Add a new component there and here (check-content.test.mjs compares the two).
+ */
+export const COMPONENTS = new Set(['Admonition', 'Tabs', 'TabItem', 'Link', 'Mermaid', 'SetupPanel', 'Card', 'Cards', 'Callout']);
 
 /** HTML a page may write as tags. Markdown covers the rest. */
 const HTML = new Set([
@@ -183,15 +185,24 @@ function checkFile(file, problems) {
   visit(tree);
 }
 
-const problems = [];
-const files = walk(root).filter((file) => /\.mdx?$/.test(file));
-for (const file of files) checkFile(file, problems);
+function main(root) {
+  if (!existsSync(root)) {
+    console.error(`check-content: ${root}/ not found. Run it from the repo, or pass the folder with the pages.`);
+    process.exit(1);
+  }
 
-if (problems.length) {
-  console.error(`check-content: ${problems.length} problem(s) in ${root}/ (MDX that would run code):`);
-  for (const problem of problems) console.error(`  ${problem}`);
-  console.error('\nUse the components from mdx-components.tsx with plain attributes; code samples go in ``` blocks.');
-  process.exit(1);
+  const problems = [];
+  const files = walk(root).filter((file) => /\.mdx?$/.test(file));
+  for (const file of files) checkFile(file, problems);
+
+  if (problems.length) {
+    console.error(`check-content: ${problems.length} problem(s) in ${root}/ (MDX that would run code):`);
+    for (const problem of problems) console.error(`  ${problem}`);
+    console.error('\nUse the components from mdx-components.tsx with plain attributes; code samples go in ``` blocks.');
+    process.exit(1);
+  }
+
+  console.log(`check-content: ${files.length} pages in ${root}/, no code: no import/export, {expressions}, handlers or unsafe URLs. ok`);
 }
 
-console.log(`check-content: ${files.length} pages in ${root}/, no code: no import/export, {expressions}, handlers or unsafe URLs. ok`);
+if (import.meta.main) main(process.argv[2] ?? 'content');

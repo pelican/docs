@@ -1,16 +1,21 @@
 // bun test scripts/check-content.test.mjs  (all tests: bun test)
 // Runs check-content.mjs on one-page folders: pages that could run code must fail, the
 // MDX the docs really use must pass.
-import { expect, test } from 'bun:test';
+import { afterAll, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { COMPONENTS } from './check-content.mjs';
 
 const script = new URL('./check-content.mjs', import.meta.url).pathname;
 
+// One temporary folder for the whole file, removed at the end.
+const sandbox = mkdtempSync(join(tmpdir(), 'check-content-'));
+afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
+
 function check(page) {
-  const dir = mkdtempSync(join(tmpdir(), 'check-content-'));
+  const dir = mkdtempSync(join(sandbox, 'page-'));
   writeFileSync(join(dir, 'page.mdx'), `---\ntitle: Test\n---\n\n${page}\n`);
   const result = spawnSync(process.execPath, [script, dir], { encoding: 'utf8' });
   return { ok: result.status === 0, output: result.stdout + result.stderr };
@@ -30,6 +35,7 @@ const blocked = {
   'a lowercase event handler': '<img src="/a.png" onerror="alert(1)" />',
   'dangerouslySetInnerHTML': '<div dangerouslySetInnerHTML={{ __html: "x" }} />',
   'a javascript: link in JSX': '<a href="javascript:alert(1)">x</a>',
+  'a vbscript: link': '<a href="vbscript:msgbox(1)">x</a>',
   'a javascript: link with a tab in the scheme': '<Link to="java\tscript:alert(1)">x</Link>',
   'a javascript: link in braces': "<a href={'javascript:alert(1)'}>x</a>",
   'a data: link in a template literal': '<Link to={`data:text/html,x`}>x</Link>',
@@ -78,3 +84,22 @@ for (const [name, page] of Object.entries(allowed)) {
     expect({ ok, output }).toMatchObject({ ok: true });
   });
 }
+
+test('allows exactly the components mdx-components.tsx gives pages', () => {
+  const source = readFileSync(new URL('../mdx-components.tsx', import.meta.url), 'utf8');
+  const returned = source.slice(source.indexOf('return {'), source.indexOf('};', source.indexOf('return {')));
+  // The names in the returned object, other than the spread defaults and the span override.
+  const own = [...returned.matchAll(/^\s+([A-Z]\w*),$/gm)].map(([, name]) => name);
+  const fumadocsDefaults = ['Card', 'Cards', 'Callout'];
+
+  expect(own.length).toBeGreaterThan(0);
+  expect([...COMPONENTS].sort()).toEqual([...own, ...fumadocsDefaults].sort());
+});
+
+test('says so when the folder is missing', () => {
+  const result = spawnSync(process.execPath, [script, join(sandbox, 'no-such-folder')], { encoding: 'utf8' });
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain('not found');
+});
+

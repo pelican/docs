@@ -17,6 +17,14 @@ bun test        # the tests for scripts/ and router/
 
 Every script in `scripts/` and `router/` runs on Bun and starts with the same header: what it does, when it runs, how to run it and where its tests are. [scripts/README.md](scripts/README.md) lists them all.
 
+The build refreshes the egg data for the interim `/eggs` page (it uses the network), so it can change `data/eggs.json`, `public/data/eggs/` and `public/img/games/`. Leave those out of a pull request unless it's about the egg data.
+
+### Before a pull request
+
+```sh
+bun test && bun run typecheck && bun run build
+```
+
 ## Where things are
 
 | Path | What it is |

@@ -4,7 +4,7 @@
  *
  * When:  by hand, to see the docs and a local Hub together
  * Run:   bun run build && bun run dev:site, then open http://127.0.0.1:8020/
- * Tests: none
+ * Tests: bun test router/dev-server.test.mjs
  *
  * The docs build (out/) answers /docs/* and the five root files, the Hub everything else: the
  * split pelican.dev makes in production (router/README.md). No dependencies.
@@ -13,18 +13,9 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import http from 'node:http';
-import { extname, join, normalize, posix, resolve, sep } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { pipeline } from 'node:stream';
-import { fileURLToPath } from 'node:url';
-
-const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const OUT = resolve(repo, process.env.OUT ?? 'out');
-const PORT = Number(process.env.PORT ?? 8020);
-const HUB = new URL(process.env.HUB ?? 'http://127.0.0.1:8010');
-
-/** The paths this build serves on pelican.dev; keep in step with router/README.md and scripts/check-paths.mjs. */
-const ROOT_FILES = ['/llms.txt', '/llms-full.txt', '/update-panel.sh', '/migrate-panel.sh', '/migrate-wings.sh'];
-const isDocsPath = (path) => path === '/docs' || path.startsWith('/docs/') || ROOT_FILES.includes(path);
+import { isDocsPath, isNextPayload, keepOnSite, ROOT_FILES } from './paths.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -42,10 +33,21 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
-/** A file under out/ for a URL path, or undefined. Never leaves out/. */
-async function fileFor(path) {
-  const full = normalize(join(OUT, path));
-  if (full !== OUT && !full.startsWith(OUT + sep)) return undefined;
+/**
+ * A file under `out` for a URL path, `{ dir: true }` for a folder, or undefined. The path is
+ * decoded here (and only here), and it can never leave `out`.
+ */
+async function fileFor(out, path) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return undefined;
+  }
+
+  const full = normalize(join(out, decoded));
+  if (full !== out && !full.startsWith(out + sep)) return undefined;
+
   try {
     const info = await stat(full);
     if (info.isFile()) return { full, size: info.size };
@@ -55,27 +57,32 @@ async function fileFor(path) {
 }
 
 /**
- * The Netlify mapping (netlify.toml), in the same order:
- * 1. /docs/_next/*  -> out/_next/*        (assetPrefix; forced)
- * 2. the file itself, or <dir>/index.html (a directory without the slash gets a 301, like Netlify)
- * 3. /docs/*        -> out/docs/md/*      (the .md copies; only when nothing else matched)
+ * What the docs build answers for a path under `out`, the way Netlify does (netlify.toml):
+ * 1. /docs/_next/*  -> out/_next/*        (assetPrefix)
+ * 2. the file itself, or <dir>/index.html (a folder without its slash gets a 301)
+ * 3. /docs/*        -> out/docs/md/*      (the .md copies, only when nothing else matched)
+ *
+ * Returns `{ file }`, `{ redirect }` or undefined (missing: the caller sends out/404.html).
  */
-async function resolveDocs(path) {
-  if (path.startsWith('/docs/_next/')) {
-    const file = await fileFor(path.slice('/docs'.length));
+export async function resolveDocs(pathname, out) {
+  if (pathname.startsWith('/docs/_next/')) {
+    const file = await fileFor(out, pathname.slice('/docs'.length));
     return file?.full ? { file } : undefined;
   }
-  const file = await fileFor(path);
+
+  const file = await fileFor(out, pathname);
   if (file?.full) return { file };
   if (file?.dir) {
-    if (!path.endsWith('/')) return { redirect: `${path}/` };
-    const index = await fileFor(`${path}index.html`);
+    if (!pathname.endsWith('/')) return { redirect: `${pathname}/` };
+    const index = await fileFor(out, `${pathname}index.html`);
     if (index?.full) return { file: index };
   }
-  if (path.startsWith('/docs/')) {
-    const md = await fileFor(`/docs/md/${path.slice('/docs/'.length)}`);
+
+  if (pathname.startsWith('/docs/')) {
+    const md = await fileFor(out, `/docs/md/${pathname.slice('/docs/'.length)}`);
     if (md?.full) return { file: md };
   }
+
   return undefined;
 }
 
@@ -88,47 +95,38 @@ function sendFile(res, method, status, { full, size }) {
   });
   if (method === 'HEAD') return res.end();
   // pipeline, not pipe: a file that fails to open after stat() ends this response instead
-  // of crashing the router with an unhandled stream error.
+  // of crashing the server with an unhandled stream error.
   pipeline(createReadStream(full), res, () => {});
 }
 
-async function serveDocs(req, res, path) {
-  // The docs are a static build and never see the Hub's session: like the
-  // Worker will before it forwards to Netlify, drop Cookie and Authorization.
-  delete req.headers.cookie;
-  delete req.headers.authorization;
+async function serveDocs(req, res, url, out) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { Allow: 'GET, HEAD', 'Content-Type': 'text/plain' });
     return res.end('Method Not Allowed\n');
   }
-  const hit = await resolveDocs(path);
+
+  const hit = await resolveDocs(url.pathname, out);
   if (hit?.redirect) {
-    const query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    res.writeHead(301, { Location: hit.redirect + query });
+    res.writeHead(301, { Location: hit.redirect + url.search });
     return res.end();
   }
   if (hit?.file) return sendFile(res, req.method, 200, hit.file);
+
   // Netlify answers every missing path with out/404.html.
-  const notFound = await fileFor('/404.html');
+  const notFound = await fileFor(out, '/404.html');
   if (notFound?.full) return sendFile(res, req.method, 404, notFound);
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('Not Found\n');
 }
 
-/**
- * Next.js navigation payloads (`RSC: 1` header or `?_rsc=`) for paths outside
- * the docs: the docs' client router prefetches them for links to the Hub (/,
- * /plugins, ...). The Hub has none, so answer here instead of booting Laravel;
- * on click Next.js then loads the page normally.
- */
-const isNextPayload = (req) => req.headers.rsc === '1' || /[?&]_rsc=/.test(req.url ?? '');
-
-function proxyToHub(req, res) {
-  if (isNextPayload(req)) {
-    res.setHeader('X-Served-By', 'router');
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
+function proxyToHub(req, res, url, hub) {
+  // The docs' client router prefetches its links to the Hub as Next.js payloads; the Hub has
+  // none, so answer here instead of booting Laravel. On click Next.js loads the page normally.
+  if (isNextPayload(req.headers.rsc, url)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store', 'X-Served-By': 'router' });
     return res.end('Not a docs page\n');
   }
+
   const headers = {
     ...req.headers,
     'x-forwarded-for': req.socket.remoteAddress ?? '',
@@ -136,13 +134,10 @@ function proxyToHub(req, res) {
     'x-forwarded-proto': 'http',
   };
   const upstream = http.request(
-    { protocol: HUB.protocol, hostname: HUB.hostname, port: HUB.port, method: req.method, path: req.url, headers },
+    { protocol: hub.protocol, hostname: hub.hostname, port: hub.port, method: req.method, path: req.url, headers },
     (hubRes) => {
       const out = { ...hubRes.headers, 'x-served-by': 'hub' };
-      // Keep redirects on this origin when the Hub answers with its own address.
-      if (typeof out.location === 'string' && out.location.startsWith(HUB.origin)) {
-        out.location = out.location.slice(HUB.origin.length) || '/';
-      }
+      if (typeof out.location === 'string') out.location = keepOnSite(out.location, hub.origin);
       res.writeHead(hubRes.statusCode ?? 502, out);
       // pipeline, not pipe: if the Hub cuts its response short, the browser's response is
       // closed too instead of hanging (and a browser that leaves stops the Hub's).
@@ -152,36 +147,43 @@ function proxyToHub(req, res) {
   upstream.on('error', (error) => {
     if (res.headersSent) return res.destroy(error);
     res.writeHead(502, { 'Content-Type': 'text/plain' });
-    res.end(`The Hub at ${HUB.origin} did not answer: ${error.message}\n`);
+    res.end(`The Hub at ${hub.origin} did not answer: ${error.message}\n`);
   });
   pipeline(req, upstream, () => {});
 }
 
-const server = http.createServer(async (req, res) => {
-  let path;
-  try {
-    // Decoded and with ./.. resolved, so /docs/%2e%2e/x can't reach out/ outside docs/.
-    // Appended to an origin, not resolved against one: a path like //host/x stays a path (as in
-    // worker.mjs), instead of becoming another host.
-    path = posix.normalize(decodeURIComponent(new URL(`http://x${req.url ?? '/'}`).pathname));
-  } catch {
-    res.writeHead(400);
-    return res.end();
-  }
-  const docs = isDocsPath(path);
-  res.on('finish', () => console.log(`${res.statusCode} ${res.getHeader('x-served-by') === 'router' ? 'edge' : docs ? 'docs' : 'hub '} ${req.method} ${req.url}`));
-  try {
-    if (docs) await serveDocs(req, res, path);
-    else proxyToHub(req, res);
-  } catch (error) {
-    console.error(error);
-    if (!res.headersSent) res.writeHead(500);
-    res.end();
-  }
-});
+/** The local server: the same docs-or-Hub decision as worker.mjs (paths.mjs). */
+export function createServer({ out, hub }) {
+  return http.createServer(async (req, res) => {
+    // Appended to a dummy origin, never resolved against one, so //host/x stays a path. The
+    // pathname has its ./.. resolved and is not decoded, as in the Worker.
+    const url = new URL(`http://x${req.url ?? '/'}`);
+    const docs = isDocsPath(url.pathname);
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`pelican.dev (local): http://127.0.0.1:${PORT}/`);
-  console.log(`  /docs/*, ${ROOT_FILES.join(', ')} -> ${OUT}`);
-  console.log(`  everything else -> ${HUB.origin}`);
-});
+    res.on('finish', () => {
+      const by = res.getHeader('x-served-by') === 'router' ? 'edge' : docs ? 'docs' : 'hub ';
+      console.log(`${res.statusCode} ${by} ${req.method} ${req.url}`);
+    });
+
+    try {
+      if (docs) await serveDocs(req, res, url, out);
+      else proxyToHub(req, res, url, hub);
+    } catch (error) {
+      console.error(error);
+      if (!res.headersSent) res.writeHead(500);
+      res.end();
+    }
+  });
+}
+
+if (import.meta.main) {
+  const out = resolve(import.meta.dir, '..', process.env.OUT ?? 'out');
+  const hub = new URL(process.env.HUB ?? 'http://127.0.0.1:8010');
+  const port = Number(process.env.PORT ?? 8020);
+
+  createServer({ out, hub }).listen(port, '127.0.0.1', () => {
+    console.log(`pelican.dev (local): http://127.0.0.1:${port}/`);
+    console.log(`  /docs/*, ${ROOT_FILES.map((name) => `/${name}`).join(', ')} -> ${out}`);
+    console.log(`  everything else -> ${hub.origin}`);
+  });
+}

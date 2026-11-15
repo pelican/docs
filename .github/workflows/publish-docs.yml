@@ -51,12 +51,19 @@ jobs:
       - name: 'Install dependencies'
         run: bun install --frozen-lockfile
 
+      # Nothing is published that fails the tests or the typecheck (build.yml runs the same).
+      - name: 'Test the scripts (bun test)'
+        run: bun test
+
+      - name: 'Typecheck'
+        run: bun run typecheck
+
       # prebuild checks the content, postbuild checks every file lands where it should.
       - name: 'Build'
         run: bun run build
 
       - name: 'Pack the docs for the Hub'
-        run: bun scripts/pack-docs.mjs dist-docs
+        run: bun run pack:docs dist-docs
 
       - name: 'Pick the target'
         id: target

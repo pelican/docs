@@ -9,7 +9,6 @@
     "build": "next build",
     "prebuild": "bun scripts/check-content.mjs && bun scripts/sync-eggs.mjs --if-online",
     "postbuild": "bun scripts/check-paths.mjs",
-    "start": "bunx serve out",
     "test": "bun test",
     "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit",
     "check:content": "bun scripts/check-content.mjs",

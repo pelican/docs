@@ -18,15 +18,16 @@
  * here for the few things the Worker settles itself).
  */
 
-/** The paths this build serves on pelican.dev; keep in step with README.md, dev-server.mjs and scripts/check-paths.mjs. */
-export const ROOT_FILES = new Set(['/llms.txt', '/llms-full.txt', '/update-panel.sh', '/migrate-panel.sh', '/migrate-wings.sh']);
+import { isDocsPath, isNextPayload, keepOnSite } from './paths.mjs';
 
-export const isDocsPath = (path) => path === '/docs' || path.startsWith('/docs/') || ROOT_FILES.has(path);
+const isReadOnly = (method) => method === 'GET' || method === 'HEAD';
 
-/** A Next.js navigation payload (the docs' client router prefetching a Hub link). */
-const isNextPayload = (request, url) => request.headers.get('rsc') === '1' || url.searchParams.has('_rsc');
-
-const hasBody = (method) => method !== 'GET' && method !== 'HEAD';
+/** An origin from the Worker's settings, without a trailing slash; a clear error if it's missing. */
+function originFrom(env, name) {
+  const value = env?.[name];
+  if (!value) throw new Error(`The Worker setting ${name} is missing (router/wrangler.toml [vars]).`);
+  return value.replace(/\/+$/, '');
+}
 
 /**
  * The visitor's path and query on `origin`. Built from the origin with the path set on it, never
@@ -47,21 +48,15 @@ function editable(response) {
   return new Response(response.body, response);
 }
 
-/**
- * Keep redirects on pelican.dev: an origin that answers with its own address
- * (Netlify's trailing-slash 301s, a Hub that doesn't trust the Worker yet) gets
- * the path only, which the browser resolves against pelican.dev.
- */
+/** Keep a redirect from `origin` on pelican.dev (paths.mjs, keepOnSite). */
 function keepLocationHere(response, origin) {
   const location = response.headers.get('location');
-  if (location && location.startsWith(origin)) {
-    response.headers.set('location', location.slice(origin.length) || '/');
-  }
+  if (location) response.headers.set('location', keepOnSite(location, origin));
   return response;
 }
 
 async function toDocs(request, url, env, fetchImpl) {
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
+  if (!isReadOnly(request.method)) {
     return new Response('Method Not Allowed\n', { status: 405, headers: { allow: 'GET, HEAD', 'content-type': 'text/plain' } });
   }
 
@@ -70,7 +65,7 @@ async function toDocs(request, url, env, fetchImpl) {
   headers.delete('cookie');
   headers.delete('authorization');
 
-  const origin = env.DOCS_ORIGIN.replace(/\/+$/, '');
+  const origin = originFrom(env, 'DOCS_ORIGIN');
   // Netlify does the /docs/_next and .md rewrites itself (netlify.toml).
   const upstream = await fetchImpl(onOrigin(url, origin), { method: request.method, headers, redirect: 'manual' });
 
@@ -81,7 +76,7 @@ async function toDocs(request, url, env, fetchImpl) {
 }
 
 async function toHub(request, url, env, fetchImpl) {
-  const origin = env.HUB_ORIGIN.replace(/\/+$/, '');
+  const origin = originFrom(env, 'HUB_ORIGIN');
   const headers = new Headers(request.headers);
 
   // Who the visitor asked for and from where. The Hub trusts these from the Worker
@@ -89,11 +84,14 @@ async function toHub(request, url, env, fetchImpl) {
   headers.set('x-forwarded-host', url.host);
   headers.set('x-forwarded-proto', url.protocol.replace(':', ''));
   headers.set('x-forwarded-port', url.port || (url.protocol === 'https:' ? '443' : '80'));
+  // Only Cloudflare's word for the visitor's address: a visitor can send their own
+  // X-Forwarded-For, and the Hub trusts that header from the Worker.
+  headers.delete('x-forwarded-for');
   const visitor = request.headers.get('cf-connecting-ip');
   if (visitor) headers.set('x-forwarded-for', visitor);
 
   const init = { method: request.method, headers, redirect: 'manual' };
-  if (hasBody(request.method)) {
+  if (!isReadOnly(request.method)) {
     init.body = request.body;
     init.duplex = 'half'; // a streamed body (Node needs it; Workers accept it)
   }
@@ -116,7 +114,7 @@ export async function route(request, env, fetchImpl = fetch) {
 
   // The Hub has no Next.js payloads; answering here keeps a Laravel boot off every docs page
   // view (the docs prefetch their header links). On click Next.js loads the page normally.
-  if (isNextPayload(request, url)) {
+  if (isNextPayload(request.headers.get('rsc'), url)) {
     return new Response('Not a docs page\n', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
   }
 

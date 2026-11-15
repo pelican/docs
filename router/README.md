@@ -31,7 +31,9 @@ Env: `PORT` (default `8020`), `HUB` (default `http://127.0.0.1:8010`), `OUT`
 
 ## The paths this build serves
 
-Matched on the decoded, normalised path (`/docs/%2e%2e/x` is `/x`):
+The list lives in one file, `router/paths.mjs` (`ROOT_FILES`, `isDocsPath`), which the
+scripts and both routers import. Paths are matched as the browser sends them: dot segments
+resolved (`/docs/%2e%2e/x` is `/x`), but not decoded (`/docs%2Fx` is one segment, the Hub's):
 
 | Path | From |
 | --- | --- |
@@ -41,9 +43,10 @@ Matched on the decoded, normalised path (`/docs/%2e%2e/x` is `/x`):
 | `/llms.txt`, `/llms-full.txt` | `out/` |
 | `/update-panel.sh`, `/migrate-panel.sh`, `/migrate-wings.sh` | `out/` (the docs tell people to `curl` them) |
 
-Everything else goes to the Hub. `scripts/check-paths.mjs` keeps the build in
-step with this list: it fails when a file lands outside `out/docs/` that isn't
-one of the five root files, Netlify's own, or on its INTERIM list.
+Everything else goes to the Hub. `scripts/check-paths.mjs` checks the build
+against this list after every build. It fails when a file lands outside `out/docs/`
+that isn't a root file, Netlify's own, `_next/` or on its INTERIM list; when a root
+file is missing; or when a docs page loads something from outside `/docs/`.
 
 Inside the docs paths it behaves like Netlify (`netlify.toml`): `GET`/`HEAD`
 only, a directory without its trailing slash gets a 301, a missing file gets
@@ -109,8 +112,8 @@ cd router && bunx wrangler deploy --route "next.pelican.dev/*"   # try it on a s
 ```
 
 `wrangler.toml` holds the two origins and, commented out, the `pelican.dev/*`
-route for the switch. Keep `worker.mjs`, `dev-server.mjs` and
-`scripts/check-paths.mjs` in step when the list of paths changes.
+route for the switch. Both routers take their paths from `paths.mjs`, so a change
+to the list happens in one place (and in the Hub's `DocsBuildService::ROOT_FILES`).
 
 ## Switching to the Worker (later, if needed)
 

@@ -16,6 +16,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   all, with the rules a new script follows.
 - Tests are `<name>.test.mjs` files next to the code, written with `bun:test`. Run them all with
   `bun test`.
-- Before opening a pull request: `bun test`, `bun run typecheck`, `bun run build` (the build
-  checks pages before it, `check:content`, and paths after it, `check:paths`).
+- Before opening a pull request: `bun test`, `bun run typecheck`, `bun run build`. The build
+  checks the pages before it (`check:content`), refreshes the egg data (`sync:eggs`, which uses
+  the network and rewrites `data/eggs.json`, `public/data/eggs/`, `public/img/games/`: don't
+  commit those unless the task is about eggs), and checks the paths after it (`check:paths`).
+- The paths this build serves on pelican.dev are in one file, `router/paths.mjs`. Change them
+  there, and in the Hub's `DocsBuildService::ROOT_FILES` for the root files.
+- A new MDX component goes in `mdx-components.tsx` and in `COMPONENTS` in
+  `scripts/check-content.mjs`; a test fails if the two lists differ.
 - How pelican.dev is served (the Hub on Forge, the docs under /docs) is in `router/README.md`.

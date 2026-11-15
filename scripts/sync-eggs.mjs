@@ -4,7 +4,7 @@
  *
  * When:  before every build (prebuild, with --if-online: never fails the build); by hand to refresh
  * Run:   bun run sync:eggs          (or: bun scripts/sync-eggs.mjs [--if-online])
- * Tests: none
+ * Tests: bun test scripts/sync-eggs.test.mjs  (the parts that need no network)
  *
  * Builds data/eggs.json for the /eggs page and the homepage games strip.
  *
@@ -54,6 +54,15 @@ const STEAM_ICON_CDN = 'https://cdn.cloudflare.steamstatic.com/steamcommunity/pu
 /** Largest side of a saved icon: 64 CSS pixels on a 2x screen. Smaller sources are not enlarged. */
 const ICON_PX = 128;
 const soft = process.argv.includes('--if-online');
+
+/** How long one request may take, in ms. */
+const TIMEOUT_MS = { default: 15_000, hub: 20_000, steam: 10_000, download: 20_000 };
+/** How many requests run at once: egg files (raw GitHub, fast), Steam lookups and icon downloads (rate-limited). */
+const PARALLEL = { eggFiles: 16, steam: 4, icons: 4 };
+/** The Hub's API gives 100 eggs a page; never read more than this many pages (5,000 eggs), so a bad answer can't loop. */
+const HUB_MAX_PAGES = 50;
+/** How much of an egg's description the /eggs list keeps. */
+const DESCRIPTION_CHARS = 220;
 
 // Original drawings (public/img/games) for games that have no Steam page.
 // Nothing of the publisher's is copied in; the script never overwrites these.
@@ -196,7 +205,7 @@ const MIXED_FOLDERS = new Set(
     .filter((key) => key.startsWith('games-'))
     .map((key) => key.split('/').slice(0, 2).join('/') + '/'),
 );
-const gameByPath = (path) =>
+export const gameByPath = (path) =>
   Object.entries(GAME_BY_PATH)
     .filter(([prefix]) => path.startsWith(prefix))
     .sort((a, b) => b[0].length - a[0].length)[0]?.[1] ?? null;
@@ -208,7 +217,7 @@ const STEAM_STORE_NAME = {
   'Grand Theft Auto V': 'Grand Theft Auto V Enhanced',
 };
 
-const slugify = (s) =>
+export const slugify = (s) =>
   s
     .toLowerCase()
     .replace(/&/g, 'and')
@@ -221,10 +230,27 @@ const humanize = (s) =>
     .trim();
 const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
 
-async function getText(url, ms = 15000) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(ms) });
-  if (!res.ok) throw new Error(`${res.status} ${url}`);
-  return res.text();
+/**
+ * A request that failed because of the network or the server (offline, timed out, rate
+ * limited, an error status), not because of a bug here. With --if-online, only these keep the
+ * saved data instead of failing the build.
+ */
+class NetworkError extends Error {}
+
+/** fetch(), with a timeout, turning network failures and error statuses into NetworkError. */
+async function fetchOk(url, ms) {
+  let res;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(ms) });
+  } catch (error) {
+    throw new NetworkError(`${url}: ${error.message}`);
+  }
+  if (!res.ok) throw new NetworkError(`${res.status} ${url}`);
+  return res;
+}
+
+async function getText(url, ms = TIMEOUT_MS.default) {
+  return (await fetchOk(url, ms)).text();
 }
 
 async function pool(items, size, fn) {
@@ -256,7 +282,7 @@ const IMAGE_FAMILY = {
 };
 
 /** "Java 8–25" for an egg offering java_8 … java_25, "3 images" otherwise; null for one image. */
-function imageNote(images) {
+export function imageNote(images) {
   if (images.length < 2) return null;
   const tags = images.map((image) => /:([a-z]+)_(\d+(?:\.\d+)*)$/.exec(image));
   const family = tags[0] && IMAGE_FAMILY[tags[0][1]];
@@ -274,7 +300,7 @@ const text = (value) => (typeof value === 'string' ? value.replace(/\r\n?/g, '\n
  * Validation rules as a list. Older eggs write them as one "required|string|max:20"
  * string; a regex rule may hold "|" itself, so its pieces are joined back up.
  */
-function ruleList(rules) {
+export function ruleList(rules) {
   if (Array.isArray(rules)) return rules.filter((r) => typeof r === 'string' && r).map((r) => r.trim());
   if (typeof rules !== 'string' || !rules.trim()) return [];
   const out = [];
@@ -288,7 +314,7 @@ function ruleList(rules) {
 }
 
 /** Pull what the page needs out of an egg file (JSON or YAML; Pterodactyl's or Pelican's format). */
-function readEgg(source) {
+export function readEgg(source) {
   let data;
   try {
     data = JSON.parse(source);
@@ -352,9 +378,9 @@ async function hubEggs() {
   const byUuid = new Map();
   let last = 1;
   for (let page = 1; page <= last; page++) {
-    const data = JSON.parse(await getText(`${HUB_API}?per_page=100&page=${page}&sort=name`, 20000));
+    const data = JSON.parse(await getText(`${HUB_API}?per_page=100&page=${page}&sort=name`, TIMEOUT_MS.hub));
     if (!Array.isArray(data.data)) throw new Error(`unexpected Hub answer on page ${page}`);
-    last = Math.min(Number(data.last_page) || 1, 50);
+    last = Math.min(Number(data.last_page) || 1, HUB_MAX_PAGES);
     for (const egg of data.data) {
       if (!egg.uuid) continue;
       if (!byUuid.has(egg.uuid)) byUuid.set(egg.uuid, []);
@@ -372,7 +398,7 @@ async function steamLookup(name) {
   // Steam's search finds nothing for a term with "+" in it ("DOOM + DOOM II"); the match below ignores it anyway.
   const term = name.replace(/\s*\+\s*/g, ' ');
   const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}&cc=us&l=en`;
-  const data = JSON.parse(await getText(url, 10000));
+  const data = JSON.parse(await getText(url, TIMEOUT_MS.steam));
   const hit = (data.items ?? []).find((item) => norm(item.name) === norm(name));
   if (!hit) return { steamAppId: null, art: null };
   return { steamAppId: hit.id, art: (await steamHeader(hit.id)) ?? hit.tiny_image ?? null };
@@ -382,17 +408,15 @@ async function steamLookup(name) {
 async function steamHeader(appId) {
   try {
     const url = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=basic`;
-    const data = JSON.parse(await getText(url, 10000));
+    const data = JSON.parse(await getText(url, TIMEOUT_MS.steam));
     return data[appId]?.data?.header_image ?? null;
   } catch {
     return null;
   }
 }
 
-async function getBuffer(url, ms = 20000) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(ms) });
-  if (!res.ok) throw new Error(`${res.status} ${url}`);
-  return Buffer.from(await res.arrayBuffer());
+async function getBuffer(url, ms = TIMEOUT_MS.download) {
+  return Buffer.from(await (await fetchOk(url, ms)).arrayBuffer());
 }
 
 /** The homepage's games, read from lib/eggs.ts so the list lives in one place. */
@@ -413,7 +437,7 @@ function ownEggIcon(game) {
 
 /** Hashes of an app's Steam icons, from the public SteamCMD info API. */
 async function steamIconHashes(appId) {
-  const data = JSON.parse(await getText(`https://api.steamcmd.net/v1/info/${appId}`, 15000));
+  const data = JSON.parse(await getText(`https://api.steamcmd.net/v1/info/${appId}`, TIMEOUT_MS.default));
   const common = data?.data?.[appId]?.common ?? {};
   return { icon: common.icon ?? null, clienticon: common.clienticon ?? null };
 }
@@ -564,7 +588,7 @@ async function main() {
       groups.get(slug).eggs.push({
         id: null,
         name: entry.egg.name,
-        description: (entry.egg.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 220),
+        description: (entry.egg.description ?? '').replace(/\s+/g, ' ').trim().slice(0, DESCRIPTION_CHARS),
         url: encodeEggUrl(url),
         image: null,
         imageNote: null,
@@ -586,7 +610,7 @@ async function main() {
   const savedIcons = new Set();
   let read = 0;
   const details = new Map();
-  await pool(allEggs, 16, async ({ g, e }) => {
+  await pool(allEggs, PARALLEL.eggFiles, async ({ g, e }) => {
     try {
       const egg = readEgg(await getText(e.url));
       e.image = egg.images[0] ?? null;
@@ -692,7 +716,7 @@ async function main() {
   let looked = 0;
   await pool(
     games.filter((g) => g.category === 'games'),
-    4,
+    PARALLEL.steam,
     async (g) => {
       const cached = known.get(g.slug);
       // Reuse earlier matches; try again for games that had none.
@@ -719,7 +743,7 @@ async function main() {
   mkdirSync(GAME_ICONS, { recursive: true });
   let iconLookups = 0;
   let iconFiles = 0;
-  await pool(games, 4, async (g) => {
+  await pool(games, PARALLEL.icons, async (g) => {
     g.steamAppId ??= null;
     g.icon = DRAWN_ICONS[g.slug] ?? null;
     if (g.icon) return;
@@ -811,11 +835,15 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  if (soft && existsSync(OUT)) {
-    console.warn(`eggs: could not refresh (${error.message}); using the saved data/eggs.json`);
-    process.exit(0);
-  }
-  console.error(error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((error) => {
+    // --if-online (the build): no network, or GitHub, the Hub or Steam failing, keeps the saved
+    // data and lets the build go on. Anything else is a bug in this script and fails the build.
+    if (soft && error instanceof NetworkError && existsSync(OUT)) {
+      console.warn(`eggs: could not refresh (${error.message}); using the saved data/eggs.json`);
+      process.exit(0);
+    }
+    console.error(error);
+    process.exit(1);
+  });
+}

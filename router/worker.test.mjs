@@ -1,7 +1,8 @@
 // bun test router/worker.test.mjs  (all tests: bun test)
 // The Worker's routing, with fetch replaced by a recorder, so nothing leaves the machine.
 import { expect, test } from 'bun:test';
-import { isDocsPath, onOrigin, route } from './worker.mjs';
+import { isDocsPath } from './paths.mjs';
+import { onOrigin, route } from './worker.mjs';
 
 const env = { DOCS_ORIGIN: 'https://pelica.netlify.app', HUB_ORIGIN: 'https://hub.pelican.dev' };
 
@@ -134,3 +135,49 @@ test('the target keeps the origin and takes only the path and query', () => {
   expect(target.search).toBe('?q=%2F%2Fx');
   expect(target.hash).toBe('');
 });
+
+test('a visitor\'s own X-Forwarded-For never reaches the Hub', async () => {
+  const { calls, fetchImpl } = recorder();
+
+  await route(visit('/plugins', { headers: { 'x-forwarded-for': '1.2.3.4' } }), env, fetchImpl);
+  await route(visit('/plugins', { headers: { 'x-forwarded-for': '1.2.3.4', 'cf-connecting-ip': '203.0.113.7' } }), env, fetchImpl);
+
+  expect(calls[0].headers.get('x-forwarded-for')).toBe(null);
+  expect(calls[1].headers.get('x-forwarded-for')).toBe('203.0.113.7');
+});
+
+test('a redirect to a look-alike host is left alone', async () => {
+  const { fetchImpl } = recorder(() => new Response(null, { status: 302, headers: { location: 'https://hub.pelican.dev.example.com/x' } }));
+
+  expect((await route(visit('/login'), env, fetchImpl)).headers.get('location')).toBe('https://hub.pelican.dev.example.com/x');
+});
+
+test('a docs path stays a docs path for Next.js payloads and HEAD requests', async () => {
+  const { calls, fetchImpl } = recorder();
+
+  await route(visit('/docs/panel/', { headers: { rsc: '1' } }), env, fetchImpl);
+  await route(visit('/docs/panel/', { method: 'HEAD' }), env, fetchImpl);
+
+  expect(calls.map((call) => [call.url, call.init.method])).toEqual([
+    ['https://pelica.netlify.app/docs/panel/', 'GET'],
+    ['https://pelica.netlify.app/docs/panel/', 'HEAD'],
+  ]);
+});
+
+test('origins with a trailing slash work, and a missing one says which setting', async () => {
+  const { calls, fetchImpl } = recorder();
+
+  await route(visit('/docs/'), { ...env, DOCS_ORIGIN: 'https://pelica.netlify.app/' }, fetchImpl);
+  expect(calls[0].url).toBe('https://pelica.netlify.app/docs/');
+
+  await expect(route(visit('/plugins'), { DOCS_ORIGIN: env.DOCS_ORIGIN }, fetchImpl)).rejects.toThrow('HUB_ORIGIN');
+});
+
+test('an encoded slash is one path segment, so /docs%2F... is the Hub\'s, as in the browser', async () => {
+  const { calls, fetchImpl } = recorder();
+
+  await route(visit('/docs%2Fpanel/'), env, fetchImpl);
+
+  expect(new URL(calls[0].url).host).toBe('hub.pelican.dev');
+});
+

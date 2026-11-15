@@ -10,6 +10,9 @@ import { SetupAwareSpan } from '@/components/setup/setup-span';
 /**
  * Components available in every .mdx page without an import.
  *
+ * Adding one? Also add its name to COMPONENTS in scripts/check-content.mjs, which only lets
+ * pages use the components listed there (a test fails if the two lists differ).
+ *
  * <Admonition>, <Tabs>, <TabItem> and <Link> keep the names and props they
  * had on Docusaurus, so existing pages work unchanged.
  */

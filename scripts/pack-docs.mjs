@@ -17,9 +17,8 @@
  */
 import { existsSync } from 'node:fs';
 import { cp, mkdir, rm } from 'node:fs/promises';
-
-/** The files the docs tell people to download from pelican.dev's root. */
-export const ROOT_FILES = ['llms.txt', 'llms-full.txt', 'update-panel.sh', 'migrate-panel.sh', 'migrate-wings.sh'];
+import { basename, join } from 'node:path';
+import { ROOT_FILES } from '../router/paths.mjs';
 
 /**
  * The redirects under /docs from netlify.toml (it stays the one list: Netlify's PR previews use
@@ -27,42 +26,53 @@ export const ROOT_FILES = ['llms.txt', 'llms-full.txt', 'update-panel.sh', 'migr
  */
 export function docsRedirects(toml) {
   const { redirects = [] } = Bun.TOML.parse(toml);
+  const underDocs = (from) => from === '/docs' || from?.startsWith('/docs/');
 
   return redirects
     .map(({ from, to, status = 301 }) => ({ from, to, status }))
-    .filter(({ from, to, status }) => from?.startsWith('/docs') && to && status >= 300 && status < 400);
+    .filter(({ from, to, status }) => underDocs(from) && to && status >= 300 && status < 400);
 }
 
-async function pack(folder) {
-  const needed = ['out/docs/index.html', 'out/_next/static', 'out/404.html', ...ROOT_FILES.map((name) => `out/${name}`)];
+/**
+ * Packs `src` (the built site) into `folder`, which is emptied first. The folder's name must
+ * start with "dist", so a typo like `bun run pack:docs .` can't delete the repo or the build.
+ */
+export async function pack(folder, { src = 'out', toml = 'netlify.toml' } = {}) {
+  if (!basename(folder).startsWith('dist')) {
+    throw new Error(`The output folder's name must start with "dist" (got "${folder}"): it is deleted first.`);
+  }
+
+  const needed = ['docs/index.html', '_next/static', '404.html', ...ROOT_FILES];
   for (const path of needed) {
-    if (!existsSync(path)) throw new Error(`${path} is missing: run "bun run build" first`);
+    if (!existsSync(join(src, path))) throw new Error(`${join(src, path)} is missing: run "bun run build" first`);
   }
 
   await rm(folder, { recursive: true, force: true });
-  await mkdir(`${folder}/_root`, { recursive: true });
+  await mkdir(join(folder, '_root'), { recursive: true });
 
-  await cp('out/docs', folder, { recursive: true });
-  await cp('out/_next', `${folder}/_next`, { recursive: true });
-  await cp('out/404.html', `${folder}/404.html`);
+  await cp(join(src, 'docs'), folder, { recursive: true });
+  await cp(join(src, '_next'), join(folder, '_next'), { recursive: true });
+  await cp(join(src, '404.html'), join(folder, '404.html'));
   for (const name of ROOT_FILES) {
-    await cp(`out/${name}`, `${folder}/_root/${name}`);
+    await cp(join(src, name), join(folder, '_root', name));
   }
 
-  const redirects = docsRedirects(await Bun.file('netlify.toml').text());
-  await Bun.write(`${folder}/redirects.json`, `${JSON.stringify(redirects, null, 2)}\n`);
+  const redirects = docsRedirects(await Bun.file(toml).text());
+  await Bun.write(join(folder, 'redirects.json'), `${JSON.stringify(redirects, null, 2)}\n`);
 
   const build = {
     sha: process.env.GITHUB_SHA ?? 'local',
     branch: process.env.GITHUB_REF_NAME ?? 'local',
     built_at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
   };
-  await Bun.write(`${folder}/BUILD.json`, `${JSON.stringify(build)}\n`);
+  await Bun.write(join(folder, 'BUILD.json'), `${JSON.stringify(build)}\n`);
 
-  console.log(`pack-docs: ${folder} (${redirects.length} redirects, ${ROOT_FILES.length} root files)`);
+  return { redirects: redirects.length, rootFiles: ROOT_FILES.length };
 }
 
 if (import.meta.main) {
-  process.chdir(`${import.meta.dir}/..`);
-  await pack(process.argv[2] ?? 'dist-docs');
+  process.chdir(join(import.meta.dir, '..'));
+  const folder = process.argv[2] ?? 'dist-docs';
+  const { redirects, rootFiles } = await pack(folder);
+  console.log(`pack-docs: ${folder} (${redirects} redirects, ${rootFiles} root files)`);
 }
