@@ -114,8 +114,15 @@ suite('install.sh options', () => {
     expect(dryRun(['--domain', 'panel.example.com', '--email', "o'brien@example.com"]).out).toContain("isn't an email");
     expect(dryRun([...BASE, '--profile', 'enterprise']).out).toContain('--profile is quick or production');
     expect(dryRun(['--ip', '300.1.2.3']).out).toContain("isn't an IPv4 address");
-    // Let's Encrypt refuses contacts at example.com (seen on a real run), so it's caught up front.
-    expect(dryRun(['--domain', 'panel.example.com', '--email', 'admin@example.com']).out).toContain("Let's Encrypt refuses addresses at example.com");
+    // Let's Encrypt refuses contacts at example.com (seen on a real run): a real run stops before
+    // touching anything (here as non-root, it stops at that check, before the root check)...
+    const real = install(['--dir', mkdtempSync(join(tmpdir(), 'pelican-install-')), '--domain', 'panel.example.com', '--email', 'admin@example.com']);
+    expect(real.code).not.toBe(0);
+    expect(real.out).toContain("Let's Encrypt refuses addresses at example.com");
+    // ...while a dry run, which only shows the plan, warns and goes on (the docs' example uses it).
+    const preview = dryRun(['--domain', 'panel.example.com', '--email', 'you@example.com']);
+    expect(preview.code).toBe(0);
+    expect(preview.out).toContain('use a real email for the real run');
   });
 
   test('with a domain, Wings needs its own; without one, it needs none (and may not have one)', () => {
@@ -227,9 +234,38 @@ suite('install.sh files', () => {
     expect(switched.out).toContain('uses the production profile');
   });
 
-  test("--staging uses Let's Encrypt staging", () => {
+  test("--staging uses Let's Encrypt staging; running again without it goes back to real certificates", () => {
     const { dir } = dryRun([...BASE, '--staging']);
     expect(settings(dir).LE_CA_SERVER).toBe('https://acme-staging-v02.api.letsencrypt.org/directory');
+    expect(dryRun([...BASE, '--staging'], dir).code).toBe(0);
+    expect(settings(dir).LE_CA_SERVER).toBe('https://acme-staging-v02.api.letsencrypt.org/directory');
+
+    const again = dryRun([], dir);
+    expect(again.out).toContain('Moving from Let\'s Encrypt staging to real certificates');
+    expect(settings(dir).LE_CA_SERVER).toBe('https://acme-v02.api.letsencrypt.org/directory');
+  });
+
+  test('another CA set by hand in pelican.env is kept on a second run', () => {
+    const { dir } = dryRun(BASE);
+    const file = join(dir, 'pelican.env');
+    writeFileSync(file, readFileSync(file, 'utf8').replace(/^LE_CA_SERVER=.*$/m, "LE_CA_SERVER='https://acme.zerossl.com/v2/DV90'"));
+    expect(dryRun([], dir).code).toBe(0);
+    expect(settings(dir).LE_CA_SERVER).toBe('https://acme.zerossl.com/v2/DV90');
+  });
+
+  test('a second run keeps the public subnet chosen on the first, unless PELICAN_PUBLIC_SUBNET says otherwise', () => {
+    const { dir } = dryRun(IP, undefined, { PELICAN_PUBLIC_SUBNET: '10.99.1.0/24' });
+    expect(dryRun([], dir).code).toBe(0);
+    expect(settings(dir).PUBLIC_SUBNET).toBe('10.99.1.0/24');
+    expect(dryRun([], dir, { PELICAN_PUBLIC_SUBNET: '10.99.3.0/24' }).code).toBe(0);
+    expect(settings(dir).PUBLIC_SUBNET).toBe('10.99.3.0/24');
+  });
+
+  test('Wings is downloaded beside the binary and renamed over it (a running one can be replaced, not written)', () => {
+    const { out } = dryRun([...IP, '--wings']);
+    expect(out).toContain('-o /usr/local/bin/wings.new');
+    expect(out).toContain('mv -f /usr/local/bin/wings.new /usr/local/bin/wings');
+    expect(out).not.toContain('-o /usr/local/bin/wings ');
   });
 
   test('the address ranges can be changed for networks that clash', () => {
@@ -252,7 +288,7 @@ suite('deploy.sh', () => {
     const record = join(bin, 'calls');
     writeFileSync(
       join(bin, 'docker'),
-      `#!/bin/sh\n{ echo "ARGS $*"; echo "PANEL_URL=$PANEL_URL"; echo "PELICAN_DIR=$PELICAN_DIR"; echo "APP_KEY_SET=\${APP_KEY:+yes}"; } >> "${record}"\n`,
+      `#!/bin/sh\n{ echo "ARGS $*"; echo "PANEL_URL=$PANEL_URL"; echo "PELICAN_DIR=$PELICAN_DIR"; echo "ACME_STORAGE=$ACME_STORAGE"; echo "APP_KEY_SET=\${APP_KEY:+yes}"; } >> "${record}"\n`,
     );
     chmodSync(join(bin, 'docker'), 0o755);
     const result = Bun.spawnSync([BASH, join(dir, 'deploy.sh')], { env: { PATH: `${bin}:${process.env.PATH}` } });
@@ -287,6 +323,7 @@ suite('deploy.sh', () => {
     const { code, calls } = deploy(dir);
     expect(code).toBe(0);
     expect(calls).toContain('PANEL_URL=https://panel.example.com');
+    expect(calls).toContain('ACME_STORAGE=acme.json');
 
     const http = routes(dir);
     expect(http.routers['pelican-panel']).toEqual({
@@ -301,6 +338,13 @@ suite('deploy.sh', () => {
     expect(http.routers['pelican-to-domain']).toMatchObject({ rule: 'PathPrefix(`/`)', priority: 1, entryPoints: ['web'], middlewares: ['pelican-to-domain'] });
     expect(http.middlewares['pelican-to-domain']).toEqual({ redirectRegex: { regex: '^https?://[^/]+(.*)', replacement: 'https://panel.example.com${1}' } });
     expect(http.routers['pelican-wings']).toBeUndefined();
+  });
+
+  test('certificates are kept per CA: staging gets its own store, so its test certificates go with it', () => {
+    const { dir } = dryRun([...BASE, '--staging']);
+    expect(deploy(dir).calls).toContain('ACME_STORAGE=acme-acme-staging-v02.api.letsencrypt.org-directory.json');
+    dryRun([], dir); // without --staging: back to Let's Encrypt's production server
+    expect(deploy(dir).calls).toContain('ACME_STORAGE=acme.json');
   });
 
   test('adding a domain later: set it in pelican.env and deploy again', () => {

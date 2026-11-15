@@ -99,9 +99,9 @@ export const DOCS_MOTIFS: Record<string, Motif> = {
     label: 'sh',
     lang: 'sh',
     lines: [
+      "# On the server's IP, with the defaults (the quick profile, no Wings)",
       'curl -fsSL https://pelican.dev/install.sh | sudo bash',
-      '==> Docker Swarm, Traefik (HTTPS) and the Panel',
-      'Finish the setup: https://panel.example.com/installer',
+      '# With a domain and HTTPS, MariaDB and Redis',
     ],
   },
 

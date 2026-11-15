@@ -168,7 +168,7 @@ docker service logs -f pelican_panel       # the Panel's logs
 docker service logs pelican_traefik 2>&1 | grep -i acme   # certificate problems
 ```
 
-No certificate? Check that the domain points at the server, ports 80 and 443 are reachable from the internet and the record isn't proxied by a CDN. Let's Encrypt limits how often it issues certificates for one domain: test with `--staging`, then run the script again without it.
+No certificate? Check that the domain points at the server, ports 80 and 443 are reachable from the internet and the record isn't proxied by a CDN. Let's Encrypt limits how often it issues certificates for one domain: test with `--staging`, then run the script again without it, which moves the install to real certificates (the test ones are kept apart and not used again).
 
 Docker's address ranges can clash with a network your server is already on. The script uses `10.203.0.0/16` for Swarm and `10.204.0.0/24` for `docker_gwbridge`; set `PELICAN_SWARM_POOL`, `PELICAN_GWBRIDGE_SUBNET` and `PELICAN_PUBLIC_SUBNET` before running it to use others.
 

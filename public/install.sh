@@ -240,6 +240,12 @@ setting() { printf '%s' "${saved[$1]:-}"; }
 
 load_settings
 
+# A subnet chosen on the first run stays (the stack's network and TRUSTED_PROXIES use it), unless
+# PELICAN_PUBLIC_SUBNET asks for another.
+if [[ -z "${PELICAN_PUBLIC_SUBNET:-}" && -n "$(setting PUBLIC_SUBNET)" ]]; then
+  PUBLIC_SUBNET="$(setting PUBLIC_SUBNET)"
+fi
+
 # ---- Gather the options ----------------------------------------------------------------------
 step "Pelican install (script v$VERSION)"
 $dry_run && info "Dry run: files go to $dir, nothing on this server changes."
@@ -270,7 +276,12 @@ if [[ -n "$domain" ]]; then
   valid_email "$email" || die "\"$email\" isn't an email address."
   case "${email##*@}" in
     example.com | example.net | example.org | localhost)
-      die "Let's Encrypt refuses addresses at ${email##*@}: use a real email (it only sends certificate notices)." ;;
+      # A dry run only shows the plan, so the docs' placeholder works there; a real run stops.
+      if $dry_run; then
+        warn "Let's Encrypt refuses addresses at ${email##*@}: use a real email for the real run."
+      else
+        die "Let's Encrypt refuses addresses at ${email##*@}: use a real email (it only sends certificate notices)."
+      fi ;;
   esac
 fi
 
@@ -314,11 +325,16 @@ else
   [[ "$with_wings" == yes ]] || wings_domain=""
 fi
 
+# Let's Encrypt's server: staging only while --staging is passed (running again without it moves
+# to real certificates); another CA set by hand in pelican.env is kept.
 le_server="$LE_PRODUCTION"
+saved_ca="$(setting LE_CA_SERVER)"
 if $staging; then
   le_server="$LE_STAGING"
-elif [[ -n "$(setting LE_CA_SERVER)" ]]; then
-  le_server="$(setting LE_CA_SERVER)"
+elif [[ "$saved_ca" == "$LE_STAGING" ]]; then
+  info "Moving from Let's Encrypt staging to real certificates (no --staging this time)."
+elif [[ -n "$saved_ca" ]]; then
+  le_server="$saved_ca"
 fi
 
 app_key="$(setting APP_KEY)"
@@ -515,7 +531,8 @@ services:
       - --entryPoints.web.transport.respondingTimeouts.readTimeout=600s
       - --entryPoints.websecure.transport.respondingTimeouts.readTimeout=600s
       - --certificatesResolvers.letsencrypt.acme.email=${LE_EMAIL}
-      - --certificatesResolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      # One store per CA (deploy.sh names it), so test certificates never outlive --staging.
+      - --certificatesResolvers.letsencrypt.acme.storage=/letsencrypt/${ACME_STORAGE}
       - --certificatesResolvers.letsencrypt.acme.caServer=${LE_CA_SERVER}
       - --certificatesResolvers.letsencrypt.acme.httpChallenge.entryPoint=web
       - --ping=true
@@ -680,6 +697,15 @@ set -a
 set +a
 export PELICAN_DIR="$PWD"
 
+# Traefik keeps certificates and its account per CA: production in acme.json, any other CA
+# (staging) in a file of its own, so switching CAs starts clean.
+if [[ "${LE_CA_SERVER:-}" == "https://acme-v02.api.letsencrypt.org/directory" || -z "${LE_CA_SERVER:-}" ]]; then
+  export ACME_STORAGE="acme.json"
+else
+  ACME_STORAGE="acme-$(sed -E 's#^https?://##; s#[^A-Za-z0-9.-]+#-#g; s#-+$##' <<<"$LE_CA_SERVER").json"
+  export ACME_STORAGE
+fi
+
 # The Panel's address: its domain with HTTPS, or the server's IP over HTTP until it has one.
 if [[ -n "${PANEL_DOMAIN:-}" ]]; then
   if [[ -z "${LE_EMAIL:-}" ]]; then
@@ -775,8 +801,14 @@ if [[ "$with_wings" == yes ]]; then
   step "Wings"
   wings_arch="${arch:-amd64}"
   run mkdir -p /etc/pelican /var/run/wings
-  run curl -fsSL -o /usr/local/bin/wings "$WINGS_RELEASES/wings_linux_$wings_arch"
-  run chmod u+x /usr/local/bin/wings
+  # Download beside it and rename over it: a running Wings' file can't be written ("text file
+  # busy"), but it can be replaced. The running Wings keeps its version until it restarts.
+  run curl -fsSL -o /usr/local/bin/wings.new "$WINGS_RELEASES/wings_linux_$wings_arch"
+  run chmod u+x /usr/local/bin/wings.new
+  run mv -f /usr/local/bin/wings.new /usr/local/bin/wings
+  if ! $dry_run && systemctl is-active --quiet wings 2>/dev/null; then
+    info "Wings is running: systemctl restart wings starts the version just downloaded."
+  fi
   if $dry_run; then
     info "Would write /etc/systemd/system/wings.service (the unit from the docs: wings/install)."
   else
