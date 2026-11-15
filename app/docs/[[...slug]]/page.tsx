@@ -35,7 +35,13 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   );
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      // Hooks for the Hub look in app/global.css ("Docs: page").
+      breadcrumb={{ className: 'dt-crumbs' }}
+      footer={{ className: 'dt-pager' }}
+    >
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
@@ -47,8 +53,8 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           })}
         />
       </DocsBody>
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <EditOnGitHub href={githubEditUrl('docs', page.path)} />
+      <div className="dt-pagefoot flex flex-wrap items-center justify-between gap-4 border-t pt-6">
+        <EditOnGitHub className="dt-edit" href={githubEditUrl('docs', page.path)} />
         {page.data.lastModified && <PageLastUpdate date={page.data.lastModified} />}
       </div>
     </DocsPage>

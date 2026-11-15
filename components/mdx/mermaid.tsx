@@ -2,6 +2,30 @@
 
 import { useEffect, useId, useState } from 'react';
 
+// Colours from ui/tokens.css (--pl-card, --pl-fg, --pl-edge, --pl-muted, --pl-ground).
+// The text face by name (next/font registers it under its real name): Mermaid measures the labels
+// with it, which a CSS variable can't do.
+const FONT = '"Instrument Sans", "Instrument Sans Fallback", sans-serif';
+const LIGHT = {
+  fontFamily: FONT,
+  background: '#f3f7f9',
+  primaryColor: '#ffffff',
+  primaryTextColor: '#04121c',
+  primaryBorderColor: '#04121c',
+  lineColor: '#04121c',
+  edgeLabelBackground: '#f3f7f9',
+};
+const DARK = {
+  fontFamily: FONT,
+  darkMode: true,
+  background: '#071926',
+  primaryColor: '#0a1e2b',
+  primaryTextColor: '#e3ecf1',
+  primaryBorderColor: '#b9ccd6',
+  lineColor: '#b9ccd6',
+  edgeLabelBackground: '#071926',
+};
+
 /** ```mermaid code blocks, drawn in the browser and redrawn on theme change. */
 export function Mermaid({ chart }: { chart: string }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -21,7 +45,12 @@ export function Mermaid({ chart }: { chart: string }) {
       mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
-        theme: dark ? 'dark' : 'default',
+        // The site's cards: white (dark: navy card) boxes with square 2px edges, navy lines.
+        // "classic": square boxes; Mermaid 12's default "neo" look adds round corners and shadows.
+        look: 'classic',
+        theme: 'base',
+        themeVariables: dark ? DARK : LIGHT,
+        themeCSS: '.node rect, .node polygon, .node circle { stroke-width: 2px; }',
       });
       // A fresh id each time: mermaid removes any element that already has the id it's given,
       // which would take the diagram on the page with it.
