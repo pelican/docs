@@ -2,17 +2,20 @@
 # (hub-preview.pelican.dev), so the preview shows the whole one-site pelican.dev: the Hub's
 # pages and these docs under /docs.
 #
-# The branch preview/docs-under-docs holds exactly what goes in the Hub's public/docs/:
-# out/docs/*, plus out/_next/ as _next/ (pages load /docs/_next/... because of assetPrefix,
-# while the export writes those files to out/_next/), plus BUILD.json naming the commit.
-# The Hub installs it on the preview host (App\Services\Site\DocsPreviewService); the last
-# step asks the preview to check for the new build right away.
+# The branch preview/docs-under-docs holds exactly what the Hub serves under /docs on the
+# preview: out/docs/*, plus out/_next/ as _next/ (pages load /docs/_next/... because of
+# assetPrefix, while the export writes those files to out/_next/), plus BUILD.json naming the
+# commit. The Hub installs it into its storage on the preview host
+# (App\Services\Site\DocsPreviewService); the last step asks the preview to check for the new
+# build right away. The branch name stays, so the Hub's SITE_DOCS_PREVIEW_BRANCH doesn't change.
+#
+# Runs on feat/fumadocs-next (pelican/docs#234), which has held this work since #239 was merged.
 name: 'Preview build'
 on:
   workflow_dispatch:
   push:
     branches:
-      - 'feat/docs-under-docs'
+      - 'feat/fumadocs-next'
 
 concurrency:
   group: preview-build
