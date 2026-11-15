@@ -24,6 +24,9 @@
         "@types/node": "26.6.6",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.3.0",
+        "mdast-util-from-markdown": "2.1.0",
+        "mdast-util-mdx": "3.0.0",
+        "micromark-extension-mdxjs": "3.0.0",
         "postcss": "8.5.28",
         "sharp": "0.35.5",
         "tailwindcss": "4.3.3",
@@ -32,6 +35,11 @@
       },
     },
   },
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "sharp",
+    "esbuild",
+  ],
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.3.0", "", {}, "sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA=="],
 

@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
+/* The V12 tokens shared with the Hub (published at /docs/ui/v1/tokens.css). */
+@import '../ui/tokens.css';
 
 /* =========================================================================
  * Site-wide theme, in the V12 "B v3" style: navy #04121C, sky #38BDF8,
@@ -16,16 +18,8 @@
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Fumadocs' colours; the --pl-* brand colours come from ui/tokens.css. */
 :root {
-  --pl-ink: #04121c;
-  --pl-sky: #38bdf8;
-  --pl-sky-deep: #0b79ad;
-  --pl-white: #ffffff;
-  --pl-paper: #f3f7f9;
-  /* the thick edge and hard shadow used on cards, code and callouts */
-  --pl-edge: var(--pl-ink);
-  --pl-shadow: var(--pl-ink);
-
   --color-fd-background: #f3f7f9;
   --color-fd-foreground: #04121c;
   --color-fd-muted: #e3edf2;
@@ -51,9 +45,6 @@
 }
 
 .dark {
-  --pl-edge: #2e4756;
-  --pl-shadow: #38bdf8;
-
   --color-fd-background: #04121c;
   --color-fd-foreground: #f3f7f9;
   --color-fd-muted: #0a1f2e;

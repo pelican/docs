@@ -1,6 +1,7 @@
 # Pelican Docs
 
-The website and documentation at [pelican.dev](https://pelican.dev), covering [Pelican Panel](https://github.com/pelican/panel) and [Wings](https://github.com/pelican/wings).
+The source for the documentation at [pelican.dev/docs](https://pelican.dev/docs), covering [Pelican Panel](https://github.com/pelican/panel) and [Wings](https://github.com/pelican/wings).
+
 Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) and served by Netlify as a static site.
 
 ## Running it locally
@@ -23,6 +24,9 @@ bun run build   # the production site, written to out/
 | `app/(home)/page.tsx` | The homepage. |
 | `public/` | Files served as they are, including the `update-panel.sh` and `migrate-*.sh` scripts. |
 | `netlify.toml` | Build settings and redirects such as `/discord`. |
+| `ui/` | Design tokens (`tokens.css`) and site nav (`nav.json`) shared with the Hub; published at `/docs/ui/v1/`. |
+| `router/` | `dev-server.mjs`: pelican.dev as one site locally (docs from `out/`, the rest from the Hub). See its README. |
+| `scripts/check-*.mjs` | `check-content` (parses every page as MDX and fails on anything that could run code: `import`/`export`, `{expressions}`, components outside `mdx-components.tsx`, handlers, unsafe URLs; runs before the build, tested by `bun run test:content`) and `check-paths` (everything under `/docs/`, runs after it). |
 
 ## Writing a page
 

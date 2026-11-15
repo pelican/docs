@@ -8,8 +8,9 @@ import { source } from '@/lib/source';
  *
  *   /llms.txt             an index of every docs page, linking the .md files
  *   /llms-full.txt        every docs page in one file, in sidebar order
- *   /docs/<page>.md       one page; built to out/md/<page>.md and served at
- *                         /docs/<page>.md by a rewrite in netlify.toml
+ *   /docs/<page>.md       one page; built to out/docs/md/<page>.md (app/docs/md)
+ *                         and served at /docs/<page>.md by a rewrite in
+ *                         netlify.toml (and router/dev-server.mjs locally)
  *
  * The Markdown comes from Fumadocs (`includeProcessedMarkdown` in
  * source.config.ts), with <Admonition>, <Tabs> and friends left as
@@ -25,7 +26,7 @@ export function markdownPath(page: DocsPage): string {
   return page.slugs.length === 0 ? '/docs/index.md' : `${page.url}.md`;
 }
 
-/** Route params for app/md/[...slug]: the page's slugs, with .md on the last one. */
+/** Route params for app/docs/md/[...slug]: the page's slugs, with .md on the last one. */
 export function markdownParams(): { slug: string[] }[] {
   return source.getPages().map((page) => ({ slug: markdownPath(page).replace(/^\/docs\//, '').split('/') }));
 }

@@ -1,6 +1,7 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { DiscordIcon } from '@/components/icons';
 import { links } from '@/lib/links';
+import { navOutsideDocs } from '@/lib/nav';
 
 /**
  * Options for the docs layout. On desktop the B v3 top bar (DocsTopBar) carries
@@ -12,7 +13,7 @@ export function docsOptions(): BaseLayoutProps {
       title: (
         <span className="dt-navtitle">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/logo.png" alt="" width={28} height={28} />
+          <img src="/docs/img/logo.png" alt="" width={28} height={28} />
           Pelican <span>Docs</span>
         </span>
       ),
@@ -20,10 +21,12 @@ export function docsOptions(): BaseLayoutProps {
     },
     githubUrl: links.github,
     links: [
+      // The Hub's pages (ui/nav.json). Fumadocs' `external` would open a new tab; without it a
+      // click tries client-side navigation, gets no payload from the Hub and loads the page normally.
       { text: 'Home', url: '/', on: 'menu' },
-      { text: 'Eggs', url: links.eggs, on: 'menu' },
-      { text: 'Plugins', url: `${links.hub}/plugins`, on: 'menu' },
-      { text: 'Sponsor', url: '/support/', on: 'menu' },
+      ...navOutsideDocs
+        .filter((item) => item.href.startsWith('/'))
+        .map((item) => ({ text: item.label, url: item.href, on: 'menu' as const })),
       {
         type: 'icon',
         label: 'Discord',

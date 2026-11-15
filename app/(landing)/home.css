@@ -8,37 +8,8 @@
  * ====================================================================== */
 
 .pl {
-  --ink: #04121c;
-  --sky: #38bdf8;
-  --sky-deep: #0b79ad;
-  --white: #ffffff;
-  --paper: #f3f7f9;
-  --text: #1f3644;
-  --on-ink-soft: #b9ccd6;
-  --line-on-ink: #2e4756;
-  --line: 3px solid var(--ink);
-  --pad: clamp(16px, 4cqi, 64px);
-  --section: clamp(72px, 9cqi, 120px);
-  --font-display: var(--pl-font-display), 'Helvetica Neue', sans-serif;
-  --font-text: var(--pl-font-text), 'Helvetica Neue', system-ui, sans-serif;
-  --font-code: var(--font-jetbrains), ui-monospace, Menlo, monospace;
-  --btn-shadow: var(--ink);
-  /* Theme roles. --ink and --white flip in dark mode (see "Dark theme" at the
-     end); these stay put or carry the role the light values had. */
-  --navy: #04121c; /* always navy: text on sky, chrome that is dark in both themes */
-  --snow: #ffffff; /* always white: text on navy */
-  --shadow: var(--ink); /* hard offset shadow on cards */
-  --muted: #33505f;
-  --faint: #8aa3b0;
-  --rule: #d5e3ea;
-  --rule-soft: #e3edf2;
-  --rule-ink: rgba(4, 18, 28, 0.12);
-  --chip: #e3edf2;
-  --hover: #e8f6fd;
-  --hover-strong: #cdeefd;
-  --on-sky-soft: #0b2a3b;
-  --kbd-bg: rgba(255, 255, 255, 0.5);
-
+  /* The colours, fonts and sizes (--ink, --sky, --line, --pad, ...) are in
+     ui/tokens.css, loaded on every page by app/global.css. */
   container: page / inline-size;
   flex: 1;
   display: flex;
@@ -4556,27 +4527,7 @@ html:has(.pl-ed[open]) {
  * keep their light values and only the bands around them change.
  * ====================================================================== */
 .dark .pl {
-  --ground: #04121c;
-  --deep: #071926;
-  --code: #000b12;
-  --ink: #ffffff;
-  --white: #0a1e2b;
-  --card: #0a1e2b; /* the surface, also inside .on-ink where --white is white again */
-  --paper: #071926;
-  --text: #d4e3ea;
-  --muted: #b9ccd6;
-  --faint: #7f99a6;
-  --rule: #2e4756;
-  --rule-soft: #1f3a4a;
-  --rule-ink: rgba(185, 204, 214, 0.18);
-  --chip: #14304a;
-  --hover: #0f2c3d;
-  --hover-strong: #123a52;
-  --on-sky-soft: #b9ccd6;
-  --kbd-bg: rgba(255, 255, 255, 0.1);
-  --sky-deep: #38bdf8;
-  --shadow: var(--sky);
-  --btn-shadow: var(--sky);
+  /* The dark tokens are in ui/tokens.css. */
   background: var(--ground);
 }
 
@@ -4585,13 +4536,7 @@ html:has(.pl-ed[open]) {
   color: var(--navy);
 }
 
-/* Navy sections were already dark: give them back their light values. */
-.dark .pl .on-ink {
-  --ink: #04121c;
-  --white: #ffffff;
-  --line: 3px solid var(--line-on-ink);
-  --btn-shadow: var(--snow);
-}
+/* Navy (.on-ink) sections get their light values back in ui/tokens.css. */
 
 /* ---- Full-width bands: navy grounds with slate edges, no bright blocks ---- */
 .dark .pl :is(.pl-features, .pl-activity, .pl-sup-faq) {

@@ -11,6 +11,71 @@
   # runtime isn't needed; serve out/ as plain files.
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
+# ---- pelican.dev/docs next to the Hub ------------------------------------
+# After the switch a Cloudflare route sends only /docs/*, /llms.txt,
+# /llms-full.txt and the three install scripts here; the Hub serves the rest.
+# So everything the docs load is under /docs/ (see scripts/check-paths.mjs).
+
+# The JS, CSS and fonts. next.config.mjs sets assetPrefix '/docs', so pages ask
+# for /docs/_next/...; the static export still writes them to out/_next/.
+[[redirects]]
+  from = "/docs/_next/*"
+  to = "/_next/:splat"
+  status = 200
+  force = true
+
+# Old locations of files that moved under /docs/ (other sites may link them).
+[[redirects]]
+  from = "/img/logo.png"
+  to = "/docs/img/logo.png"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/img/favicon.ico"
+  to = "/docs/img/favicon.ico"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/og/docs/*"
+  to = "/docs/og/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/md/*"
+  to = "/docs/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/api/search"
+  to = "/docs/search.json"
+  status = 301
+  force = true
+
+# INTERIM (remove after the switch, when the Hub owns these paths): the docs
+# nav uses the Hub's paths from ui/nav.json; while Netlify serves the whole
+# domain, send them where they live today. /eggs already resolves to /eggs/.
+[[redirects]]
+  from = "/plugins"
+  to = "https://hub.pelican.dev/plugins"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/plugins/*"
+  to = "https://hub.pelican.dev/plugins/:splat"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/sponsor"
+  to = "/support/"
+  status = 302
+  force = true
+
 # ---- Short links (were client-side redirects on Docusaurus) --------------
 [[redirects]]
   from = "/discord"
@@ -75,12 +140,13 @@
   force = true
 
 # ---- Markdown for AI tools (lib/llms.ts) ---------------------------------
-# /docs/panel/update.md is built to out/md/panel/update.md (the docs page route
-# owns every path under /docs). Not forced, so it only applies when no file
-# exists: the HTML pages under /docs are served as before. Keep it last.
+# /docs/panel/update.md is built to out/docs/md/panel/update.md (app/docs/md;
+# the docs page route owns the other paths under /docs). Not forced, so it only
+# applies when no file exists: the HTML pages under /docs are served as before.
+# Keep it last.
 [[redirects]]
   from = "/docs/*"
-  to = "/md/:splat"
+  to = "/docs/md/:splat"
   status = 200
 
 [[headers]]
@@ -97,6 +163,12 @@
   for = "/llms-full.txt"
   [headers.values]
     Content-Type = "text/plain; charset=utf-8"
+
+# The design tokens and nav the Hub copies (ui/); readable from any origin.
+[[headers]]
+  for = "/docs/ui/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
 
 # The install scripts are fetched with curl; make sure they come back as text.
 [[headers]]

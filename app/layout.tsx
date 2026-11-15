@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   description:
     'Pelican is a free, open-source panel for running game servers and applications in isolated Docker containers.',
   applicationName: SITE_NAME,
-  icons: { icon: '/img/favicon.ico', apple: '/img/logo.png' },
+  icons: { icon: '/docs/img/favicon.ico', apple: '/docs/img/logo.png' },
   // Fallbacks only: each page sets its own canonical, Open Graph and Twitter card
   // through pageMetadata() in lib/og.ts.
   openGraph: {
@@ -41,10 +41,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="en" className={`${display.variable} ${text.variable} ${mono.variable}`} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <RootProvider
-          // Follows the reader's system setting; the switch in the docs bar overrides it.
-          theme={{ defaultTheme: 'system' }}
-          // The search index is a static file built with the site (app/api/search).
-          search={{ options: { type: 'static' } }}
+          // Dark until the reader picks a theme with the switch in the docs bar (the Hub does the same).
+          theme={{ defaultTheme: 'dark' }}
+          // The search index is a static file built with the site (app/docs/search.json),
+          // under /docs/ like everything else the docs load.
+          search={{ options: { type: 'static', api: '/docs/search.json' } }}
         >
           {children}
           <ExternalLinkGuard />

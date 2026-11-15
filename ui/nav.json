@@ -1,0 +1,39 @@
+{
+  "items": [
+    { "label": "Docs", "href": "/docs/" },
+    { "label": "Plugins", "href": "/plugins" },
+    { "label": "Eggs", "href": "/eggs" },
+    { "label": "Community", "href": "https://discord.gg/pelican-panel" },
+    { "label": "Sponsor", "href": "/sponsor" }
+  ],
+  "footer": [
+    {
+      "title": "Product",
+      "items": [
+        { "label": "Documentation", "href": "/docs/" },
+        { "label": "Install guide", "href": "/docs/panel/getting-started/" },
+        { "label": "Live demo", "href": "https://demo.pelican.dev" },
+        { "label": "Plugin Hub", "href": "/plugins" }
+      ]
+    },
+    {
+      "title": "Community",
+      "items": [
+        { "label": "Discord", "href": "https://discord.gg/pelican-panel" },
+        { "label": "GitHub", "href": "https://github.com/pelican/panel" },
+        { "label": "Contributors", "href": "/docs/contributors/" },
+        { "label": "Translate", "href": "/docs/guides/translating/" }
+      ]
+    },
+    {
+      "title": "Project",
+      "items": [
+        { "label": "FAQ", "href": "/faq/" },
+        { "label": "Sponsor", "href": "/sponsor" },
+        { "label": "Versioning", "href": "/docs/versioning/" },
+        { "label": "Comparison", "href": "/docs/comparison/" }
+      ]
+    }
+  ],
+  "cta": { "label": "Get started", "href": "/docs/panel/getting-started/" }
+}

@@ -171,7 +171,7 @@ function loadAssets(): Promise<Assets> {
       font('InstrumentSans-SemiBold.ttf'),
       font('InstrumentSans-Bold.ttf'),
       font('JetBrainsMono-Medium.ttf'),
-      readFile(join(ROOT, 'public/img/logo.png')),
+      readFile(join(ROOT, 'public/docs/img/logo.png')),
     ]);
     return {
       fonts: [

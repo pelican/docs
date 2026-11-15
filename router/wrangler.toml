@@ -1,0 +1,15 @@
+# The pelican.dev router (worker.mjs). Deploy from this folder: `bunx wrangler deploy`.
+# It is a plain ES module with no build step and no bindings beyond the two origins.
+name = "pelican-dev-router"
+main = "worker.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+[vars]
+DOCS_ORIGIN = "https://pelica.netlify.app"
+HUB_ORIGIN = "https://hub.pelican.dev"
+
+# Try it on a spare hostname first (a proxied DNS record in the pelican.dev zone):
+#   bunx wrangler deploy --route "next.pelican.dev/*"
+# For the switch, the route below, with the pelican.dev record proxied (orange cloud):
+# routes = [{ pattern = "pelican.dev/*", zone_name = "pelican.dev" }]

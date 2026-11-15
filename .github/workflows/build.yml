@@ -36,8 +36,18 @@ jobs:
       - name: 'Install dependencies'
         run: bun install --frozen-lockfile
 
+      - name: 'Check content (MDX that could run code)'
+        run: bun run check:content
+
+      - name: 'Test the content check'
+        run: bun run test:content
+      - name: 'Test the router'
+        run: bun run test:router
+
       - name: 'Typecheck'
         run: bun run typecheck
 
+      # prebuild runs check:content again (Netlify builds run it there);
+      # postbuild runs check:paths on out/.
       - name: 'Build'
         run: bun run build
