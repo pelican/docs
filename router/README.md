@@ -41,7 +41,7 @@ resolved (`/docs/%2e%2e/x` is `/x`), but not decoded (`/docs%2Fx` is one segment
 | `/docs/_next/*` | `out/_next/*` (assetPrefix `/docs`; the export still writes to `out/_next/`) |
 | `/docs/<page>.md` | `out/docs/md/<page>.md`, only when no file matched first |
 | `/llms.txt`, `/llms-full.txt` | `out/` |
-| `/update-panel.sh`, `/migrate-panel.sh`, `/migrate-wings.sh` | `out/` (the docs tell people to `curl` them) |
+| `/install.sh`, `/update-panel.sh`, `/migrate-panel.sh`, `/migrate-wings.sh` | `out/` (the docs tell people to `curl` them) |
 
 Everything else goes to the Hub. `scripts/check-paths.mjs` checks the build
 against this list after every build. It fails when a file lands outside `out/docs/`
