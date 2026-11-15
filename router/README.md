@@ -1,10 +1,24 @@
 # router/
 
 pelican.dev is two apps on one domain: the **Pelican Hub** (Laravel) serves
-almost every path, and this repo's static build (Netlify) serves the docs.
-In production a Cloudflare Worker on `pelican.dev/*` (`worker.mjs`) picks the
-origin per request. `dev-server.mjs` makes the same split on your machine, with
-`out/` in place of Netlify.
+almost every path, and this repo's static build serves the docs under `/docs`
+and five root files.
+
+**Production (decided 15 November 2026): the Hub serves all of pelican.dev from
+Forge**, the docs included. This repo's CI packs each build
+(`scripts/pack-docs.mjs`) and publishes it to a branch (`main` → `docs-build`,
+`feat/fumadocs-next` → `preview/docs-under-docs`). The Hub downloads that branch
+and serves it, with nginx doing the static files where configured. One server,
+no Worker. Netlify keeps building pull requests (deploy previews), using
+`netlify.toml`. See "Production: the Hub on Forge" below.
+
+**Later, if needed: the Cloudflare Worker.** `worker.mjs` splits pelican.dev
+between Netlify (docs) and the Hub per request. It's built and tested but not
+deployed. It's the way to scale out, or to keep the docs up when the Hub server
+is down. See "The Cloudflare Worker" and "Switching to the Worker".
+
+`dev-server.mjs` makes the split on your machine, with `out/` in place of the
+docs origin, so you can see pelican.dev as one site:
 
 ```sh
 bun run build                  # writes out/
@@ -49,6 +63,28 @@ only, a directory without its trailing slash gets a 301, a missing file gets
   on click Next.js falls back to a normal page load. This keeps a Laravel boot
   off every docs page view.
 
+## Production: the Hub on Forge
+
+What the Hub needs, in order (the Hub side is in pelican/hub; its
+`docs/DOCS_ON_FORGE.md` has the settings and the nginx block):
+
+1. **Docs**: merge to `main`. Netlify production still builds it, and the
+   publish workflow packs it to the `docs-build` branch.
+2. **Hub** on Forge: deploy with the redesign, set `SITE_DOCS_HOSTS=pelican.dev`
+   and `SITE_DOCS_BRANCH=docs-build` (and the pelican.dev settings: `APP_URL`,
+   `HUB_MACHINE_URL`, `HUB_SITE_URL`, `SESSION_DOMAIN`). Add `pelican.dev` to the
+   Forge site's domains, and optionally the nginx block, so the docs' files skip
+   PHP.
+3. **DNS**: point `pelican.dev` at the Forge server (proxied through Cloudflare
+   for TLS and caching, no Worker). The Hub installs the docs build on the first
+   visit and every 10 minutes after.
+4. **Then** `HUB_REDIRECT_HUMANS=true`, so page visits on hub.pelican.dev move
+   to pelican.dev. Machine URLs (update.json, downloads, the API) stay put.
+5. **Clean up**: drop the INTERIM pages from the build (`scripts/check-paths.mjs`).
+
+**Rollback**: point `pelican.dev` back at Netlify, which still serves this
+build (interim pages included).
+
 ## The Cloudflare Worker (`worker.mjs`)
 
 The same three branches as the dev server, with Netlify instead of `out/`:
@@ -76,7 +112,7 @@ cd router && bunx wrangler deploy --route "next.pelican.dev/*"   # try it on a s
 route for the switch. Keep `worker.mjs`, `dev-server.mjs` and
 `scripts/check-paths.mjs` in step when the list of paths changes.
 
-## Switching pelican.dev over
+## Switching to the Worker (later, if needed)
 
 In this order, so nothing points at something that isn't there yet:
 

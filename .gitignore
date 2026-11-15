@@ -28,3 +28,6 @@ package-lock.json
 
 # design skill working files
 .taste-skill
+
+# scripts/pack-docs.mjs
+/dist-docs
