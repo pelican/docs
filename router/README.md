@@ -7,8 +7,8 @@ request. `dev-server.mjs` makes the same split on your machine, so you can see
 pelican.dev as one site before the Worker exists.
 
 ```sh
-pnpm build                     # writes out/
-node router/dev-server.mjs     # http://127.0.0.1:8020/ (or: pnpm preview:site)
+bun run build                  # writes out/
+node router/dev-server.mjs     # http://127.0.0.1:8020/ (or: bun run preview:site)
 ```
 
 Env: `PORT` (default `8020`), `HUB` (default `http://127.0.0.1:8010`), `OUT`

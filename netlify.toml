@@ -1,10 +1,12 @@
 # Build settings live here (in git) instead of only in the Netlify dashboard.
 [build]
-  command = "pnpm build"
+  command = "bun run build"
   publish = "out"
 
 [build.environment]
   NODE_VERSION = "22"
+  # Netlify installs with Bun when it finds bun.lock; pin the version package.json names.
+  BUN_VERSION = "1.3.14"
   # The site is a static export (next.config.mjs), so Netlify's Next.js
   # runtime isn't needed; serve out/ as plain files.
   NETLIFY_NEXT_PLUGIN_SKIP = "true"

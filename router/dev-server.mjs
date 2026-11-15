@@ -4,7 +4,7 @@
  * five root files, the Hub for everything else. The same split the Cloudflare
  * route makes in production (router/README.md). Node only, no dependencies.
  *
- *   pnpm build && node router/dev-server.mjs
+ *   bun run build && node router/dev-server.mjs
  *   open http://127.0.0.1:8020/
  *
  * Env: PORT (8020), HUB (http://127.0.0.1:8010), OUT (out, relative to the repo).

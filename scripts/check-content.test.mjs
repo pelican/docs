@@ -1,4 +1,4 @@
-// node --test scripts/check-content.test.mjs  (pnpm test:content)
+// node --test scripts/check-content.test.mjs  (bun run test:content)
 // Runs check-content.mjs on one-page folders: pages that could run code must fail, the
 // MDX the docs really use must pass.
 import { test } from 'node:test';
