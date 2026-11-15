@@ -33,6 +33,12 @@ describe('keepOnSite', () => {
     expect(keepOnSite('/already/a/path', origin)).toBe('/already/a/path');
   });
 
+  test('a path starting with // or /\\ stays on the site (the browser would read it as another host)', () => {
+    expect(keepOnSite('https://hub.pelican.dev//evil.example/x', origin)).toBe('/evil.example/x');
+    expect(keepOnSite('https://hub.pelican.dev/\\evil.example', origin)).toBe('/evil.example');
+    expect(keepOnSite('//hub.pelican.dev///evil.example', origin)).toBe('/evil.example');
+  });
+
   test('other sites, look-alikes included, are left alone', () => {
     expect(keepOnSite('https://discord.com/oauth2/authorize', origin)).toBe('https://discord.com/oauth2/authorize');
     expect(keepOnSite('https://hub.pelican.dev.example.com/x', origin)).toBe('https://hub.pelican.dev.example.com/x');

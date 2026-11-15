@@ -2,7 +2,7 @@
 
 pelican.dev is two apps on one domain: the **Pelican Hub** (Laravel) serves
 almost every path, and this repo's static build serves the docs under `/docs`
-and five root files.
+and its root files (`ROOT_FILES` in `paths.mjs`).
 
 **Production (decided 15 November 2026): the Hub serves all of pelican.dev from
 Forge**, the docs included. This repo's CI packs each build

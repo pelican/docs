@@ -45,5 +45,9 @@ export function keepOnSite(location, origin) {
 
   if (target.origin !== new URL(origin).origin) return location;
 
-  return `${target.pathname}${target.search}${target.hash}` || '/';
+  // A path that starts with "//" (or "/\\") would be read by the browser as another site
+  // (https://hub.pelican.dev//evil.example/ -> //evil.example/), so keep a single slash.
+  const path = target.pathname.replace(/^[/\\]+/, '/');
+
+  return `${path}${target.search}${target.hash}`;
 }

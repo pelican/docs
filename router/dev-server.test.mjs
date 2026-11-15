@@ -68,7 +68,7 @@ describe('createServer', () => {
     });
     await new Promise((done) => hub.listen(0, '127.0.0.1', done));
 
-    server = createServer({ out, hub: new URL(`http://127.0.0.1:${hub.address().port}`) });
+    server = createServer({ out, hub: new URL(`http://127.0.0.1:${hub.address().port}`), log: () => {} });
     await new Promise((done) => server.listen(0, '127.0.0.1', done));
     base = `http://127.0.0.1:${server.address().port}`;
   });

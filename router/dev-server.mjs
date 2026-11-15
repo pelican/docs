@@ -6,7 +6,7 @@
  * Run:   bun run build && bun run dev:site, then open http://127.0.0.1:8020/
  * Tests: bun test router/dev-server.test.mjs
  *
- * The docs build (out/) answers /docs/* and the five root files, the Hub everything else: the
+ * The docs build (out/) answers /docs/* and the root files (paths.mjs), the Hub everything else: the
  * split pelican.dev makes in production (router/README.md). No dependencies.
  * Env: PORT (8020), HUB (http://127.0.0.1:8010), OUT (out, relative to the repo).
  */
@@ -152,8 +152,8 @@ function proxyToHub(req, res, url, hub) {
   pipeline(req, upstream, () => {});
 }
 
-/** The local server: the same docs-or-Hub decision as worker.mjs (paths.mjs). */
-export function createServer({ out, hub }) {
+/** The local server: the same docs-or-Hub decision as worker.mjs (paths.mjs). `log` gets a line per request. */
+export function createServer({ out, hub, log = console.log }) {
   return http.createServer(async (req, res) => {
     // Appended to a dummy origin, never resolved against one, so //host/x stays a path. The
     // pathname has its ./.. resolved and is not decoded, as in the Worker.
@@ -162,7 +162,7 @@ export function createServer({ out, hub }) {
 
     res.on('finish', () => {
       const by = res.getHeader('x-served-by') === 'router' ? 'edge' : docs ? 'docs' : 'hub ';
-      console.log(`${res.statusCode} ${by} ${req.method} ${req.url}`);
+      log(`${res.statusCode} ${by} ${req.method} ${req.url}`);
     });
 
     try {

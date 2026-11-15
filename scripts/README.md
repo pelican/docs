@@ -4,13 +4,15 @@ Every script here and in `router/` follows the same rules, so you (or an agent) 
 run and change one without reading the others first:
 
 - **It runs on Bun:** it starts with `#!/usr/bin/env bun`, and `package.json` calls it with `bun`.
-  Next.js itself still builds on Node 22. (`router/worker.mjs` is the exception: it runs on
-  Cloudflare, so it has no shebang and no `package.json` script.)
+  Next.js itself still builds on Node 22. (Two files have no shebang and no `package.json`
+  script: `router/worker.mjs` runs on Cloudflare, and `router/paths.mjs` is only imported.)
 - **Its header says what it does in one line,** then `When:` (what runs it), `Run:` (the
   command) and `Tests:`, then the details. `pack-docs.mjs` is a short one to copy.
 - **It has a `package.json` script,** named for what it does: `check:*`, `sync:*`, `pack:*`,
   `dev:*`.
-- **Its tests sit next to it as `<name>.test.mjs`,** written with `bun:test` (`test`, `expect`).
+- **Its tests sit next to it as `<name>.test.mjs`,** written with `bun:test` (`test`, `expect`),
+  and start with a comment naming the command (`// bun test scripts/<name>.test.mjs`) and what
+  they cover.
   `bun test` runs every one of them, locally, in CI and before every publish.
 - **Its logic can be tested without running it:** the work is in exported functions, and the
   part that runs it is under `if (import.meta.main)`, so a test can import the file safely.
@@ -24,7 +26,7 @@ run and change one without reading the others first:
 | Script | What it does | When it runs | Command | Tests |
 | --- | --- | --- | --- | --- |
 | `check-content.mjs` | Fails if a page in `content/` could run code (MDX compiles pages to JavaScript) | Before every build, and in CI | `bun run check:content` | `check-content.test.mjs` |
-| `sync-eggs.mjs` | Refreshes the egg data for the interim `/eggs` page and the homepage games strip. Uses the network and rewrites `data/eggs.json`, `public/data/eggs/` and `public/img/games/` | Before every build (`--if-online`: no network keeps the saved data; a bug still fails); by hand | `bun run sync:eggs` | `sync-eggs.test.mjs` |
+| `sync-eggs.mjs` | Refreshes the egg data for the interim `/eggs` page and the homepage games strip. Uses the network and rewrites `data/eggs.json`, `public/data/eggs/`, `public/img/eggs/` and `public/img/games/` | Before every build (`--if-online`: no network keeps the saved data; a bug still fails); by hand | `bun run sync:eggs` | `sync-eggs.test.mjs` |
 | `check-paths.mjs` | Fails if the build puts a file where pelican.dev won't serve it from this build, misses a root file, or a docs page loads something from outside `/docs/` | After every build, and in CI | `bun run check:paths` | `check-paths.test.mjs` |
 | `pack-docs.mjs` | Packs `out/` into the folder the Hub serves on pelican.dev (docs, root files, 404 page, redirects) | Before every publish, in CI ("Publish docs build"); by hand to look at the result | `bun run pack:docs` | `pack-docs.test.mjs` |
 | `../router/paths.mjs` | Which paths are this build's: `/docs/*` and the root files | Imported by the scripts above and the router | (nothing to run) | `router/paths.test.mjs` |
@@ -35,9 +37,9 @@ run and change one without reading the others first:
 (`--if-online`), and `postbuild` runs `check-paths`.
 
 **The build changes tracked files.** `sync-eggs` refreshes the egg data, so after `bun run build`
-you may see changes in `data/eggs.json`, `public/data/eggs/` and `public/img/games/`. Commit
+you may see changes in `data/eggs.json`, `public/data/eggs/`, `public/img/eggs/` and `public/img/games/`. Commit
 them only when a pull request is about the egg data. Otherwise leave them out
-(`git restore data public/data public/img/games`).
+(`git restore data public/data public/img/eggs public/img/games`).
 
 ## Before a pull request
 

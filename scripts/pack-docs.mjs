@@ -10,7 +10,7 @@
  *
  *   index.html, panel/, md/, search.json …   the docs, served under /docs/
  *   _next/                                    their scripts and styles
- *   _root/update-panel.sh, llms.txt …         the five files served at the site's root
+ *   _root/update-panel.sh, llms.txt …         the root files (ROOT_FILES)
  *   404.html                                  the docs' not-found page
  *   redirects.json                            netlify.toml's redirects under /docs
  *   BUILD.json                                which commit this is
@@ -47,6 +47,9 @@ export async function pack(folder, { src = 'out', toml = 'netlify.toml' } = {}) 
     if (!existsSync(join(src, path))) throw new Error(`${join(src, path)} is missing: run "bun run build" first`);
   }
 
+  // Read before anything is deleted, so a broken netlify.toml leaves the old folder alone.
+  const redirects = docsRedirects(await Bun.file(toml).text());
+
   await rm(folder, { recursive: true, force: true });
   await mkdir(join(folder, '_root'), { recursive: true });
 
@@ -57,7 +60,6 @@ export async function pack(folder, { src = 'out', toml = 'netlify.toml' } = {}) 
     await cp(join(src, name), join(folder, '_root', name));
   }
 
-  const redirects = docsRedirects(await Bun.file(toml).text());
   await Bun.write(join(folder, 'redirects.json'), `${JSON.stringify(redirects, null, 2)}\n`);
 
   const build = {

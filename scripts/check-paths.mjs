@@ -22,7 +22,7 @@
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { ROOT_FILES } from '../router/paths.mjs';
+import { isDocsPath, ROOT_FILES } from '../router/paths.mjs';
 
 /**
  * Lists of allowed files outside out/docs/. An entry ending in "/" matches everything in that
@@ -116,7 +116,7 @@ export function pathsLoadedOutsideDocs(html) {
 
     const path = url.replace(/^https:\/\/pelican\.dev(?=\/)/, '');
     if (!path.startsWith('/') || path.startsWith('//')) continue; // another site
-    if (path.startsWith('/docs/') || ROOT_FILES.includes(path.slice(1))) continue;
+    if (isDocsPath(path)) continue;
     outside.push(path);
   }
 

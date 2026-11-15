@@ -2,7 +2,9 @@
 /**
  * Refreshes the egg data for the interim /eggs page and the homepage games strip.
  *
- * When:  before every build (prebuild, with --if-online: never fails the build); by hand to refresh
+ * When:  before every build (prebuild, with --if-online: no network keeps the saved data, a bug
+ *        still fails the build); by hand to refresh
+ * Writes: data/eggs.json, public/data/eggs/, public/img/eggs/, public/img/games/
  * Run:   bun run sync:eggs          (or: bun scripts/sync-eggs.mjs [--if-online])
  * Tests: bun test scripts/sync-eggs.test.mjs  (the parts that need no network)
  *

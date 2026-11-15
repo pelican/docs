@@ -6,8 +6,8 @@
  * Run:   cd router && bunx wrangler deploy --route "next.pelican.dev/*"   (to try it)
  * Tests: bun test router/worker.test.mjs
  *
- * As a Worker on `pelican.dev/*`: the docs build on Netlify for /docs/* and the five root
- * files, the Pelican Hub for everything else. `dev-server.mjs` makes the same split on your machine with
+ * As a Worker on `pelican.dev/*`: the docs build on Netlify for /docs/* and the root
+ * files (paths.mjs), the Pelican Hub for everything else. `dev-server.mjs` makes the same split on your machine with
  * out/ in place of Netlify; README.md has the paths and the reasons.
  *
  * Env (wrangler.toml [vars]):

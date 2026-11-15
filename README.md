@@ -2,7 +2,7 @@
 
 The source for the documentation at [pelican.dev/docs](https://pelican.dev/docs), covering [Pelican Panel](https://github.com/pelican/panel) and [Wings](https://github.com/pelican/wings).
 
-Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) as a static site. On pelican.dev the Pelican Hub serves it from Forge (see [router/README.md](router/README.md)); Netlify builds a preview for every pull request.
+Built with [Next.js](https://nextjs.org) and [Fumadocs](https://fumadocs.dev) as a static site. Today Netlify serves pelican.dev; after the switch the Pelican Hub serves these docs under /docs from Forge (decided, not done yet: see [router/README.md](router/README.md)). Netlify builds a preview for every pull request.
 
 ## Running it locally
 
@@ -17,7 +17,7 @@ bun test        # the tests for scripts/ and router/
 
 Every script in `scripts/` and `router/` runs on Bun and starts with the same header: what it does, when it runs, how to run it and where its tests are. [scripts/README.md](scripts/README.md) lists them all.
 
-The build refreshes the egg data for the interim `/eggs` page (it uses the network), so it can change `data/eggs.json`, `public/data/eggs/` and `public/img/games/`. Leave those out of a pull request unless it's about the egg data.
+The build refreshes the egg data for the interim `/eggs` page (it uses the network), so it can change `data/eggs.json`, `public/data/eggs/`, `public/img/eggs/` and `public/img/games/`. Leave those out of a pull request unless it's about the egg data.
 
 ### Before a pull request
 
