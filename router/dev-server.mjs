@@ -13,6 +13,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import http from 'node:http';
 import { extname, join, normalize, posix, resolve, sep } from 'node:path';
+import { pipeline } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
 const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -140,7 +141,9 @@ function proxyToHub(req, res) {
         out.location = out.location.slice(HUB.origin.length) || '/';
       }
       res.writeHead(hubRes.statusCode ?? 502, out);
-      hubRes.pipe(res);
+      // pipeline, not pipe: if the Hub cuts its response short, the browser's response is
+      // closed too instead of hanging (and a browser that leaves stops the Hub's).
+      pipeline(hubRes, res, () => {});
     },
   );
   upstream.on('error', (error) => {
