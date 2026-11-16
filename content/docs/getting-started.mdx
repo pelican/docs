@@ -56,8 +56,33 @@ For a quick install of Docker CE, you can use the command below:
 curl -sSL https://get.docker.com/ | CHANNEL=stable sudo sh
 ```
 
+That works on Ubuntu, Debian, Fedora, CentOS Stream and RHEL. On **AlmaLinux, Rocky Linux and Oracle Linux** it stops with "Unable to find a match: docker-ce": Docker's repos for them have no Docker Engine packages. Use Docker's CentOS repo instead, which has the same packages:
+
+```sh
+sudo curl -fsSL https://download.docker.com/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
+sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Some cloud images leave out kernel modules Docker needs:
+
+- On **CentOS Stream, AlmaLinux and Rocky Linux 10**, `xt_addrtype` is missing, so Docker installs but won't start.
+- On **Oracle Linux** with its UEK kernel, `xt_ipvs` is missing, so Docker runs but Swarm can't reach its services (the Panel answers 502).
+
+Install them, then restart Docker:
+
+```sh
+# CentOS Stream, AlmaLinux, Rocky Linux
+sudo dnf -y install kernel-modules-extra-$(uname -r)
+# Oracle Linux (UEK)
+sudo dnf -y install kernel-uek-modules-extra-$(uname -r) kernel-uek-modules-extra-netfilter-$(uname -r)
+
+sudo systemctl restart docker
+```
+
+If `sudo modprobe xt_addrtype` (or `xt_ipvs`) still can't find the module, the package was installed for a newer kernel than the one running: reboot and try again. The [install script](#the-quick-way-one-command) does all of this for you.
+
 <Admonition type="info" title="Installing Docker CE">
-    If the above command does not work, please refer to the [official Docker documentation](https://docs.docker.com/engine/install/) on how to install Docker CE on your server.
+    If none of this works on your server, see the [official Docker documentation](https://docs.docker.com/engine/install/) on how to install Docker CE.
 </Admonition>
 
 ## Start Docker on Boot

@@ -34,6 +34,8 @@ TRAEFIK_IMAGE_DEFAULT="traefik:v3.7.19" # an exact version: updates are a change
 LE_PRODUCTION="https://acme-v02.api.letsencrypt.org/directory"
 LE_STAGING="https://acme-staging-v02.api.letsencrypt.org/directory"
 WINGS_RELEASES="https://github.com/pelican/wings/releases/latest/download"
+DOCKER_CENTOS_REPO="https://download.docker.com/linux/centos/docker-ce.repo"
+OS_RELEASE="${PELICAN_OS_RELEASE:-/etc/os-release}" # another file only in the tests
 
 # Address ranges, picked to stay clear of Docker's defaults (172.17/16), Wings' own network
 # (172.18/16, pelican_nw) and the 10.0.0.0/x private networks many cloud providers use.
@@ -428,8 +430,72 @@ fi
 
 # ---- Docker --------------------------------------------------------------------------------
 step "Docker"
+
+# Which distribution this is, from os-release: ID (rocky) and ID_LIKE ("rhel centos fedora").
+os_id="" os_like=""
+if [[ -r "$OS_RELEASE" ]]; then
+  # shellcheck disable=SC1090
+  read -r os_id os_like < <(. "$OS_RELEASE" && echo "${ID:-} ${ID_LIKE:-}")
+fi
+
+# Docker's script (get.docker.com) installs Docker on Ubuntu, Debian, Fedora, CentOS and RHEL. On
+# AlmaLinux, Rocky Linux, Oracle Linux and the other RHEL rebuilds it adds Docker's repo named
+# after them, which has no Docker Engine packages, and stops. Those get Docker's CentOS repo
+# instead: the same packages, built for RHEL 8, 9 and 10.
+rhel_rebuild() {
+  case "$os_id" in
+    centos | rhel | fedora | "") return 1 ;;
+    ol) return 0 ;; # Oracle Linux, whose ID_LIKE is only "fedora"
+  esac
+  [[ " $os_like " == *" rhel "* || " $os_like " == *" centos "* ]]
+}
+
+install_docker_from_centos_repo() {
+  info "Installing Docker CE from Docker's CentOS repo ($os_id has no packages of its own there)."
+  # Same file name as get.docker.com's, so it also replaces the repo an earlier failed run added.
+  run curl -fsSL "$DOCKER_CENTOS_REPO" -o /etc/yum.repos.d/docker-ce.repo
+  run dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
+# Kernel modules Docker's network rules need: xt_addrtype (Docker won't start without it) and
+# xt_ipvs (without it Swarm can't route to a service's address, and Traefik answers 502). Some
+# RHEL-family cloud images leave them out (CentOS Stream, AlmaLinux and Rocky Linux 10 the first,
+# Oracle Linux's UEK kernel the second): they're in kernel-modules-extra, or
+# kernel-uek-modules-extra. Checked before Docker is installed (its install starts it) and on
+# every run, so a run that stopped here gets past it the next time.
+missing_modules() {
+  local module
+  for module in xt_addrtype xt_ipvs; do
+    modprobe -q "$module" 2>/dev/null || printf '%s ' "$module"
+  done
+}
+modules_added=false
+missing="$($dry_run || missing_modules)"
+if [[ -n "$missing" ]]; then
+  if command -v dnf >/dev/null 2>&1; then
+    # Oracle Linux's UEK kernel splits them further: its netfilter modules have their own package.
+    extra=(kernel-modules-extra)
+    [[ "$(uname -r)" == *uek* ]] && extra=(kernel-uek-modules-extra kernel-uek-modules-extra-netfilter)
+    info "Installing ${extra[*]}: Docker needs the kernel modules ${missing% }, which this kernel is missing."
+    # The packages for the running kernel; if the mirrors no longer have them, the newest ones.
+    # strict=False: a package this kernel series doesn't have is skipped, not an error.
+    dnf -y --setopt=strict=False install "${extra[@]/%/-$(uname -r)}" ||
+      dnf -y --setopt=strict=False install "${extra[@]}"
+    missing="$(missing_modules)"
+    [[ -z "$missing" ]] ||
+      die "Docker needs the kernel modules ${missing% }, and ${extra[*]} didn't add them for the running kernel ($(uname -r)). If a newer kernel was just installed, reboot and run this script again; otherwise install the package that has them (modprobe ${missing%% *} may name it)."
+    modules_added=true
+    ok "Kernel modules loaded"
+  else
+    warn "The kernel modules ${missing% } are missing, and Docker needs them. If Docker or the Panel doesn't work, install your distribution's extra kernel modules."
+  fi
+fi
+
 if command -v docker >/dev/null 2>&1 && ! $dry_run; then
-  ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo '(not running)') is installed"
+  docker_version="$(docker version --format '{{.Server.Version}}' 2>/dev/null || true)"
+  ok "Docker ${docker_version:-(not running yet)} is installed"
+elif rhel_rebuild; then
+  install_docker_from_centos_repo
 else
   if $dry_run; then
     info "If Docker is missing, it's installed with Docker's script (see the docs: getting-started)."
@@ -442,7 +508,17 @@ else
     curl -fsSL https://get.docker.com | CHANNEL=stable sh
   fi
 fi
-quietly systemctl enable --now docker
+
+# Starts that failed earlier (an earlier run, or Docker's install starting it without the module)
+# leave systemd refusing new ones for a while: "Start request repeated too quickly".
+$dry_run || systemctl reset-failed docker.service >/dev/null 2>&1 || true
+if ! quietly systemctl enable --now docker; then
+  $dry_run || journalctl -u docker --no-pager -n 20 >&2 || true
+  die "Docker is installed but didn't start: its last log lines are above. Fix the cause and run this script again."
+fi
+# A Docker that was already running set up its rules without the modules just added: restart it
+# so it sets them up again (this also restarts the stack's containers).
+$modules_added && quietly systemctl restart docker
 
 # ---- Swarm ---------------------------------------------------------------------------------
 step "Docker Swarm"
