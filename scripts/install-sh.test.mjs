@@ -2,7 +2,8 @@
 // public/install.sh (pelican.dev/install.sh), run for real in --dry-run: the options and their
 // errors, the files it writes (pelican.env, stack.yml, deploy.sh) for each profile, with and
 // without a domain, that a second run keeps the keys and passwords, and what deploy.sh writes
-// (Traefik's routes) and hands to `docker stack deploy` (with a stub docker). Also shellcheck, when it's installed. The script lives in public/ (served as it
+// (Traefik's routes) and hands to `docker stack deploy` (with a stub docker), and how Docker is
+// installed on each distribution (a fake os-release). Also shellcheck, when it's installed. The script lives in public/ (served as it
 // is), so its test lives here.
 import { describe, expect, test } from 'bun:test';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -278,6 +279,52 @@ suite('install.sh files', () => {
     expect(settings(dir).PUBLIC_SUBNET).toBe('10.99.1.0/24');
     expect(settings(dir).WINGS_UPSTREAM).toBe('http://10.99.2.1:8080');
     expect(result.out).toContain('--subnet 10.99.2.0/24');
+  });
+});
+
+/** A dry run on a server whose /etc/os-release says `release` (PELICAN_OS_RELEASE, for the tests). */
+function dryRunOn(release) {
+  const file = join(mkdtempSync(join(tmpdir(), 'pelican-os-')), 'os-release');
+  writeFileSync(file, release);
+  return dryRun(IP, undefined, { PELICAN_OS_RELEASE: file });
+}
+
+const CENTOS_REPO = 'curl -fsSL https://download.docker.com/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo';
+const GET_DOCKER = 'curl -fsSL https://get.docker.com | CHANNEL=stable sh';
+
+suite('install.sh Docker', () => {
+  // get.docker.com sends these to Docker's repo named after them, which has no Docker Engine
+  // packages: "Unable to find a match: docker-ce" (seen on Rocky 9).
+  test.each([
+    ['AlmaLinux 9', 'ID="almalinux"\nVERSION_ID="9.6"\nID_LIKE="rhel centos fedora"\n'],
+    ['Rocky Linux 8', 'ID="rocky"\nVERSION_ID="8.10"\nID_LIKE="rhel centos fedora"\n'],
+    ['Rocky Linux 10', 'ID="rocky"\nVERSION_ID="10.0"\nID_LIKE="rhel centos fedora"\n'],
+    ['Oracle Linux 9', 'ID="ol"\nVERSION_ID="9.6"\nID_LIKE="fedora"\n'],
+  ])('%s gets Docker from Docker\'s CentOS repo, not get.docker.com', (_name, release) => {
+    const { code, out } = dryRunOn(release);
+    expect(code).toBe(0);
+    expect(out).toContain(CENTOS_REPO);
+    expect(out).toContain('dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin');
+    expect(out).not.toContain('get.docker.com');
+  });
+
+  test.each([
+    ['Ubuntu 24.04', 'ID=ubuntu\nVERSION_ID="24.04"\nID_LIKE=debian\n'],
+    ['Debian 13', 'ID=debian\nVERSION_ID="13"\n'],
+    ['CentOS Stream 10', 'ID="centos"\nVERSION_ID="10"\nID_LIKE="rhel fedora"\n'],
+    ['RHEL 9', 'ID="rhel"\nVERSION_ID="9.6"\nID_LIKE="fedora"\n'],
+    ['Fedora 43', 'ID=fedora\nVERSION_ID=43\n'],
+    ['no os-release', ''],
+  ])('%s keeps Docker\'s own script', (_name, release) => {
+    const { code, out } = dryRunOn(release);
+    expect(code).toBe(0);
+    expect(out).toContain(GET_DOCKER);
+    expect(out).not.toContain(CENTOS_REPO);
+  });
+
+  test('Docker is started after it is installed', () => {
+    const { out } = dryRunOn('ID="rocky"\nVERSION_ID="9.6"\nID_LIKE="rhel centos fedora"\n');
+    expect(out.indexOf('systemctl enable --now docker')).toBeGreaterThan(out.indexOf('dnf -y install docker-ce'));
   });
 });
 
