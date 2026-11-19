@@ -11,7 +11,7 @@ You need Node.js 22 or newer (Next.js builds on Node) and [Bun](https://bun.com)
 ```sh
 bun install
 bun run dev     # http://localhost:3000, reloads as you edit
-bun run build   # the production site, written to out/ (checks the pages first, the paths after)
+bun run build   # the production site, written to out/ (checks the pages first, the paths and links after)
 bun test        # the tests for scripts/ and router/
 ```
 

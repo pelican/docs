@@ -1,5 +1,6 @@
 import { renderPlaceholder, type PlaceholderData } from 'fumadocs-core/mdx-plugins/remark-llms.runtime';
 import type { Node } from 'fumadocs-core/page-tree';
+import { resolveDocsHref } from '@/lib/docs-href';
 import { project } from '@/lib/home-data';
 import { source } from '@/lib/source';
 
@@ -245,16 +246,11 @@ function cleanFenceMeta(markdown: string): string {
   });
 }
 
-/** Relative and root links → absolute pelican.dev URLs, resolved like the HTML page does. */
+/** Relative and root links → absolute pelican.dev URLs, resolved like the HTML page does (lib/docs-href.ts). */
 function absoluteLinks(markdown: string, page: DocsPage): string {
-  // The page's folder on the site, e.g. /docs/panel/ for panel/getting-started.mdx.
-  const dir = `/docs/${page.path.split('/').slice(0, -1).join('/')}`.replace(/\/?$/, '/');
   return markdown.replace(/\]\((?!https?:|mailto:|#)([^)\s]+)\)/g, (_, href: string) => {
-    const [path, hash] = href.split('#');
-    let url = path.startsWith('/') ? path : new URL(path, `https://x${dir}`).pathname;
-    url = url.replace(/\.mdx?$/, '').replace(/\/index$/, '');
-    if (!/\.[a-z0-9]+$/i.test(url) && !url.endsWith('/')) url += '/';
-    return `](${SITE_URL}${url}${hash ? `#${hash}` : ''})`;
+    const url = resolveDocsHref(href, page.path);
+    return `](${url.startsWith('/') ? SITE_URL : ''}${url})`;
   });
 }
 

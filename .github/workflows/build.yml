@@ -46,6 +46,6 @@ jobs:
         run: bun run typecheck
 
       # prebuild runs check:content again (Netlify builds run it there);
-      # postbuild runs check:paths on out/.
+      # postbuild runs check:paths and check:links on out/.
       - name: 'Build'
         run: bun run build

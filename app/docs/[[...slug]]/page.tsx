@@ -6,7 +6,7 @@ import {
   EditOnGitHub,
   PageLastUpdate,
 } from 'fumadocs-ui/layouts/docs/page';
-import { createRelativeLink } from 'fumadocs-ui/mdx';
+import defaultMdxComponents from 'fumadocs-ui/mdx';
 import { getBreadcrumbItems } from 'fumadocs-core/breadcrumb';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -15,6 +15,7 @@ import { docsBreadcrumbJsonLd, jsonLdScript, ogImage, pageMetadata, techArticleJ
 import { getMDXComponents } from '@/mdx-components';
 import { PageActions } from '@/components/docs/page-actions';
 import { markdownPath } from '@/lib/llms';
+import { resolveDocsHref } from '@/lib/docs-href';
 
 export const dynamicParams = false;
 
@@ -55,8 +56,11 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       <DocsBody>
         <MDX
           components={getMDXComponents({
-            // Lets pages keep linking with relative paths like ./docker.
-            a: createRelativeLink(source, page),
+            // Pages link with relative paths like ../versioning or ./docker.mdx; resolve them
+            // against the page's folder, not its URL (which ends in /). See lib/docs-href.ts.
+            a: ({ href, ...rest }) => (
+              <defaultMdxComponents.a href={href ? resolveDocsHref(href, page.path) : href} {...rest} />
+            ),
           })}
         />
       </DocsBody>
