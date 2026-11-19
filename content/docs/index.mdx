@@ -3,19 +3,21 @@ title: "Welcome to Pelican!"
 description: "Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup."
 ---
 
-### What is Pelican?
+This is the documentation for Pelican: how to install, update and run the Panel and Wings, set up webservers, SSL and eggs, and move over from Pterodactyl.
+
+## What is Pelican?
 
 [**Pelican**](https://github.com/pelican/panel) is a free, open-source server management panel for hosting game servers, software and applications in isolated Docker containers.
 It started as a fork of [**Pterodactyl**](https://pterodactyl.io/) and has since grown well beyond it.
 
 The Panel is the web interface: it shows information about your servers and sends commands to them.
 
-### What is Wings?
+## What is Wings?
 
 [**Wings**](https://github.com/pelican/wings) is the service that runs on each machine hosting your servers.
 It handles the Docker containers behind the scenes (creating, starting, stopping and restarting them) on behalf of the Panel. Users never interact with Wings directly.
 
-### Glossary
+## Glossary
 
 **Panel**: web application that talks to Wings and lets you control your Servers.
 
@@ -35,7 +37,7 @@ It handles the Docker containers behind the scenes (creating, starting, stopping
 
 **Yolk**: curated collection of Docker Images provided by Pelican for use with Eggs.
 
-### Example Setup
+## Example Setup
 
 ```mermaid
 flowchart TD
@@ -52,7 +54,7 @@ flowchart TD
     W1  ---> C4(Project Zomboid)
 ```
 
-### Open Source!
+## Open Source!
 
 The Panel is released under [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html) and Wings under [MIT](https://opensource.org/license/mit).
 Anyone can browse the code, contribute improvements, and help identify bugs and security issues on [GitHub](https://github.com/pelican).
