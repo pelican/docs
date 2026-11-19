@@ -1,4 +1,4 @@
-import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import type { BaseLayoutProps, LinkItemType } from 'fumadocs-ui/layouts/shared';
 import { DiscordIcon } from '@/components/icons';
 import { links } from '@/lib/links';
 import { navOutsideDocs } from '@/lib/nav';
@@ -21,12 +21,11 @@ export function docsOptions(): BaseLayoutProps {
     },
     githubUrl: links.github,
     links: [
-      // The Hub's pages (ui/nav.json). Fumadocs' `external` would open a new tab; without it a
-      // click tries client-side navigation, gets no payload from the Hub and loads the page normally.
-      { text: 'Home', url: '/', on: 'menu' },
-      ...navOutsideDocs
-        .filter((item) => item.href.startsWith('/'))
-        .map((item) => ({ text: item.label, url: item.href, on: 'menu' as const })),
+      // The Hub's pages (ui/nav.json), as plain links: Fumadocs' link would add the docs'
+      // trailing slash (/sponsor/ instead of /sponsor) and try client-side navigation, and its
+      // `external` would open a new tab.
+      hubMenuLink('Home', '/'),
+      ...navOutsideDocs.filter((item) => item.href.startsWith('/')).map((item) => hubMenuLink(item.label, item.href)),
       {
         type: 'icon',
         label: 'Discord',
@@ -35,5 +34,22 @@ export function docsOptions(): BaseLayoutProps {
         url: links.discord,
       },
     ],
+  };
+}
+
+/** Fumadocs' own sidebar link look (itemVariants in fumadocs-ui's docs sidebar), for a plain <a>. */
+const MENU_LINK =
+  'relative flex flex-row items-center gap-2 rounded-lg p-2 text-start text-fd-muted-foreground wrap-anywhere transition-colors hover:bg-fd-accent/50 hover:text-fd-accent-foreground/80 hover:transition-none';
+
+/** A link to one of the Hub's pages in the phone menu, with its href exactly as written. */
+function hubMenuLink(text: string, url: string): LinkItemType {
+  return {
+    type: 'custom',
+    on: 'menu',
+    children: (
+      <a href={url} className={MENU_LINK} style={{ paddingInlineStart: 'calc(2 * var(--spacing))' }}>
+        {text}
+      </a>
+    ),
   };
 }

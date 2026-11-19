@@ -293,15 +293,16 @@ export function llmsTxt(): string {
   lines.push(
     '## Site',
     '',
-    `- [Eggs](${SITE_URL}/eggs/): searchable index of community eggs (games and apps Pelican can run)`,
-    `- [Support Pelican](${SITE_URL}/support/): how to fund the project (monthly plans, one-off donations) or help without paying`,
-    `- [FAQ](${SITE_URL}/faq/): differences from Pterodactyl, migration, egg compatibility, AGPLv3 licensing and plugins`,
+    `- [Plugins](${SITE_URL}/plugins): the Plugin Hub, with plugins and themes for the Panel`,
+    `- [Eggs](${SITE_URL}/eggs): searchable index of community eggs (games and apps Pelican can run)`,
+    `- [Support Pelican](${SITE_URL}/sponsor): how to fund the project (monthly plans, one-off donations) or help without paying`,
+    `- [FAQ](${SITE_URL}/faq): differences from Pterodactyl, migration, egg compatibility, AGPLv3 licensing and plugins`,
     `- [Full docs in one file](${SITE_URL}/llms-full.txt): every page above, in order`,
     '',
     '## Optional',
     '',
     '- [Source code](https://github.com/pelican/panel): the Panel on GitHub',
-    '- [Hub API](https://hub.pelican.dev/api): API for the plugin and egg hub',
+    '- [Hub API](https://hub.pelican.dev/docs/api): API for the plugin and egg hub',
     '',
   );
 
