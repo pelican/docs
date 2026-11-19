@@ -30,6 +30,10 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v7
+        with:
+          # The whole history: each page's "Last updated", sitemap date and JSON-LD dates come
+          # from git (lastModified in source.config.ts). A shallow clone gives every page the same date.
+          fetch-depth: 0
 
       - name: 'Setup Bun'
         uses: oven-sh/setup-bun@v2
@@ -58,7 +62,7 @@ jobs:
       - name: 'Typecheck'
         run: bun run typecheck
 
-      # prebuild checks the content, postbuild checks every file lands where it should.
+      # prebuild checks the content, postbuild checks every file lands where it should and every link works.
       - name: 'Build'
         run: bun run build
 

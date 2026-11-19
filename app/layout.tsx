@@ -2,6 +2,7 @@ import './global.css';
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
+import { DocsSearchDialog } from '@/components/docs/search-dialog';
 import { ExternalLinkGuard } from '@/components/external-link-guard';
 import { ASSET_URL, IS_PRODUCTION, OG_SIZE, SITE_NAME, ogImage } from '@/lib/og';
 
@@ -43,9 +44,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <RootProvider
           // Dark until the reader picks a theme with the switch in the docs bar (the Hub does the same).
           theme={{ defaultTheme: 'dark' }}
-          // The search index is a static file built with the site (app/docs/search.json),
-          // under /docs/ like everything else the docs load.
-          search={{ options: { type: 'static', api: '/docs/search.json' } }}
+          // Fumadocs' dialog with focus return, a results count and a focus ring
+          // (components/docs/search-dialog.tsx); it searches the static index under /docs/.
+          search={{ SearchDialog: DocsSearchDialog }}
         >
           {children}
           <ExternalLinkGuard />

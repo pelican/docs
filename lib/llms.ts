@@ -1,5 +1,6 @@
 import { renderPlaceholder, type PlaceholderData } from 'fumadocs-core/mdx-plugins/remark-llms.runtime';
 import type { Node } from 'fumadocs-core/page-tree';
+import { resolveDocsHref } from '@/lib/docs-href';
 import { project } from '@/lib/home-data';
 import { source } from '@/lib/source';
 
@@ -245,16 +246,11 @@ function cleanFenceMeta(markdown: string): string {
   });
 }
 
-/** Relative and root links → absolute pelican.dev URLs, resolved like the HTML page does. */
+/** Relative and root links → absolute pelican.dev URLs, resolved like the HTML page does (lib/docs-href.ts). */
 function absoluteLinks(markdown: string, page: DocsPage): string {
-  // The page's folder on the site, e.g. /docs/panel/ for panel/getting-started.mdx.
-  const dir = `/docs/${page.path.split('/').slice(0, -1).join('/')}`.replace(/\/?$/, '/');
   return markdown.replace(/\]\((?!https?:|mailto:|#)([^)\s]+)\)/g, (_, href: string) => {
-    const [path, hash] = href.split('#');
-    let url = path.startsWith('/') ? path : new URL(path, `https://x${dir}`).pathname;
-    url = url.replace(/\.mdx?$/, '').replace(/\/index$/, '');
-    if (!/\.[a-z0-9]+$/i.test(url) && !url.endsWith('/')) url += '/';
-    return `](${SITE_URL}${url}${hash ? `#${hash}` : ''})`;
+    const url = resolveDocsHref(href, page.path);
+    return `](${url.startsWith('/') ? SITE_URL : ''}${url})`;
   });
 }
 
@@ -297,15 +293,16 @@ export function llmsTxt(): string {
   lines.push(
     '## Site',
     '',
-    `- [Eggs](${SITE_URL}/eggs/): searchable index of community eggs (games and apps Pelican can run)`,
-    `- [Support Pelican](${SITE_URL}/support/): how to fund the project (monthly plans, one-off donations) or help without paying`,
-    `- [FAQ](${SITE_URL}/faq/): differences from Pterodactyl, migration, egg compatibility, AGPLv3 licensing and plugins`,
+    `- [Plugins](${SITE_URL}/plugins): the Plugin Hub, with plugins and themes for the Panel`,
+    `- [Eggs](${SITE_URL}/eggs): searchable index of community eggs (games and apps Pelican can run)`,
+    `- [Support Pelican](${SITE_URL}/sponsor): how to fund the project (monthly plans, one-off donations) or help without paying`,
+    `- [FAQ](${SITE_URL}/faq): differences from Pterodactyl, migration, egg compatibility, AGPLv3 licensing and plugins`,
     `- [Full docs in one file](${SITE_URL}/llms-full.txt): every page above, in order`,
     '',
     '## Optional',
     '',
     '- [Source code](https://github.com/pelican/panel): the Panel on GitHub',
-    '- [Hub API](https://hub.pelican.dev/api): API for the plugin and egg hub',
+    '- [Hub API](https://hub.pelican.dev/docs/api): API for the plugin and egg hub',
     '',
   );
 

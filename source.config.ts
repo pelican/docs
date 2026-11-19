@@ -125,6 +125,10 @@ export default defineConfig({
     rehypeCodeOptions: {
       ...codeDefaults,
       themes: { light: 'github-light', dark: 'github-dark' },
+      // Code blocks are navy in both themes (app/global.css), in github-dark's colours. Its
+      // comment grey (#6a737d) is under 4.5:1 there (2.98:1 on a highlighted line); GitHub's
+      // newer dark comment grey passes on plain and highlighted lines.
+      colorReplacements: { 'github-dark': { '#6a737d': '#8b949e' } },
       fallbackLanguage: 'plaintext',
       transformers: [
         ...(codeDefaults.transformers ?? []),

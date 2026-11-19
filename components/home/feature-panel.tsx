@@ -63,7 +63,7 @@ export function FeaturePanel() {
       <div className="pl-panel" data-ui id="pl-panel-view" role="tabpanel" aria-label={`Drawing of the ${tab} page`}>
         <div className="pl-panel__top">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/docs/img/logo.png" alt="" width={24} height={24} />
+          <img src="/docs/img/logo-96.webp" alt="" width={24} height={24} />
           <span className="pl-panel__brand">Pelican</span>
           <span className="pl-panel__crumb">/ Servers / Minecraft SMP</span>
           <span className="pl-panel__search">

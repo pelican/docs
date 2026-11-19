@@ -21,7 +21,9 @@ export function PageActions({ markdownUrl, githubUrl }: { markdownUrl: string; g
       <CopyButton url="/llms-full.txt" icon={<BookCopy />} title="Copy every docs page as one Markdown file (about 60,000 tokens)">
         Copy all docs
       </CopyButton>
-      <ViewOptionsPopover className="dt-action" markdownUrl={markdownUrl} githubUrl={githubUrl} />
+      <ViewOptionsPopover className="dt-action" markdownUrl={markdownUrl} githubUrl={githubUrl}>
+        Open in…
+      </ViewOptionsPopover>
     </div>
   );
 }

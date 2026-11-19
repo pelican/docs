@@ -1,6 +1,6 @@
 ---
 title: "Cloudflare Tunnel"
-description: "Run the Docker panel behind a Cloudflare Tunnel without opening any ports on the host."
+description: "Serve the Docker install of the Pelican Panel over HTTPS through a Cloudflare Tunnel, without opening any inbound ports on the host, and keep Wings reachable."
 ---
 
 A [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) lets you serve the panel over HTTPS without opening any inbound ports on your host. A small `cloudflared` container makes an outbound connection to Cloudflare, and Cloudflare forwards requests for your hostname down that connection to the panel.

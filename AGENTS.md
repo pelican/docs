@@ -19,7 +19,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Before opening a pull request: `bun test`, `bun run typecheck`, `bun run build`. The build
   checks the pages before it (`check:content`), refreshes the egg data (`sync:eggs`, which uses
   the network and rewrites `data/eggs.json`, `public/data/eggs/`, `public/img/eggs/`, `public/img/games/`: don't
-  commit those unless the task is about eggs), and checks the paths after it (`check:paths`).
+  commit those unless the task is about eggs), and checks the paths and the links after it (`check:paths`, `check:links`).
 - The paths this build serves on pelican.dev are in one file, `router/paths.mjs`. Change them
   there, and in the Hub's `DocsBuildService::ROOT_FILES` for the root files.
 - A new MDX component goes in `mdx-components.tsx` and in `COMPONENTS` in

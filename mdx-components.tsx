@@ -1,4 +1,5 @@
 import defaultMdxComponents from 'fumadocs-ui/mdx';
+import { CodeBlock, Pre } from 'fumadocs-ui/components/codeblock';
 import type { MDXComponents } from 'mdx/types';
 import { Admonition } from '@/components/mdx/admonition';
 import { Link } from '@/components/mdx/link';
@@ -20,6 +21,12 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
     span: SetupAwareSpan,
+    // Fumadocs' code block, with a name for its scrollable region (the file title, or "Code").
+    pre: ({ ref: _ref, ...props }) => (
+      <CodeBlock {...props} viewportProps={{ 'aria-label': typeof props.title === 'string' ? `Code: ${props.title}` : 'Code' }}>
+        <Pre>{props.children}</Pre>
+      </CodeBlock>
+    ),
     Admonition,
     Tabs,
     TabItem,

@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v7
+        with:
+          # The whole history: each page's "Last updated", sitemap date and JSON-LD dates come
+          # from git (lastModified in source.config.ts). A shallow clone gives every page the same date.
+          fetch-depth: 0
 
       # Bun installs and runs the scripts; Next.js itself still builds on Node.
       - name: 'Setup Bun'
@@ -46,6 +50,6 @@ jobs:
         run: bun run typecheck
 
       # prebuild runs check:content again (Netlify builds run it there);
-      # postbuild runs check:paths on out/.
+      # postbuild runs check:paths and check:links on out/.
       - name: 'Build'
         run: bun run build
