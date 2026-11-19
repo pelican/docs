@@ -14,8 +14,9 @@ import { githubEditUrl, source } from '@/lib/source';
 import { docsBreadcrumbJsonLd, jsonLdScript, ogImage, pageMetadata, techArticleJsonLd } from '@/lib/og';
 import { getMDXComponents } from '@/mdx-components';
 import { PageActions } from '@/components/docs/page-actions';
-import { markdownPath } from '@/lib/llms';
+import { markdownPath, SITE_URL } from '@/lib/llms';
 import { resolveDocsHref } from '@/lib/docs-href';
+import { firstCommitDate } from '@/lib/git-dates';
 
 export const dynamicParams = false;
 
@@ -34,6 +35,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       image: ogImage.docs(page.slugs),
       section: docsSection(page.url),
       lastModified: page.data.lastModified,
+      published: firstCommitDate(`content/docs/${page.path}`),
     }),
   );
 
@@ -91,6 +93,8 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
     image: ogImage.docs(page.slugs),
     type: isIndex ? 'website' : 'article',
     modifiedTime: page.data.lastModified,
+    // The page as Markdown, for AI tools (lib/llms.ts). /docs/md/… is the built file behind it.
+    markdown: `${SITE_URL}${markdownPath(page)}`,
   });
 }
 

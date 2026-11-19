@@ -52,6 +52,8 @@ interface PageMetadataInput {
   type?: 'website' | 'article';
   /** For articles: when the source last changed. */
   modifiedTime?: Date;
+  /** Absolute URL of the page as Markdown, advertised as <link rel="alternate" type="text/markdown">. */
+  markdown?: string;
 }
 
 /**
@@ -67,6 +69,7 @@ export function pageMetadata({
   image,
   type = 'website',
   modifiedTime,
+  markdown,
 }: PageMetadataInput): Metadata {
   const url = absoluteUrl(path);
   // Social cards show the site name separately, so they get the plain title.
@@ -76,7 +79,7 @@ export function pageMetadata({
   return {
     title: absoluteTitle ? { absolute: absoluteTitle } : title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, ...(markdown ? { types: { 'text/markdown': markdown } } : {}) },
     openGraph: {
       type,
       siteName: SITE_NAME,
@@ -170,7 +173,10 @@ export function techArticleJsonLd(page: {
   image: string;
   section?: string;
   lastModified?: Date;
+  published?: Date;
 }) {
+  // The Organization node the Hub's home page defines (same @id), named so it also stands alone.
+  const pelican = { '@type': 'Organization', '@id': ORG_ID, name: SITE_NAME, url: `${SITE_URL}/` };
   return {
     '@type': 'TechArticle',
     headline: page.title,
@@ -180,9 +186,11 @@ export function techArticleJsonLd(page: {
     image: new URL(page.image, SITE_URL).toString(),
     inLanguage: 'en',
     ...(page.section ? { articleSection: page.section } : {}),
+    ...(page.published ? { datePublished: page.published.toISOString() } : {}),
     ...(page.lastModified ? { dateModified: page.lastModified.toISOString() } : {}),
     isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: `${SITE_URL}/` },
-    publisher: { '@type': 'Organization', name: SITE_NAME, url: `${SITE_URL}/`, logo: `${SITE_URL}/docs/img/logo.png` },
+    author: pelican,
+    publisher: { ...pelican, logo: `${SITE_URL}/docs/img/logo.png` },
   };
 }
 
