@@ -75,6 +75,12 @@
   }
 }
 
+/* The search dialog's input: Fumadocs turns its outline off; give it one back. */
+input[aria-controls='fd-search-list']:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}
+
 /* Values filled in from the reader's <SetupPanel /> are underlined, so it is
    clear which parts of a config file came from them. */
 [data-setup][data-filled] {
@@ -182,9 +188,35 @@ figure.shiki {
   outline-offset: 2px;
 }
 
-/* The search box shows focus with its caret; the dialog's edge already frames it. */
+/* The search box gets the same ring (Fumadocs turns its outline off). */
 :root:has(.dt-root) [role='dialog'] input:focus-visible {
-  outline: none;
+  outline: 3px solid var(--pl-fg);
+  outline-offset: 2px;
+}
+
+/* Dark theme: edges of controls (search box, buttons, theme switch) at 3:1 or more against
+   the bar and the cards, so they can be told apart (WCAG 1.4.11). --pl-edge is 1.9:1 there. */
+:root.dark:has(.dt-root) {
+  --dt-control-edge: #5b7a8c;
+}
+
+/* "Skip to content" (components/docs/docs-top-bar.tsx): off screen until focused. */
+.dt-skip {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 12px 16px;
+  border: 3px solid var(--pl-ink);
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  font: 700 15px/1 var(--font-sans);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.dt-skip:focus {
+  transform: none;
 }
 
 .dt-root ::selection {
@@ -265,7 +297,7 @@ figure.shiki {
 }
 
 .dark .dt-bar__search {
-  border-color: var(--pl-edge) !important;
+  border-color: var(--dt-control-edge) !important;
   background: var(--pl-card) !important;
 }
 
@@ -338,7 +370,7 @@ figure.shiki {
 }
 
 .dark .dt-root [data-theme-toggle] {
-  border-color: var(--pl-edge);
+  border-color: var(--dt-control-edge);
   background: var(--pl-card);
 }
 
@@ -373,7 +405,7 @@ figure.shiki {
 }
 
 .dark .dt-btn {
-  border-color: var(--pl-edge);
+  border-color: var(--dt-control-edge);
   background: var(--pl-card);
   color: var(--pl-fg);
 }
@@ -940,6 +972,10 @@ figure.shiki {
   width: 16px;
   height: 16px;
   color: var(--pl-kicker);
+}
+
+.dark .dt-root .dt-action {
+  border-color: var(--dt-control-edge);
 }
 
 .dt-root .dt-action:hover {

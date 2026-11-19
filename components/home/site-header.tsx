@@ -22,7 +22,7 @@ export function SiteHeader() {
       <header className="pl-nav">
         <Link href="/" className="pl-nav__brand" aria-label="Pelican home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/docs/img/logo.png" alt="" width={44} height={44} />
+          <img src="/docs/img/logo-96.webp" alt="" width={44} height={44} />
           <span className="d">Pelican</span>
         </Link>
         <nav className="pl-nav__links" aria-label="Main">
