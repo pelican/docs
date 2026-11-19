@@ -10,7 +10,8 @@
  * browser does (against the page's own URL, which ends in "/" because of trailingSlash), and
  * fails when a link to this build's paths (router/paths.mjs: /docs/* and the root files):
  *   - goes to a page or file that isn't in out/ and isn't an old path netlify.toml redirects;
- *   - has an #anchor that the target page has no id for (same-page "#x" links included).
+ *   - has an #anchor that the target page has no id for (same-page "#x" links included);
+ * and when a /docs redirect in netlify.toml points at a docs page that isn't in the build.
  * Links to the Hub's pages (/plugins, /eggs, …) and to other sites aren't checked.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -105,6 +106,17 @@ function walk(dir) {
   });
 }
 
+/**
+ * netlify.toml's /docs redirects whose target is a docs page that isn't in the build
+ * (`redirects` as from pack-docs' docsRedirects: `{ from, to }`). Same `{ page, href, reason }`s.
+ */
+export function brokenRedirects(redirects, pages) {
+  return redirects
+    .filter(({ to }) => to.startsWith('/docs'))
+    .filter(({ to }) => !pages.has(new URL(to, ORIGIN).pathname))
+    .map(({ from, to }) => ({ page: `netlify.toml ${from}`, href: to, reason: 'redirects to no page' }));
+}
+
 /** Runs the check on a built `outDir`: how many docs pages it read, and the broken links. */
 export function checkLinks(outDir, toml = 'netlify.toml') {
   const files = walk(outDir).map((file) => relative(outDir, file).split(sep).join('/'));
@@ -112,10 +124,9 @@ export function checkLinks(outDir, toml = 'netlify.toml') {
   for (const file of files.filter((f) => f.startsWith('docs/') && f.endsWith('.html'))) {
     pages.set(pagePathOf(file), readFileSync(join(outDir, file), 'utf8'));
   }
-  const redirects = new Set(
-    existsSync(toml) ? docsRedirects(readFileSync(toml, 'utf8')).map(({ from }) => from.replace(/\/$/, '')) : [],
-  );
-  return { pages: pages.size, broken: brokenLinks(pages, files, redirects) };
+  const redirects = existsSync(toml) ? docsRedirects(readFileSync(toml, 'utf8')) : [];
+  const from = new Set(redirects.map(({ from }) => from.replace(/\/$/, '')));
+  return { pages: pages.size, broken: [...brokenLinks(pages, files, from), ...brokenRedirects(redirects, pages)] };
 }
 
 function main(outDir) {

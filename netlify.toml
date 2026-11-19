@@ -192,6 +192,51 @@
   status = 301
   force = true
 
+# Older names still linked from other sites (they 404 on pelican.dev today). The Hub serves
+# the same redirects (its own list); keep both in step.
+[[redirects]]
+  from = "/docs/panel/config"
+  to = "/docs/panel/standalone/optional-config/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/eggs/creating-a-custom-docker-image"
+  to = "/docs/eggs/creating-a-custom-yolk/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/updating-panel"
+  to = "/docs/panel/update/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/wings/installing-wings"
+  to = "/docs/wings/install/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/wings/updating-wings"
+  to = "/docs/wings/update/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/team"
+  to = "/docs/contributors/"
+  status = 301
+  force = true
+
+# The update script's old name (outside /docs, so the Hub has it in its own list).
+[[redirects]]
+  from = "/updatePanel.sh"
+  to = "/update-panel.sh"
+  status = 301
+  force = true
+
 # ---- Markdown for AI tools (lib/llms.ts) ---------------------------------
 # /docs/panel/update.md is built to out/docs/md/panel/update.md (app/docs/md;
 # the docs page route owns the other paths under /docs). Not forced, so it only

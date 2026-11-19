@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { brokenLinks, idsIn, linksIn, pagePathOf } from './check-links.mjs';
+import { brokenLinks, brokenRedirects, idsIn, linksIn, pagePathOf } from './check-links.mjs';
 
 const page = (body) => `<html><body><h1 id="top">x</h1>${body}</body></html>`;
 
@@ -57,6 +57,18 @@ describe('brokenLinks', () => {
       { page: '/docs/x/', href: '#gone', reason: 'no #gone on /docs/x/' },
     ]);
   });
+});
+
+test('a redirect to a docs page that isn\'t built is broken', () => {
+  const pages = new Map([['/docs/wings/install/', page('')]]);
+  const redirects = [
+    { from: '/docs/wings/installing-wings', to: '/docs/wings/install/' },
+    { from: '/docs/glossary', to: '/docs/wings/install/#top' },
+    { from: '/docs/team', to: '/docs/team-page/' },
+  ];
+  expect(brokenRedirects(redirects, pages)).toEqual([
+    { page: 'netlify.toml /docs/team', href: '/docs/team-page/', reason: 'redirects to no page' },
+  ]);
 });
 
 describe('the script', () => {
