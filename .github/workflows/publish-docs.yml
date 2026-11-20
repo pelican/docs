@@ -15,6 +15,10 @@ on:
     branches:
       - 'main'
       - 'feat/fumadocs-next'
+  # Daily, so a new Panel release (scripts/sync-release.mjs) reaches pelican.dev without a push.
+  # GitHub runs schedules from main only, so this rebuilds pelican.dev, like a push to main.
+  schedule:
+    - cron: '23 5 * * *'
 
 concurrency:
   group: publish-docs-${{ github.ref_name }}
@@ -64,6 +68,9 @@ jobs:
 
       # prebuild checks the content, postbuild checks every file lands where it should and every link works.
       - name: 'Build'
+        env:
+          # sync-release reads the latest Panel release with it (a higher rate limit).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun run build
 
       - name: 'Pack the docs for the Hub'

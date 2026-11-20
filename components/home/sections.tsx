@@ -300,7 +300,7 @@ export function ActivitySection() {
         </dl>
         <p className="pl-activity__latest">
           Latest release:{' '}
-          <a href={`${repo}/releases/tag/v${project.version}`}>
+          <a href={project.releaseUrl}>
             {project.version}, {project.released}
           </a>
         </p>
@@ -508,7 +508,7 @@ export function SiteFooterNav() {
         </div>
         <p className="pl-footer__legal">
           © 2024–{new Date().getFullYear()} Pelican · {project.license} · Latest release{' '}
-          <a href={`${repo}/releases/tag/v${project.version}`}>{project.version}</a>, {project.released}
+          <a href={project.releaseUrl}>{project.version}</a>, {project.released}
         </p>
       </div>
     </footer>

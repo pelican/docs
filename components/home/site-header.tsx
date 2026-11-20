@@ -5,8 +5,16 @@ import { links } from '@/lib/links';
 import { project } from '@/lib/home-data';
 import { MobileMenu } from './mobile-menu';
 
+/**
+ * What the announcement bar says about a release. The version comes from GitHub at build time
+ * (lib/home-data.ts), so a newer release than the one written about here gets a plain line.
+ */
+const announced = { version: '1.0.0-rc.2', text: 'A crashing plugin can no longer take the panel down, and more.' };
+
 /** Announcement bar plus the sky-blue nav from the V12 "B v3" board. */
 export function SiteHeader() {
+  const text =
+    project.version === announced.version ? announced.text : `The latest Panel release, out ${project.released}.`;
   return (
     <>
       <a href="#main" className="pl-skip">
@@ -14,8 +22,8 @@ export function SiteHeader() {
       </a>
       <div className="pl-announce">
         <span className="pl-announce__tag">{project.version.replace('1.0.0-', '')}</span>
-        <span>A crashing plugin can no longer take the panel down, and more.</span>
-        <a href={`https://github.com/pelican/panel/releases/tag/v${project.version}`} className="pl-announce__link">
+        <span>{text}</span>
+        <a href={project.releaseUrl} className="pl-announce__link">
           Read the release →
         </a>
       </div>

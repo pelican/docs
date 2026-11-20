@@ -27,6 +27,7 @@ run and change one without reading the others first:
 | --- | --- | --- | --- | --- |
 | `check-content.mjs` | Fails if a page in `content/` could run code (MDX compiles pages to JavaScript) | Before every build, and in CI | `bun run check:content` | `check-content.test.mjs` |
 | `sync-eggs.mjs` | Refreshes the egg data for the interim `/eggs` page and the homepage games strip. Uses the network and rewrites `data/eggs.json`, `public/data/eggs/`, `public/img/eggs/` and `public/img/games/` | Before every build (`--if-online`: no network keeps the saved data; a bug still fails); by hand | `bun run sync:eggs` | `sync-eggs.test.mjs` |
+| `sync-release.mjs` | Reads the latest Pelican Panel release from GitHub (version, date, link) for the homepage and `llms.txt`, into `data/release.json`. Uses the network (`GITHUB_TOKEN` if set); on any failure it prints one line and the build uses the typed values in `lib/home-data.ts` | Before every build (never fails it: 5 s timeout); by hand | `bun run sync:release` | `sync-release.test.mjs` |
 | `check-paths.mjs` | Fails if the build puts a file where pelican.dev won't serve it from this build, misses a root file, or a docs page loads something from outside `/docs/` | After every build, and in CI | `bun run check:paths` | `check-paths.test.mjs` |
 | `check-links.mjs` | Fails if a link on a docs page goes to a docs page, file or `#anchor` that isn't in the build (links to the Hub and other sites aren't checked) | After every build, and in CI | `bun run check:links` | `check-links.test.mjs` |
 | `pack-docs.mjs` | Packs `out/` into the folder the Hub serves on pelican.dev (docs, root files, 404 page, redirects) | Before every publish, in CI ("Publish docs build"); by hand to look at the result | `bun run pack:docs` | `pack-docs.test.mjs` |
@@ -35,13 +36,14 @@ run and change one without reading the others first:
 | `../router/dev-server.mjs` | Shows pelican.dev as one site on your machine (docs from `out/`, the rest from a local Hub) | By hand | `bun run dev:site` | `router/dev-server.test.mjs` |
 | `../router/worker.mjs` | The Cloudflare Worker option for later (not deployed) | Not deployed | see `router/README.md` | `router/worker.test.mjs` |
 
-`bun run build` runs the checks around Next.js: `prebuild` runs `check-content` and `sync-eggs`
-(`--if-online`), and `postbuild` runs `check-paths` and `check-links`.
+`bun run build` runs the checks around Next.js: `prebuild` runs `check-content`, `sync-eggs`
+(`--if-online`) and `sync-release`, and `postbuild` runs `check-paths` and `check-links`.
 
 **The build changes tracked files.** `sync-eggs` refreshes the egg data, so after `bun run build`
 you may see changes in `data/eggs.json`, `public/data/eggs/`, `public/img/eggs/` and `public/img/games/`. Commit
-them only when a pull request is about the egg data. Otherwise leave them out
-(`git restore data public/data public/img/eggs public/img/games`).
+them only when a pull request is about the egg data. `sync-release` writes the latest release into
+`data/release.json`; in git that file holds no release (the typed values in `lib/home-data.ts` apply), so
+never commit it. Leave them out with `git restore data public/data public/img/eggs public/img/games`.
 
 ## Before a pull request
 
