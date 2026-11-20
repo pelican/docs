@@ -1,3 +1,1 @@
-{
-  "note": "Written by scripts/sync-release.mjs before each build. Empty here: lib/home-data.ts uses its typed values."
-}
+{}
