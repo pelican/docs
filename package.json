@@ -7,7 +7,7 @@
     "dev": "next dev",
     "dev:site": "bun router/dev-server.mjs",
     "build": "next build",
-    "prebuild": "bun scripts/check-content.mjs && bun scripts/sync-eggs.mjs --if-online",
+    "prebuild": "bun scripts/check-content.mjs && bun scripts/sync-eggs.mjs --if-online && bun scripts/sync-release.mjs",
     "postbuild": "bun scripts/check-paths.mjs && bun scripts/check-links.mjs",
     "test": "bun test",
     "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit",
@@ -15,6 +15,7 @@
     "check:paths": "bun scripts/check-paths.mjs",
     "check:links": "bun scripts/check-links.mjs",
     "sync:eggs": "bun scripts/sync-eggs.mjs",
+    "sync:release": "bun scripts/sync-release.mjs",
     "pack:docs": "bun scripts/pack-docs.mjs",
     "postinstall": "fumadocs-mdx"
   },
