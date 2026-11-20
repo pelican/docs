@@ -8,6 +8,11 @@
 #   feat/fumadocs-next -> preview/docs-under-docs   (hub-preview.pelican.dev)
 #
 # The last step asks that Hub to install it right away; it also checks every 10 minutes.
+#
+# It also runs every day, so the latest Panel release (scripts/sync-release.mjs: the homepage and
+# llms.txt) is on pelican.dev within a day without a push. That run builds and publishes each
+# branch above that exists. GitHub runs schedules only from the default branch (main), so the
+# daily run starts once this file is on main.
 name: 'Publish docs build'
 on:
   workflow_dispatch:
@@ -15,22 +20,62 @@ on:
     branches:
       - 'main'
       - 'feat/fumadocs-next'
-
-concurrency:
-  group: publish-docs-${{ github.ref_name }}
-  cancel-in-progress: true
+  schedule:
+    - cron: '23 5 * * *'
 
 permissions:
   contents: write
 
 jobs:
-  publish:
-    name: 'Build and publish /docs for the Hub'
+  branches:
+    name: 'Pick the branches to publish'
     runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.pick.outputs.list }}
+    steps:
+      # A push or a manual run publishes its own branch. The daily run publishes the same branches
+      # a push would (the list under on.push), skipping any that no longer exist.
+      - name: 'Pick the branches'
+        id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            found=()
+            for branch in main feat/fumadocs-next; do
+              if git ls-remote --exit-code --heads "$REPO_URL" "refs/heads/$branch" > /dev/null; then
+                found+=("$branch")
+              fi
+            done
+            list=$(printf '%s\n' "${found[@]}" | jq -Rnc '[inputs]')
+          else
+            list=$(jq -nc --arg b "$GITHUB_REF_NAME" '[$b]')
+          fi
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "Publishing: $list"
+
+  publish:
+    name: 'Build and publish /docs for the Hub (${{ matrix.branch }})'
+    needs: branches
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.branches.outputs.list) }}
+    # One publish per branch at a time; a newer run (a push, or the daily run) replaces an older one.
+    concurrency:
+      group: publish-docs-${{ matrix.branch }}
+      cancel-in-progress: true
+    env:
+      # The branch built, and pack-docs' BUILD.json names it (the daily run starts on main).
+      BUILD_BRANCH: ${{ matrix.branch }}
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v7
         with:
+          # A push builds its own commit; the daily run builds each branch's latest commit.
+          ref: ${{ github.event_name == 'schedule' && matrix.branch || github.sha }}
           # The whole history: each page's "Last updated", sitemap date and JSON-LD dates come
           # from git (lastModified in source.config.ts). A shallow clone gives every page the same date.
           fetch-depth: 0
@@ -63,8 +108,14 @@ jobs:
         run: bun run typecheck
 
       # prebuild checks the content, postbuild checks every file lands where it should and every link works.
+      # GITHUB_TOKEN: sync-release reads the latest Panel release with it (a higher rate limit).
       - name: 'Build'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun run build
+
+      - name: 'Name the commit built'
+        run: echo "BUILD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: 'Pack the docs for the Hub'
         run: bun run pack:docs dist-docs
@@ -72,7 +123,7 @@ jobs:
       - name: 'Pick the target'
         id: target
         run: |
-          if [ "$GITHUB_REF_NAME" = "main" ]; then
+          if [ "$BUILD_BRANCH" = "main" ]; then
             echo "branch=docs-build" >> "$GITHUB_OUTPUT"
             echo "refresh=https://pelican.dev/docs/_refresh" >> "$GITHUB_OUTPUT"
           else
@@ -90,7 +141,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -q -m "Docs build of ${GITHUB_SHA::10} (${GITHUB_REF_NAME})"
+          git commit -q -m "Docs build of ${BUILD_SHA::10} (${BUILD_BRANCH})"
           git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${TARGET}"
 
       # Not fatal: the Hub also checks on its own every 10 minutes and on the first visit. Until
