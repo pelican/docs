@@ -2,27 +2,54 @@ name: 'Build'
 on:
   workflow_dispatch:
   workflow_call:
+  pull_request:
   push:
     branches:
       - 'main'
 
 jobs:
-  deploy:
-    name: 'Deploy'
+  build:
+    name: 'Build'
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v4
-      - name: 'Setup Node'
-        uses: actions/setup-node@v4
+        uses: actions/checkout@v7
         with:
-          node-version: 20
-      - uses: pnpm/action-setup@v3
-        name: Install pnpm
-        with:
-            version: 10
-            run_install: true # pnpm will install dependencies recursively.
+          # The whole history: each page's "Last updated", sitemap date and JSON-LD dates come
+          # from git (lastModified in source.config.ts). A shallow clone gives every page the same date.
+          fetch-depth: 0
 
-      - name: 'Build'   
-        run: |
-          pnpm build
+      # Bun installs and runs the scripts; Next.js itself still builds on Node.
+      - name: 'Setup Bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: 'Setup Node'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: 'Cache Bun packages'
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: 'Install dependencies'
+        run: bun install --frozen-lockfile
+
+      - name: 'Check content (MDX that could run code)'
+        run: bun run check:content
+
+      - name: 'Test the scripts (bun test)'
+        run: bun test
+
+      - name: 'Typecheck'
+        run: bun run typecheck
+
+      # prebuild runs check:content again (Netlify builds run it there);
+      # postbuild runs check:paths and check:links on out/.
+      - name: 'Build'
+        run: bun run build

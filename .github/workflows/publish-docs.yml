@@ -1,0 +1,106 @@
+# Publishes the built docs for the Pelican Hub, which serves them on pelican.dev from Forge:
+# /docs/* and the root files (/update-panel.sh, /llms.txt, ...). scripts/pack-docs.mjs packs
+# out/ into the folder the Hub installs (App\Services\Site\DocsBuildService): the /docs files,
+# _next/, _root/ with the root files, 404.html, redirects.json (netlify.toml's /docs redirects)
+# and BUILD.json naming the commit. It goes to a branch the Hub downloads:
+#
+#   main               -> docs-build                (pelican.dev, production)
+#   feat/fumadocs-next -> preview/docs-under-docs   (hub-preview.pelican.dev)
+#
+# The last step asks that Hub to install it right away; it also checks every 10 minutes.
+name: 'Publish docs build'
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'feat/fumadocs-next'
+  # Daily, so a new Panel release (scripts/sync-release.mjs) reaches pelican.dev without a push.
+  # GitHub runs schedules from main only, so this rebuilds pelican.dev, like a push to main.
+  schedule:
+    - cron: '23 5 * * *'
+
+concurrency:
+  group: publish-docs-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: 'Build and publish /docs for the Hub'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v7
+        with:
+          # The whole history: each page's "Last updated", sitemap date and JSON-LD dates come
+          # from git (lastModified in source.config.ts). A shallow clone gives every page the same date.
+          fetch-depth: 0
+
+      - name: 'Setup Bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: 'Setup Node'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: 'Cache Bun packages'
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: 'Install dependencies'
+        run: bun install --frozen-lockfile
+
+      # Nothing is published that fails the tests or the typecheck (build.yml runs the same).
+      - name: 'Test the scripts (bun test)'
+        run: bun test
+
+      - name: 'Typecheck'
+        run: bun run typecheck
+
+      # prebuild checks the content, postbuild checks every file lands where it should and every link works.
+      - name: 'Build'
+        env:
+          # sync-release reads the latest Panel release with it (a higher rate limit).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run build
+
+      - name: 'Pack the docs for the Hub'
+        run: bun run pack:docs dist-docs
+
+      - name: 'Pick the target'
+        id: target
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "branch=docs-build" >> "$GITHUB_OUTPUT"
+            echo "refresh=https://pelican.dev/docs/_refresh" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=preview/docs-under-docs" >> "$GITHUB_OUTPUT"
+            echo "refresh=https://hub-preview.pelican.dev/docs/_refresh" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 'Publish to ${{ steps.target.outputs.branch }}'
+        working-directory: dist-docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ steps.target.outputs.branch }}
+        run: |
+          git init -q -b docs-build
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -q -m "Docs build of ${GITHUB_SHA::10} (${GITHUB_REF_NAME})"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${TARGET}"
+
+      # Not fatal: the Hub also checks on its own every 10 minutes and on the first visit. Until
+      # the Hub serves pelican.dev, the production refresh reaches Netlify and fails harmlessly.
+      - name: 'Ask the Hub to install it'
+        run: curl -fsS --max-time 60 "${{ steps.target.outputs.refresh }}" || echo "The Hub will pick it up on its next check."

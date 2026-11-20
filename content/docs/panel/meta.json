@@ -1,0 +1,10 @@
+{
+  "title": "Panel",
+  "defaultOpen": true,
+  "pages": [
+    "install",
+    "standalone",
+    "update",
+    "advanced"
+  ]
+}

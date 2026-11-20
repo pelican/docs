@@ -1,0 +1,275 @@
+# Build settings live here (in git) instead of only in the Netlify dashboard.
+[build]
+  command = "bun run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Netlify installs with Bun when it finds bun.lock; pin the version package.json names.
+  BUN_VERSION = "1.3.14"
+  # The site is a static export (next.config.mjs), so Netlify's Next.js
+  # runtime isn't needed; serve out/ as plain files.
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+# ---- pelican.dev/docs next to the Hub ------------------------------------
+# After the switch a Cloudflare route sends only /docs/*, /llms.txt,
+# /llms-full.txt and the four install scripts here; the Hub serves the rest.
+# So everything the docs load is under /docs/ (see scripts/check-paths.mjs).
+
+# The JS, CSS and fonts. next.config.mjs sets assetPrefix '/docs', so pages ask
+# for /docs/_next/...; the static export still writes them to out/_next/.
+[[redirects]]
+  from = "/docs/_next/*"
+  to = "/_next/:splat"
+  status = 200
+  force = true
+
+# Old locations of files that moved under /docs/ (other sites may link them).
+[[redirects]]
+  from = "/img/logo.png"
+  to = "/docs/img/logo.png"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/img/favicon.ico"
+  to = "/docs/img/favicon.ico"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/og/docs/*"
+  to = "/docs/og/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/md/*"
+  to = "/docs/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/api/search"
+  to = "/docs/search.json"
+  status = 301
+  force = true
+
+# INTERIM (remove after the switch, when the Hub owns these paths): the docs
+# nav uses the Hub's paths from ui/nav.json; while Netlify serves the whole
+# domain, send them where they live today. /eggs already resolves to /eggs/.
+[[redirects]]
+  from = "/plugins"
+  to = "https://hub.pelican.dev/plugins"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/plugins/*"
+  to = "https://hub.pelican.dev/plugins/:splat"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/sponsor"
+  to = "/support/"
+  status = 302
+  force = true
+
+# ---- Short links (were client-side redirects on Docusaurus) --------------
+[[redirects]]
+  from = "/discord"
+  to = "https://discord.gg/pelican-panel"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/pelican/panel"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/hub"
+  to = "https://hub.pelican.dev"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/donate"
+  to = "/support/"
+  status = 301
+  force = true
+
+# The Docusaurus blog has no page in the new site: its address goes to the homepage for now
+# (302, not for good). The Hub does the same once it serves pelican.dev (pelican/hub#285).
+[[redirects]]
+  from = "/blog"
+  to = "/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/blog/*"
+  to = "/"
+  status = 302
+  force = true
+
+# ---- Old docs paths ------------------------------------------------------
+[[redirects]]
+  from = "/docs/about"
+  to = "/docs/contributors/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/glossary"
+  to = "/docs/#glossary"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/troubleshooting"
+  to = "/docs/guides/troubleshooting/"
+  status = 301
+  force = true
+
+# These pages existed but were empty; send readers to the overview.
+[[redirects]]
+  from = "/docs/guides/disk-quotas/btrfs"
+  to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/guides/disk-quotas/lvm"
+  to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/guides/disk-quotas/zfs"
+  to = "/docs/guides/disk-quotas/about/"
+  status = 301
+  force = true
+
+# Docker became the recommended install (pelican/docs#226): the Docker guide is now
+# panel/install, guides/docker is the top-level Getting Started, and the install without
+# Docker moved under panel/standalone/.
+[[redirects]]
+  from = "/docs/guides/docker"
+  to = "/docs/getting-started/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/advanced/docker"
+  to = "/docs/panel/install/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/getting-started"
+  to = "/docs/panel/standalone/getting-started/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/webserver-config"
+  to = "/docs/panel/standalone/webserver-config/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/panel-setup"
+  to = "/docs/panel/standalone/panel-setup/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/optional-config"
+  to = "/docs/panel/standalone/optional-config/"
+  status = 301
+  force = true
+
+# Older names still linked from other sites (they 404 on pelican.dev today). The Hub serves
+# the same redirects (its own list); keep both in step.
+[[redirects]]
+  from = "/docs/panel/config"
+  to = "/docs/panel/standalone/optional-config/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/eggs/creating-a-custom-docker-image"
+  to = "/docs/eggs/creating-a-custom-yolk/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/panel/updating-panel"
+  to = "/docs/panel/update/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/wings/installing-wings"
+  to = "/docs/wings/install/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/wings/updating-wings"
+  to = "/docs/wings/update/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/docs/team"
+  to = "/docs/contributors/"
+  status = 301
+  force = true
+
+# The update script's old name (outside /docs, so the Hub has it in its own list).
+[[redirects]]
+  from = "/updatePanel.sh"
+  to = "/update-panel.sh"
+  status = 301
+  force = true
+
+# ---- Markdown for AI tools (lib/llms.ts) ---------------------------------
+# /docs/panel/update.md is built to out/docs/md/panel/update.md (app/docs/md;
+# the docs page route owns the other paths under /docs). Not forced, so it only
+# applies when no file exists: the HTML pages under /docs are served as before.
+# Keep it last.
+[[redirects]]
+  from = "/docs/*"
+  to = "/docs/md/:splat"
+  status = 200
+
+[[headers]]
+  for = "/*.md"
+  [headers.values]
+    Content-Type = "text/markdown; charset=utf-8"
+
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+[[headers]]
+  for = "/llms-full.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+# The design tokens and nav the Hub copies (ui/); readable from any origin.
+[[headers]]
+  for = "/docs/ui/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+# The install scripts are fetched with curl; make sure they come back as text.
+[[headers]]
+  for = "/*.sh"
+  [headers.values]
+    Content-Type = "text/x-shellscript; charset=utf-8"

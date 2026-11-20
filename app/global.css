@@ -1,0 +1,1321 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+/* The V12 tokens shared with the Hub (published at /docs/ui/v1/tokens.css). */
+@import '../ui/tokens.css';
+
+/* =========================================================================
+ * Site-wide theme, in the V12 "B v3" style: navy #04121C, sky #38BDF8,
+ * white and paper; Bricolage Grotesque headings, Instrument Sans text,
+ * thick navy borders. Fumadocs reads all of its colours from the
+ * --color-fd-* variables; the values below serve the interim pages, and the
+ * docs set their own (the Hub's roles) in the "Docs" section further down.
+ * ====================================================================== */
+
+@theme {
+  --font-sans: var(--pl-font-text), 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--pl-font-display), 'Helvetica Neue', ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Fumadocs' colours; the --pl-* brand colours come from ui/tokens.css. */
+:root {
+  --color-fd-background: #f3f7f9;
+  --color-fd-foreground: #04121c;
+  --color-fd-muted: #e3edf2;
+  --color-fd-muted-foreground: #3c5866;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #04121c;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #04121c;
+  --color-fd-border: rgba(4, 18, 28, 0.16);
+  --color-fd-primary: #04121c;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #e3edf2;
+  --color-fd-secondary-foreground: #04121c;
+  --color-fd-accent: #c8ecfc;
+  --color-fd-accent-foreground: #04121c;
+  --color-fd-ring: #38bdf8;
+
+  --color-fd-info: #0b79ad;
+  --color-fd-warning: #b45309;
+  --color-fd-error: #be123c;
+  --color-fd-success: #15803d;
+  --color-fd-idea: #a16207;
+}
+
+.dark {
+  --color-fd-background: #04121c;
+  --color-fd-foreground: #f3f7f9;
+  --color-fd-muted: #0a1f2e;
+  --color-fd-muted-foreground: #b9ccd6;
+  --color-fd-popover: #0a1f2e;
+  --color-fd-popover-foreground: #f3f7f9;
+  --color-fd-card: #0a1f2e;
+  --color-fd-card-foreground: #f3f7f9;
+  --color-fd-border: rgba(185, 204, 214, 0.18);
+  --color-fd-primary: #38bdf8;
+  --color-fd-primary-foreground: #04121c;
+  --color-fd-secondary: #0f2a3c;
+  --color-fd-secondary-foreground: #f3f7f9;
+  --color-fd-accent: rgba(56, 189, 248, 0.16);
+  --color-fd-accent-foreground: #e0f2fe;
+  --color-fd-ring: #38bdf8;
+
+  --color-fd-info: #38bdf8;
+  --color-fd-warning: #fbbf24;
+  --color-fd-error: #fb7185;
+  --color-fd-success: #4ade80;
+  --color-fd-idea: #facc15;
+}
+
+@layer base {
+  :where(h1, h2, h3, h4) {
+    font-family: var(--font-display);
+  }
+}
+
+/* The search dialog's input: Fumadocs turns its outline off; give it one back. */
+input[aria-controls='fd-search-list']:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}
+
+/* Values filled in from the reader's <SetupPanel /> are underlined, so it is
+   clear which parts of a config file came from them. */
+[data-setup][data-filled] {
+  text-decoration: underline dotted var(--pl-sky);
+  text-underline-offset: 3px;
+}
+
+/* =========================================================================
+ * Interim pages (/faq): the MDX pieces they share with the docs. The docs
+ * restyle the same pieces under .dt-root below; these go when the interim
+ * pages do.
+ * ====================================================================== */
+.prose :where(h2, h3, h4):not(.not-prose *) {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.prose :where(h2):not(.not-prose *) {
+  font-size: 1.75em;
+}
+
+.prose :where(a):not([data-card], .not-prose, .not-prose *) {
+  color: inherit;
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--pl-sky);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.prose :where(a):not([data-card], .not-prose, .not-prose *):hover {
+  text-decoration-color: currentColor;
+}
+
+.prose :where(code):not(pre code, .not-prose *) {
+  border: 1.5px solid var(--color-fd-border);
+  border-radius: 0;
+  background: var(--color-fd-card);
+}
+
+figure.shiki {
+  border: 2px solid var(--pl-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: 5px 5px 0 var(--pl-shadow);
+}
+
+.dark figure.shiki {
+  box-shadow: 5px 5px 0 rgba(56, 189, 248, 0.55);
+}
+
+[style*='--callout-color'] {
+  border: 2px solid var(--pl-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 var(--callout-color);
+}
+
+[style*='--callout-color'] > div:first-child[role='none'] {
+  border-radius: 0;
+}
+
+/* =========================================================================
+ * Docs, in the look of the Hub's redesigned pages (hub-preview.pelican.dev:
+ * the homepage, plugin and egg pages, /faq). Their rules live in the Hub's
+ * resources/css/site/{base,app,plugins,eggs}.css; the class each block copies
+ * is named above it. What they share: square corners, 3px edges on cards and
+ * controls, 2px rules between rows, no offset shadows, navy code, sky only as
+ * an accent. Everything is under .dt-root (the docs layout), or under
+ * :root:has(.dt-root) for what Fumadocs portals out of it (search dialog), so
+ * the interim pages above keep their look.
+ * ====================================================================== */
+
+/* ---- Fumadocs' colours, set to the Hub's roles (ui/tokens.css) ----------- */
+:root:has(.dt-root) {
+  --color-fd-background: var(--pl-ground);
+  --color-fd-foreground: var(--pl-fg);
+  --color-fd-muted: var(--pl-chip);
+  --color-fd-muted-foreground: var(--pl-muted);
+  --color-fd-popover: var(--pl-card);
+  --color-fd-popover-foreground: var(--pl-fg);
+  --color-fd-card: var(--pl-card);
+  --color-fd-card-foreground: var(--pl-fg);
+  --color-fd-border: var(--pl-rule);
+  --color-fd-secondary: var(--pl-chip);
+  --color-fd-secondary-foreground: var(--pl-fg);
+  --color-fd-accent: var(--pl-hover);
+  --color-fd-accent-foreground: var(--pl-fg);
+  --color-fd-ring: var(--pl-sky);
+  --color-fd-overlay: rgb(4 18 28 / 0.6);
+  --color-fd-info: var(--pl-info);
+  --color-fd-success: var(--pl-ok);
+  --color-fd-warning: var(--pl-warn);
+  --color-fd-error: var(--pl-bad);
+  --color-fd-idea: var(--pl-idea);
+}
+
+:root.dark:has(.dt-root) {
+  --color-fd-overlay: rgb(0 11 18 / 0.78);
+}
+
+/* Focus: the Hub's 3px ring in the text colour (base.css `.pl :focus-visible`). */
+.dt-root :focus-visible,
+:root:has(.dt-root) [role='dialog'] :focus-visible {
+  outline: 3px solid var(--pl-fg);
+  outline-offset: 2px;
+}
+
+/* The search box gets the same ring (Fumadocs turns its outline off). */
+:root:has(.dt-root) [role='dialog'] input:focus-visible {
+  outline: 3px solid var(--pl-fg);
+  outline-offset: 2px;
+}
+
+/* Dark theme: edges of controls (search box, buttons, theme switch) at 3:1 or more against
+   the bar and the cards, so they can be told apart (WCAG 1.4.11). --pl-edge is 1.9:1 there. */
+:root.dark:has(.dt-root) {
+  --dt-control-edge: #5b7a8c;
+}
+
+/* "Skip to content" (components/docs/docs-top-bar.tsx): off screen until focused. */
+.dt-skip {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 12px 16px;
+  border: 3px solid var(--pl-ink);
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  font: 700 15px/1 var(--font-sans);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.dt-skip:focus {
+  transform: none;
+}
+
+.dt-root ::selection {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+}
+
+/* ---- Top bar (tablet and desktop): the Hub's nav, .pl-nav ----------------
+ * Sky in the light theme, the navy ground in the dark, with the 3px line the
+ * Hub draws under it. 72px, not the Hub's 88px: it stays on screen while you
+ * read, so it gives the page the height it can.
+ * ------------------------------------------------------------------------ */
+.dt-root {
+  --dt-bar: 72px;
+}
+
+.dt-root #nd-docs-layout {
+  --fd-banner-height: var(--dt-bar);
+}
+
+.dt-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: var(--dt-bar);
+  padding: 0 24px;
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  border-bottom: 3px solid var(--pl-ink);
+}
+
+.dark .dt-bar {
+  background: var(--pl-ink);
+  color: var(--pl-fg);
+  border-bottom-color: var(--pl-line-on-ink);
+}
+
+.dt-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  text-decoration: none;
+}
+
+.dt-bar__brand img {
+  width: 38px;
+  height: 38px;
+}
+
+.dt-bar__section {
+  padding: 2px 8px;
+  border: 2px solid currentColor;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* The search box: the Hub's input (.pl-input), at the bar's button height. */
+.dt-bar__search {
+  flex: 0 1 340px;
+  min-height: 44px;
+  padding-inline: 12px !important;
+  border: 3px solid var(--pl-ink) !important;
+  border-radius: 0 !important;
+  background: var(--pl-white) !important;
+  color: var(--pl-muted) !important;
+  font-size: 15px !important;
+}
+
+.dark .dt-bar__search {
+  border-color: var(--dt-control-edge) !important;
+  background: var(--pl-card) !important;
+}
+
+.dt-bar__search:hover {
+  color: var(--pl-fg) !important;
+}
+
+.dt-root kbd {
+  padding: 0 5px;
+  border: 2px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.dt-bar__links {
+  display: flex;
+  gap: 28px;
+  margin-left: auto;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.dt-bar__links a {
+  text-decoration: none;
+}
+
+.dt-bar__links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.dt-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* The light/dark switch, in the bar and the sidebar: the Hub's .pl-theme. The active
+   half is filled sky, the other shows what a click switches to. */
+.dt-root [data-theme-toggle] {
+  gap: 2px;
+  padding: 4px;
+  border: 3px solid var(--pl-ink);
+  border-radius: 0;
+  background: var(--pl-white);
+  color: var(--pl-fg);
+  --color-fd-accent: var(--pl-sky);
+  --color-fd-accent-foreground: var(--pl-ink);
+}
+
+.dt-root [data-theme-toggle] > * {
+  border-radius: 0;
+}
+
+.dt-root [data-theme-toggle] > svg:not([class*='bg-fd-accent']) {
+  color: var(--pl-muted);
+}
+
+.dt-bar__theme {
+  min-height: 44px;
+}
+
+.dt-bar__theme > svg {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+}
+
+.dark .dt-root [data-theme-toggle] {
+  border-color: var(--dt-control-edge);
+  background: var(--pl-card);
+}
+
+/* Buttons: the Hub's .pl-btn--small; square, 3px edge, no shadow. */
+.dt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 3px solid var(--pl-ink);
+  background: var(--pl-white);
+  color: var(--pl-ink);
+  font: 600 15px/1 var(--font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: filter 0.12s ease;
+}
+
+.dt-btn:hover {
+  filter: brightness(1.08);
+}
+
+.dt-btn:active {
+  filter: brightness(0.92);
+}
+
+.dt-btn--ink {
+  background: var(--pl-ink);
+  color: var(--pl-white);
+}
+
+.dark .dt-btn {
+  border-color: var(--dt-control-edge);
+  background: var(--pl-card);
+  color: var(--pl-fg);
+}
+
+.dark .dt-btn--ink {
+  border-color: var(--pl-sky);
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+}
+
+@media (max-width: 1180px) {
+  .dt-bar__links {
+    display: none;
+  }
+  .dt-bar__search {
+    margin-left: auto;
+  }
+}
+
+/* Phones: Fumadocs' own bar takes over, in the same colours. */
+@media (max-width: 767px) {
+  .dt-bar {
+    display: none;
+  }
+  .dt-root #nd-docs-layout {
+    --fd-banner-height: 0px;
+  }
+}
+
+.dt-root #nd-subnav {
+  background: var(--pl-sky) !important;
+  color: var(--pl-ink);
+  border-bottom: 3px solid var(--pl-ink);
+  backdrop-filter: none;
+}
+
+.dark .dt-root #nd-subnav {
+  background: var(--pl-ink) !important;
+  color: var(--pl-fg);
+  border-bottom-color: var(--pl-line-on-ink);
+}
+
+.dt-root #nd-subnav button {
+  border-radius: 0;
+  color: inherit;
+}
+
+.dt-navtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.045em;
+}
+
+.dt-navtitle span {
+  padding: 1px 6px;
+  border: 2px solid currentColor;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* The sidebar's own title and search duplicate the top bar on larger screens. */
+@media (min-width: 768px) {
+  #nd-sidebar [data-search-full],
+  #nd-sidebar a.dt-navtitle,
+  #nd-sidebar a:has(> .dt-navtitle) {
+    display: none;
+  }
+}
+
+/* ---- Sidebar: the Hub's app sidebar, .pl-side ----------------------------
+ * White, a rule on its edge, the current page in light sky with a sky edge.
+ * ------------------------------------------------------------------------ */
+.dt-root #nd-sidebar {
+  background: var(--pl-card);
+  border-inline-end: 2px solid var(--pl-rule);
+}
+
+.dt-root #nd-sidebar :is(a, button) {
+  border-radius: 0;
+}
+
+.dt-root #nd-sidebar a,
+.dt-root #nd-sidebar button[data-state] {
+  color: var(--pl-text);
+  font-weight: 500;
+}
+
+.dt-root #nd-sidebar :is(a, button):hover {
+  background: var(--pl-hover);
+  color: var(--pl-fg);
+}
+
+.dt-root #nd-sidebar a[data-active='true'] {
+  background: var(--pl-hover-strong);
+  color: var(--pl-fg);
+  font-weight: 600;
+}
+
+.dt-root #nd-sidebar a[data-active='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--pl-kicker);
+}
+
+/* Section labels ("Project"): the Hub's .pl-side__label, in the muted text colour so they
+   pass contrast on white. */
+.dt-root #nd-sidebar p {
+  color: var(--pl-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dt-root #nd-sidebar :focus-visible {
+  outline-offset: -3px;
+}
+
+/* ---- Table of contents: the plugin page's section links (.pl-pp__toc) ---- */
+.dt-root #toc-title {
+  color: var(--pl-fg);
+  font-weight: 700;
+}
+
+.dt-root #nd-toc {
+  --color-fd-primary: var(--pl-sky);
+}
+
+.dt-root #nd-toc a {
+  color: var(--pl-muted);
+}
+
+.dt-root #nd-toc a:hover {
+  color: var(--pl-fg);
+}
+
+.dt-root #nd-toc a[data-active='true'] {
+  color: var(--pl-fg);
+  font-weight: 700;
+}
+
+.dt-root #nd-toc :focus-visible {
+  outline-offset: -3px;
+}
+
+/* The phone and tablet "On this page" bar. */
+.dt-root #nd-tocnav,
+.dt-root [data-toc-popover] {
+  border-radius: 0;
+}
+
+/* ---- Page header: the plugin page's kicker and title (.pl-pp__kicker, .pl-pp__title) ---- */
+.dt-crumbs {
+  --color-fd-primary: var(--pl-kicker);
+  color: var(--pl-kicker);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dt-crumbs a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dt-root #nd-page h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 4vw, 46px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+
+.dt-root #nd-page h1 + p {
+  color: var(--pl-text);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+/* ---- Prose: the Hub's Markdown (.pl-prose) -------------------------------- */
+.dt-root .prose {
+  --tw-prose-body: var(--pl-fg);
+  --tw-prose-headings: var(--pl-fg);
+  --tw-prose-bold: var(--pl-fg);
+  --tw-prose-bullets: var(--pl-muted);
+  --tw-prose-counters: var(--pl-muted);
+  --tw-prose-quotes: var(--pl-text);
+  --tw-prose-hr: var(--pl-rule);
+}
+
+.dt-root .prose :where(h2, h3, h4):not(.not-prose *) {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.dt-root .prose :where(h2):not(.not-prose *) {
+  font-size: 1.6em;
+}
+
+/* Links: underlined in the text colour, the underline turns sky on hover. */
+.dt-root .prose :where(a):not([data-card], .not-prose, .not-prose *) {
+  color: var(--pl-fg);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.dt-root .prose :where(a):not([data-card], .not-prose, .not-prose *):hover {
+  text-decoration-color: var(--pl-kicker);
+}
+
+/* Inline code: a flat chip, no edge (also in the search dialog's results). */
+.dt-root .prose :where(code):not(pre code, .not-prose *),
+:root:has(.dt-root) [role='dialog'] .prose code {
+  padding: 1px 5px;
+  border: 0;
+  border-radius: 0;
+  background: var(--pl-chip);
+  font-size: 0.86em;
+  font-variant-ligatures: none;
+}
+
+.dt-root .prose :where(ul):not(.not-prose *) {
+  list-style-type: square;
+}
+
+.dt-root .prose :where(blockquote):not(.not-prose *) {
+  padding-left: 14px;
+  border-left: 4px solid var(--pl-sky);
+  font-style: normal;
+}
+
+.dt-root .prose :where(hr):not(.not-prose *) {
+  border-top-width: 2px;
+}
+
+.dt-root .prose :where(img):not(.not-prose *) {
+  border: 3px solid var(--pl-edge);
+}
+
+/* Tables: the Hub's Markdown table (.pl-mdx table): a 3px edge, a sky head, 2px rules. */
+.dt-root .prose :where(table):not(.not-prose *) {
+  border-collapse: collapse;
+  border: 3px solid var(--pl-edge);
+  border-radius: 0;
+  background: var(--pl-card);
+}
+
+.dt-root .prose :where(th, td):not(.not-prose *) {
+  border: 2px solid var(--pl-rule);
+}
+
+.dt-root .prose :where(th):not(.not-prose *) {
+  background: var(--pl-sky);
+  border-color: var(--pl-sky);
+  color: var(--pl-ink);
+  font-weight: 700;
+}
+
+.dt-root .prose :where(tbody tr):hover {
+  background: var(--pl-hover);
+}
+
+/* ---- Code blocks: the egg page's install script (.pl-eg__pre) -------------
+ * Navy in both themes (the darker code navy in the dark), so the dark Shiki
+ * colours serve both. The file name sits in a bar over the code.
+ * ------------------------------------------------------------------------ */
+.dt-root figure.shiki {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--pl-code);
+  color: var(--pl-on-code);
+  box-shadow: none;
+  font-variant-ligatures: none;
+}
+
+.dt-root figure.shiki code span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+}
+
+.dt-root figure.shiki figcaption {
+  color: var(--pl-on-code);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.dt-root figure.shiki > div:has(> figcaption) {
+  border-bottom: 2px solid var(--pl-line-on-ink);
+  color: var(--pl-on-code-soft);
+}
+
+/* The copy button. */
+.dt-root figure.shiki button {
+  border-radius: 0;
+  color: var(--pl-on-code-soft);
+}
+
+.dt-root figure.shiki button:hover,
+.dt-root figure.shiki button[data-checked] {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--pl-on-code);
+}
+
+/* No blur behind it: a corner in the code colour, so a long line ends cleanly under it. */
+.dt-root figure.shiki > div.absolute:has(> button) {
+  top: 0;
+  right: 0;
+  padding: 9px 8px;
+  border-radius: 0;
+  backdrop-filter: none;
+  background: var(--pl-code);
+}
+
+.dt-root figure.shiki :focus-visible {
+  outline-color: var(--pl-sky);
+  outline-offset: -3px;
+}
+
+/* Every line keeps its height, also the empty ones Shiki gives an inner <span> (plain text). */
+.dt-root figure.shiki .line {
+  min-height: 1lh;
+}
+
+/* ```text wrap (lib/shiki-setup.ts; Fumadocs moves the class to the figure): long lines
+   wrap, for prompts that are read before use. */
+.dt-root figure.shiki.dt-wrap pre {
+  width: auto;
+}
+
+.dt-root figure.shiki.dt-wrap code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Shown in full: no 600px cap with a scroll inside. */
+.dt-root figure.shiki.dt-wrap [role='region'] {
+  max-height: none;
+}
+
+.dt-root figure.shiki .highlighted {
+  background: rgb(56 189 248 / 0.16);
+}
+
+.dt-root figure.shiki .highlighted::after {
+  border-left: 3px solid var(--pl-sky);
+}
+
+/* ---- Callouts: the Hub's alerts (.pl-alert), which copy them -------------
+ * A 3px edge, the tone as an 8px left edge, the card surface, no shadow.
+ * ------------------------------------------------------------------------ */
+.dt-root [style*='--callout-color'] {
+  gap: 12px;
+  padding: 14px 18px !important;
+  border: 3px solid var(--pl-edge) !important;
+  border-left: 8px solid var(--callout-color) !important;
+  border-radius: 0 !important;
+  background: var(--pl-card);
+  color: var(--pl-fg);
+  box-shadow: none;
+  font-size: 15px;
+}
+
+.dt-root [style*='--callout-color'] > div:first-child[role='none'] {
+  display: none;
+}
+
+.dt-root [style*='--callout-color'] > svg {
+  margin-top: 1px;
+}
+
+.dt-root [style*='--callout-color'] :is(p, .text-fd-muted-foreground) {
+  color: var(--pl-fg);
+}
+
+.dt-root [style*='--callout-color'] > div > p:first-child:not(:only-child) {
+  font-weight: 700;
+}
+
+/* ---- Tabs: the plugin page's tabs (.pl-pp__toc) in a 2px frame ----------- */
+.dt-root .dt-tabs {
+  border: 2px solid var(--pl-edge) !important;
+  border-radius: 0 !important;
+  background: var(--pl-ground) !important;
+}
+
+.dt-root .dt-tabs > [role='tablist'] {
+  gap: 4px;
+  padding-inline: 8px;
+  border-bottom: 2px solid var(--pl-rule);
+  background: var(--pl-card);
+}
+
+.dt-root .dt-tabs > [role='tablist'] > [role='tab'] {
+  padding: 12px 12px 9px;
+  border-bottom: 3px solid transparent;
+  color: var(--pl-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dt-root .dt-tabs > [role='tablist'] > [role='tab']:hover,
+.dt-root .dt-tabs > [role='tablist'] > [role='tab'][data-state='active'] {
+  color: var(--pl-fg);
+  border-bottom-color: var(--pl-sky);
+}
+
+.dt-root .dt-tabs > [role='tablist'] > [role='tab']:focus-visible {
+  outline-color: var(--pl-sky);
+  outline-offset: -3px;
+}
+
+.dt-root .dt-tabs > [role='tabpanel'] {
+  border-radius: 0;
+  background: transparent;
+}
+
+/* ---- "Your setup": the Hub's card (.pl-card) with its form fields --------- */
+.dt-setup {
+  padding: 22px 24px 24px;
+  border: 3px solid var(--pl-edge);
+  background: var(--pl-card);
+  color: var(--pl-fg);
+}
+
+.dt-setup__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.dt-setup__title svg {
+  color: var(--pl-kicker);
+}
+
+.dt-setup__lede {
+  margin-top: 6px;
+  color: var(--pl-text);
+  font-size: 15px;
+}
+
+.dt-setup__reset {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 2px solid var(--pl-edge);
+  background: var(--pl-card);
+  color: var(--pl-fg);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dt-setup__reset:hover {
+  background: var(--pl-hover);
+}
+
+.dt-setup__label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dt-setup__hint {
+  color: var(--pl-muted);
+  font-size: 13px;
+}
+
+.dt-setup__input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 3px solid var(--pl-edge);
+  background: var(--pl-card);
+  color: var(--pl-fg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.dt-setup__input::placeholder {
+  color: var(--pl-muted);
+  opacity: 0.8;
+}
+
+.dt-setup__input:focus-visible {
+  outline: 3px solid var(--pl-sky);
+  outline-offset: 2px;
+}
+
+/* Choices: one framed row; the picked one is filled like the Hub's selected chip (.pl-tab). */
+.dt-seg {
+  border: 3px solid var(--pl-edge);
+  background: var(--pl-card);
+}
+
+.dt-seg__option {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--pl-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.dt-seg__option + .dt-seg__option {
+  border-left: 2px solid var(--pl-rule);
+}
+
+.dt-seg__option:hover {
+  background: var(--pl-hover);
+  color: var(--pl-fg);
+}
+
+.dt-seg__option[data-checked] {
+  background: var(--pl-ink);
+  color: var(--pl-white);
+}
+
+.dark .dt-seg__option[data-checked] {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+}
+
+.dt-seg__option:has(:focus-visible) {
+  outline: 3px solid var(--pl-sky);
+  outline-offset: -3px;
+}
+
+/* ---- Page actions (Copy page, Copy all docs, Open in): the Hub's small buttons ---- */
+.dt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: -8px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--pl-rule);
+}
+
+.dt-root .dt-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--pl-edge);
+  border-radius: 0;
+  background: var(--pl-card);
+  color: var(--pl-fg);
+  font: 600 14px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.dt-root .dt-action svg {
+  width: 16px;
+  height: 16px;
+  color: var(--pl-kicker);
+}
+
+.dark .dt-root .dt-action {
+  border-color: var(--dt-control-edge);
+}
+
+.dt-root .dt-action:hover {
+  background: var(--pl-hover);
+}
+
+.dt-root .dt-action:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* The "Open" menu (Fumadocs' popover, portalled out of the layout). */
+:root:has(.dt-root) [data-radix-popper-content-wrapper] > [role='dialog'] {
+  padding: 4px;
+  border: 3px solid var(--pl-edge);
+  border-radius: 0;
+  background: var(--pl-card);
+  box-shadow: none;
+}
+
+:root:has(.dt-root) [data-radix-popper-content-wrapper] > [role='dialog'] a {
+  border-radius: 0;
+}
+
+:root:has(.dt-root) [data-radix-popper-content-wrapper] > [role='dialog'] a:hover {
+  background: var(--pl-hover);
+}
+
+/* ---- Page footer: the Hub's small button and cards ------------------------ */
+.dt-pagefoot {
+  border-top: 2px solid var(--pl-rule);
+}
+
+.dt-edit {
+  min-height: 40px;
+  padding: 0 14px !important;
+  border: 2px solid var(--pl-edge) !important;
+  border-radius: 0 !important;
+  background: var(--pl-card) !important;
+  color: var(--pl-fg) !important;
+  font-size: 14px !important;
+  font-weight: 600;
+}
+
+.dt-edit:hover {
+  background: var(--pl-hover) !important;
+}
+
+.dt-pager > a {
+  border: 3px solid var(--pl-edge);
+  border-radius: 0;
+  background: var(--pl-card);
+  font-size: 15px;
+}
+
+.dt-pager > a:hover {
+  background: var(--pl-hover);
+  color: var(--pl-fg);
+}
+
+.dt-pager > a > div:first-child {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dt-pager > a > p {
+  color: var(--pl-muted);
+}
+
+/* ---- Search dialog: the Hub's dialog (square, 3px edge, no shadow) -------- */
+:root:has(.dt-root) [role='dialog']:has(#fd-search-list),
+:root:has(.dt-root) [role='dialog']:has(input[role='combobox']) {
+  border: 3px solid var(--pl-edge);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root:has(.dt-root) [role='dialog'] [role='option'] {
+  border-radius: 0;
+}
+
+/* The Hub's backdrops are a plain navy tint, no blur. */
+:root:has(.dt-root) .bg-fd-overlay {
+  backdrop-filter: none;
+}
+
+:root:has(.dt-root) [role='dialog'] .prose a {
+  color: inherit;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+:root:has(.dt-root) [role='dialog'] [role='option'][aria-selected='true'] {
+  background: var(--pl-hover-strong);
+  box-shadow: inset 3px 0 0 var(--pl-kicker);
+}
+
+:root:has(.dt-root) [role='dialog'] input[role='combobox'] {
+  font-size: 18px;
+}
+
+:root:has(.dt-root) [role='dialog'] button[aria-label='Close Search'] {
+  border: 2px solid currentColor;
+  border-radius: 0;
+}
+
+/* ---- Small things --------------------------------------------------------- */
+.dt-root #nd-page :is(.rounded-lg, .rounded-xl, .rounded-md) {
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-root *,
+  .dt-root *::before,
+  .dt-root *::after {
+    transition: none !important;
+  }
+}
+
+/* =========================================================================
+ * "You're leaving pelican.dev" dialog (every page)
+ * ====================================================================== */
+.xl-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-width: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.xl-dialog::backdrop {
+  background: rgba(4, 18, 28, 0.62);
+}
+
+.xl-dialog__box {
+  position: relative;
+  padding: 28px;
+  border: 3px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  box-shadow: 10px 10px 0 var(--pl-sky);
+  font-family: var(--font-sans);
+}
+
+.xl-dialog__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  cursor: pointer;
+}
+
+.xl-dialog__close:hover {
+  background: var(--pl-sky);
+}
+
+.xl-dialog__kicker {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--pl-ink);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.xl-dialog__title {
+  margin: 14px 40px 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.xl-dialog__desc {
+  margin-top: 12px;
+  font-size: 16px;
+  color: #33505f;
+}
+
+.xl-dialog__url {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: #f3f7f9;
+  border: 2px solid #d5e3ea;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.xl-dialog__remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.xl-dialog__remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pl-ink);
+}
+
+.xl-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.xl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 3px solid var(--pl-ink);
+  background: #ffffff;
+  color: var(--pl-ink);
+  font: 600 16px var(--font-sans);
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--pl-ink);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.xl-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--pl-ink);
+}
+
+.xl-btn--go {
+  background: var(--pl-ink);
+  color: #ffffff;
+  box-shadow: 4px 4px 0 var(--pl-sky);
+}
+
+.xl-btn--go:hover {
+  box-shadow: 6px 6px 0 var(--pl-sky);
+}
+
+.xl-dialog__close:focus-visible,
+.xl-btn:focus-visible,
+.xl-dialog__remember input:focus-visible {
+  outline: 3px solid var(--pl-sky);
+  outline-offset: 3px;
+}
+
+/* Dark: the V3 night card (navy surface, white edge, sky shadow). */
+.dark .xl-dialog::backdrop {
+  background: rgba(0, 11, 18, 0.78);
+}
+
+.dark .xl-dialog__box {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+}
+
+.dark .xl-dialog__close {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+}
+
+.dark .xl-dialog__close:hover {
+  color: var(--pl-ink);
+}
+
+.dark .xl-dialog__kicker {
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+}
+
+.dark .xl-dialog__desc {
+  color: #b9ccd6;
+}
+
+.dark .xl-dialog__url {
+  background: #04121c;
+  border-color: #2e4756;
+}
+
+.dark .xl-dialog__remember input {
+  accent-color: var(--pl-sky);
+}
+
+.dark .xl-btn {
+  border-color: #ffffff;
+  background: #0a1e2b;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 var(--pl-sky);
+}
+
+.dark .xl-btn:hover {
+  box-shadow: 6px 6px 0 var(--pl-sky);
+}
+
+.dark .xl-btn--go {
+  border-color: var(--pl-sky);
+  background: var(--pl-sky);
+  color: var(--pl-ink);
+  box-shadow: 4px 4px 0 #ffffff;
+}
+
+.dark .xl-btn--go:hover {
+  box-shadow: 6px 6px 0 #ffffff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xl-dialog[open] .xl-dialog__box {
+    animation: xl-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .xl-dialog[open]::backdrop {
+    animation: xl-fade 0.2s ease both;
+  }
+}
+
+@keyframes xl-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@keyframes xl-fade {
+  from {
+    opacity: 0;
+  }
+}

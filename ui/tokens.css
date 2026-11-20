@@ -1,0 +1,158 @@
+/* =========================================================================
+ * pelican.dev design tokens, V12 "B v3" (light) and "V3 · Night" (dark).
+ *
+ * The one source for the colours, font stacks and sizes the site uses. This
+ * repo imports it (app/global.css, which loads on every page), and the build
+ * publishes it at /docs/ui/v1/tokens.css for the Hub to copy, so both halves of
+ * pelican.dev draw with the same values. Plain CSS (no Tailwind at-rules), so
+ * it works anywhere.
+ *
+ * Only custom properties live here; the rules that use them stay in
+ * app/(landing)/home.css (the `.pl` pages) and app/global.css (the docs).
+ *
+ * Dark mode: next-themes puts `dark` on <html> before the first paint (system
+ * setting by default; the switch in either nav overrides it and stores the
+ * choice in localStorage "theme", shared by the docs and the Hub).
+ * ====================================================================== */
+
+/* ---- Fonts ---------------------------------------------------------------
+ * Bricolage Grotesque (display, 800), Instrument Sans (text), JetBrains Mono
+ * (code). In this repo next/font sets these three variables on <html> with its
+ * own hashed family names; these are the fallbacks for anyone self-hosting the
+ * faces under their real names. :where() keeps them at zero specificity, so
+ * next/font's class always wins.
+ * ------------------------------------------------------------------------- */
+:where(:root) {
+  --pl-font-display: 'Bricolage Grotesque', 'Bricolage Grotesque Fallback';
+  --pl-font-text: 'Instrument Sans', 'Instrument Sans Fallback';
+  --font-jetbrains: 'JetBrains Mono', 'JetBrains Mono Fallback';
+}
+
+/* ---- Page-wide brand colours (the docs chrome reads these) --------------- */
+:root {
+  --pl-ink: #04121c;
+  --pl-sky: #38bdf8;
+  --pl-sky-deep: #0b79ad;
+  --pl-white: #ffffff;
+  --pl-paper: #f3f7f9;
+  /* the thick edge used on cards, code and callouts (and the interim pages' hard shadow) */
+  --pl-edge: var(--pl-ink);
+  --pl-shadow: var(--pl-ink);
+  /* The page roles of the Hub's redesigned pages (the `.pl` names without the prefix), for
+     chrome that sits outside a `.pl` wrapper, such as the docs. */
+  --pl-fg: #04121c; /* text and icons */
+  --pl-text: #1f3644; /* lead paragraphs */
+  --pl-muted: #33505f;
+  --pl-ground: #f3f7f9; /* the page under the cards (the Hub's --paper) */
+  --pl-card: #ffffff;
+  --pl-rule: #d5e3ea; /* 2px dividers */
+  --pl-rule-soft: #e3edf2;
+  --pl-chip: #e3edf2; /* inline code, counts */
+  --pl-hover: #e8f6fd;
+  --pl-hover-strong: #cdeefd; /* the current item in a list */
+  --pl-kicker: #0a76a8; /* small sky text over a title: the Hub's #0b79ad a shade darker, 4.6:1 on the ground */
+  --pl-code: #04121c; /* code blocks are navy in both themes */
+  --pl-on-code: #e3ecf1;
+  --pl-on-code-soft: #b9ccd6;
+  --pl-line-on-ink: #2e4756;
+  /* Tones: the callouts, and the Hub's alerts that copy them. */
+  --pl-info: #0b79ad;
+  --pl-ok: #15803d;
+  --pl-warn: #b45309;
+  --pl-bad: #b42318;
+  --pl-idea: #a16207;
+}
+
+.dark {
+  --pl-edge: #2e4756;
+  --pl-shadow: #38bdf8;
+  /* Soft white: pure #fff glares on navy. */
+  --pl-fg: #e3ecf1;
+  --pl-text: #d4e3ea;
+  --pl-muted: #b9ccd6;
+  --pl-ground: #071926;
+  --pl-card: #0a1e2b;
+  --pl-rule: #2e4756;
+  --pl-rule-soft: #1f3a4a;
+  --pl-chip: #14304a;
+  --pl-hover: #0f2c3d;
+  --pl-hover-strong: #123a52;
+  --pl-kicker: #38bdf8;
+  --pl-code: #000b12;
+  --pl-info: #38bdf8;
+  --pl-ok: #4ade80;
+  --pl-warn: #fbbf24;
+  --pl-bad: #fda29b;
+  --pl-idea: #facc15;
+}
+
+/* ---- The `.pl` design (homepage, site pages, the Hub's pages) ------------
+ * `.pl` is the wrapper around a V12 page.
+ * ------------------------------------------------------------------------- */
+.pl {
+  --ink: #04121c;
+  --sky: #38bdf8;
+  --sky-deep: #0b79ad;
+  --white: #ffffff;
+  --paper: #f3f7f9;
+  --text: #1f3644;
+  --on-ink-soft: #b9ccd6;
+  --line-on-ink: #2e4756;
+  --line: 3px solid var(--ink);
+  --pad: clamp(16px, 4cqi, 64px);
+  --section: clamp(72px, 9cqi, 120px);
+  --font-display: var(--pl-font-display), 'Helvetica Neue', sans-serif;
+  --font-text: var(--pl-font-text), 'Helvetica Neue', system-ui, sans-serif;
+  --font-code: var(--font-jetbrains), ui-monospace, Menlo, monospace;
+  --btn-shadow: var(--ink);
+  /* Theme roles. --ink and --white flip in dark mode (below); these stay put or
+     carry the role the light values had. */
+  --navy: #04121c; /* always navy: text on sky, chrome that is dark in both themes */
+  --snow: #ffffff; /* always white: text on navy */
+  --shadow: var(--ink); /* hard offset shadow on cards */
+  --muted: #33505f;
+  --faint: #8aa3b0;
+  --rule: #d5e3ea;
+  --rule-soft: #e3edf2;
+  --rule-ink: rgba(4, 18, 28, 0.12);
+  --chip: #e3edf2;
+  --hover: #e8f6fd;
+  --hover-strong: #cdeefd;
+  --on-sky-soft: #0b2a3b;
+  --kbd-bg: rgba(255, 255, 255, 0.5);
+}
+
+/* In the dark, --ink and --white swap roles: --ink is the foreground (text, the
+   3px borders) and --white the card surface. Shadows turn sky; sky bands become
+   navy grounds; navy (.on-ink) sections keep their light values. */
+.dark .pl {
+  --ground: #04121c;
+  --deep: #071926;
+  --code: #000b12;
+  --ink: #ffffff;
+  --white: #0a1e2b;
+  --card: #0a1e2b; /* the surface, also inside .on-ink where --white is white again */
+  --paper: #071926;
+  --text: #d4e3ea;
+  --muted: #b9ccd6;
+  --faint: #7f99a6;
+  --rule: #2e4756;
+  --rule-soft: #1f3a4a;
+  --rule-ink: rgba(185, 204, 214, 0.18);
+  --chip: #14304a;
+  --hover: #0f2c3d;
+  --hover-strong: #123a52;
+  --on-sky-soft: #b9ccd6;
+  --kbd-bg: rgba(255, 255, 255, 0.1);
+  --sky-deep: #38bdf8;
+  --shadow: var(--sky);
+  --btn-shadow: var(--sky);
+}
+
+/* Navy sections were already dark: give them back their light values. */
+.dark .pl .on-ink {
+  --ink: #04121c;
+  --white: #ffffff;
+  --line: 3px solid var(--line-on-ink);
+  --btn-shadow: var(--snow);
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "panel",
+    "wings",
+    "eggs",
+    "guides",
+    "---Project---",
+    "versioning",
+    "comparison",
+    "contributors"
+  ]
+}
