@@ -1,13 +1,32 @@
+import releaseJson from '@/data/release.json';
+
 /**
  * Facts the homepage shows. Everything here was read from a real source on
  * 2 November 2026; the source is noted beside each block. Update it when the
  * numbers move (a new release, a new plugin count) rather than guessing.
  */
 
-export const project = {
+/**
+ * The latest Panel release, read from GitHub before each build by scripts/sync-release.mjs
+ * (data/release.json). These typed values are the fallback for when it couldn't (no network,
+ * a rate limit); in git the file holds no release, so they also apply until the first build.
+ */
+const typedRelease = {
   // github.com/pelican/panel/releases
   version: '1.0.0-rc.2',
   released: '22 October 2026',
+  url: 'https://github.com/pelican/panel/releases/tag/v1.0.0-rc.2',
+};
+const live = releaseJson as { version?: string; released?: string; url?: string };
+export const release =
+  live.version && live.released && live.url
+    ? { version: live.version, released: live.released, url: live.url }
+    : typedRelease;
+
+export const project = {
+  version: release.version,
+  released: release.released,
+  releaseUrl: release.url,
   // github.com/pelican/panel (stargazers, contributors on the default branch)
   stars: 2419,
   contributors: 235,
