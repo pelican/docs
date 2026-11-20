@@ -62,11 +62,9 @@ export async function pack(folder, { src = 'out', toml = 'netlify.toml' } = {}) 
 
   await Bun.write(join(folder, 'redirects.json'), `${JSON.stringify(redirects, null, 2)}\n`);
 
-  // BUILD_SHA/BUILD_BRANCH: the commit and branch built, when they aren't the ones that started
-  // the run (the daily publish starts on main and also builds feat/fumadocs-next).
   const build = {
-    sha: process.env.BUILD_SHA || process.env.GITHUB_SHA || 'local',
-    branch: process.env.BUILD_BRANCH || process.env.GITHUB_REF_NAME || 'local',
+    sha: process.env.GITHUB_SHA ?? 'local',
+    branch: process.env.GITHUB_REF_NAME ?? 'local',
     built_at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
   };
   await Bun.write(join(folder, 'BUILD.json'), `${JSON.stringify(build)}\n`);

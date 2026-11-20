@@ -97,25 +97,6 @@ describe('pack', () => {
     expect(Object.keys(JSON.parse(readFileSync(join(folder, 'BUILD.json'), 'utf8')))).toEqual(['sha', 'branch', 'built_at']);
   });
 
-  test('BUILD.json names the commit and branch built, BUILD_SHA/BUILD_BRANCH first', async () => {
-    const saved = { ...process.env };
-    try {
-      Object.assign(process.env, { GITHUB_SHA: 'aaa', GITHUB_REF_NAME: 'main', BUILD_SHA: 'bbb', BUILD_BRANCH: 'feat/fumadocs-next' });
-      const folder = join(sandbox, 'dist-build-env');
-      await pack(folder, { src, toml });
-      expect(JSON.parse(readFileSync(join(folder, 'BUILD.json'), 'utf8'))).toMatchObject({ sha: 'bbb', branch: 'feat/fumadocs-next' });
-      delete process.env.BUILD_SHA;
-      delete process.env.BUILD_BRANCH;
-      await pack(folder, { src, toml });
-      expect(JSON.parse(readFileSync(join(folder, 'BUILD.json'), 'utf8'))).toMatchObject({ sha: 'aaa', branch: 'main' });
-    } finally {
-      for (const key of ['GITHUB_SHA', 'GITHUB_REF_NAME', 'BUILD_SHA', 'BUILD_BRANCH']) {
-        if (key in saved) process.env[key] = saved[key];
-        else delete process.env[key];
-      }
-    }
-  });
-
   test('refuses an output folder that isn\'t a dist folder, before deleting anything', async () => {
     await expect(pack(src, { src, toml })).rejects.toThrow('must start with "dist"');
     await expect(pack(sandbox, { src, toml })).rejects.toThrow('must start with "dist"');
