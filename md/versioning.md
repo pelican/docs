@@ -1,0 +1,105 @@
+# Versioning & Releases
+
+> How Pelican versions the Panel and Wings with semantic versioning, what counts as a breaking change, and how deprecations, releases and support work.
+
+Source: https://pelican.dev/docs/versioning/
+
+Pelican follows [semantic versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`).
+
+## Panel and Wings
+
+The Panel and Wings are versioned **independently**. A Panel release does not mean there is a Wings release with the same number, and the other way around.
+Compatibility is guaranteed within a major version: any Panel `1.x` works with any Wings `1.x` at or above the Panel's minimum Wings version.
+See [Updating the Panel](https://pelican.dev/docs/panel/update/) and [Updating Wings](https://pelican.dev/docs/wings/update/) for the current requirements.
+
+| Panel   | Minimum Wings |
+|---------|---------------|
+| `1.0.x` | `1.0.0`       |
+
+The minimum Wings version is only raised in a **minor** Panel release and is announced in the release notes.
+
+The Panel checks the Wings version of every node and shows two kinds of warnings:
+
+- **Outdated**: the node runs an older Wings than the latest release. It still works, but you should [update Wings](https://pelican.dev/docs/wings/update/).
+- **Incompatible**: the node runs a Wings older than the Panel's minimum. The node icon turns yellow, the node page shows the required version and the health check fails. Update Wings as soon as possible.
+
+The Panel never blocks a node because of its Wings version. An incompatible node keeps working, but features that need a newer Wings may fail.
+
+## What semver covers
+
+A breaking change to any of these only happens in a new **major** version:
+
+- The REST API: the [application and client API](https://pelican.dev/docs/panel/advanced/api-docs/), both request inputs and response shapes.
+- The egg format (egg export/import) and the requirements for [yolks](https://pelican.dev/docs/eggs/creating-a-custom-yolk/).
+- Configuration: the Panel `.env` keys and the Wings `config.yml` format.
+- The plugin API, as described in the [plugin compatibility policy](https://pelican.dev/docs/panel/advanced/plugins/#compatibility-policy).
+
+These are **not** covered and can change in any release:
+
+- The database schema. It is internal, use the API instead of querying tables directly.
+- Internal PHP classes, services and views not listed in the plugin compatibility policy.
+- The UI.
+
+## Deprecations
+
+Features, API fields and config keys are deprecated in a **minor** release and removed only in the next **major** release.
+Deprecations are announced in the release notes and marked as deprecated in the [API docs](https://pelican.dev/docs/panel/advanced/api-docs/).
+
+Minimum requirements (PHP, database versions) are only raised in minor releases and are announced in the release notes.
+
+## Releases
+
+Releases are tagged from the `main` branch.
+
+- **Patch** releases (`1.0.1`) contain bug and security fixes.
+- **Minor** releases (`1.1.0`) add features and can deprecate things.
+- **Major** releases (`2.0.0`) can remove deprecated things and make other breaking changes.
+
+The changelog lives in the GitHub releases:
+
+- Panel: [github.com/pelican/panel/releases](https://github.com/pelican/panel/releases)
+- Wings: [github.com/pelican/wings/releases](https://github.com/pelican/wings/releases)
+
+## Support
+
+Only the **latest release** is supported. Bug and security fixes ship as a new patch release, they are not backported to older versions.
+Please [update](https://pelican.dev/docs/panel/update/) before reporting a bug.
+
+## Upgrading from a beta
+
+Update like any other release, following [Updating the Panel](https://pelican.dev/docs/panel/update/) and [Updating Wings](https://pelican.dev/docs/wings/update/).
+Upgrading from `1.0.0-beta38` or earlier to `1.0.0` includes these breaking changes:
+
+> **Warning: PHP 8.4 required**
+>
+> PHP 8.3 is no longer supported. [Upgrade PHP](https://pelican.dev/docs/guides/php-upgrade/) **before** updating the Panel.
+
+### Application API
+
+API responses are unchanged, but some deprecated request inputs were removed:
+
+| Endpoint                                   | Removed input                                           | Use instead         |
+|--------------------------------------------|---------------------------------------------------------|---------------------|
+| `PATCH /api/application/servers/{id}/build` | `memory`, `swap`, `io`, `cpu`, `threads`, `disk`        | `limits.*`          |
+| `POST /api/application/servers`            | `deploy.locations`                                      | `deploy.tags`       |
+| `GET /api/application/nodes/deployable`    | `location_ids`                                          | `tags`              |
+
+The removed inputs are **silently ignored** on the build and deployable endpoints, so check any scripts or billing integrations that still send them.
+
+### Discord webhooks
+
+Discord support moved out of the core webhook system into plugins.
+Existing Discord webhooks keep firing with their saved payload, but lose the Discord-specific formatting (such as embed timestamps) and can't be edited.
+Install a plugin that provides the Discord webhook type to edit them or create new ones.
+
+### Plugins
+
+- Fractal was removed. `App\Transformers\Api\*` and `$this->fractal` are gone; API responses are built with the classes in `app/Data/Api` and `$this->response`.
+- `App\Enums\WebhookType` and the `DiscordPreview` component were removed. Webhook types are now plain strings.
+- Activity logs are append-only. Updating or deleting an `ActivityLog` throws an exception.
+- Major dependency updates: `phpseclib/phpseclib` 4, `predis/predis` 3, `spatie/laravel-permission` 8 and `spatie/laravel-query-builder` 7. Check your plugin code and `composer_packages`.
+- `^` in `panel_version` now works like composer's caret and stops before the next major version. See [Panel version](https://pelican.dev/docs/panel/advanced/plugins/#panel-version).
+
+### Passkeys
+
+If passkey sign-in fails after updating and the Panel runs behind a reverse proxy, set `TRUSTED_PROXIES` (see [Reverse Proxy Setup](https://pelican.dev/docs/panel/standalone/optional-config/#reverse-proxy-setup)) so the Panel sees the correct host.

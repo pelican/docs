@@ -1,0 +1,64 @@
+3:"$Sreact.fragment"
+4:"/docs/_next/static/chunks/3s-jpcj8rzv6k.js"
+5:"/docs/_next/static/chunks/2mehwreqybejf.js"
+6:"/docs/_next/static/chunks/2nl55mt74-alk.js"
+7:"/docs/_next/static/chunks/0gc30oz7foz30.js"
+8:"/docs/_next/static/chunks/0k2bhkbaq4n21.js"
+9:I[39756,["$4","$5","$6","$7","$8"],"default"]
+a:I[37457,["$4","$5","$6","$7","$8"],"default"]
+f:"/docs/_next/static/chunks/2w_xaozl947re.js"
+10:"/docs/_next/static/chunks/3r3exhkjerrxg.js"
+11:"/docs/_next/static/chunks/1-4wx3o6t6jh5.js"
+12:"/docs/_next/static/chunks/3dbl_q9_j689u.js"
+13:"/docs/_next/static/chunks/0con8bknl3jhu.js"
+14:I[98330,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"DocsPage"]
+16:I[98330,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"DocsTitle"]
+17:I[98330,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"DocsDescription"]
+18:I[77538,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"PageActions"]
+19:I[98330,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"DocsBody"]
+1a:I[94157,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"Heading"]
+1b:I[47873,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"default"]
+2f:"ViewportBoundary"
+30:I[97367,["$4","$5","$6","$7","$8"],"$2f"]
+31:"MetadataBoundary"
+32:I[97367,["$4","$5","$6","$7","$8"],"$31"]
+33:"$Sreact.suspense"
+34:I[27201,["$4","$5","$6","$7","$8"],"IconMark"]
+c:X
+c:C
+d:X
+15:T435,{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pelican.dev/"},{"@type":"ListItem","position":2,"name":"Documentation","item":"https://pelican.dev/docs/"}]},{"@type":"TechArticle","headline":"Welcome to Pelican!","description":"Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup.","url":"https://pelican.dev/docs/","mainEntityOfPage":"https://pelican.dev/docs/","image":"https://pelican.dev/docs/og/image.png","inLanguage":"en","datePublished":"2024-03-24T05:53:30.000Z","dateModified":"2026-11-19T23:46:00.000Z","isPartOf":{"@type":"WebSite","name":"Pelican","url":"https://pelican.dev/"},"author":{"@type":"Organization","@id":"https://pelican.dev/#organization","name":"Pelican","url":"https://pelican.dev/"},"publisher":{"@type":"Organization","@id":"https://pelican.dev/#organization","name":"Pelican","url":"https://pelican.dev/","logo":"https://pelican.dev/docs/img/logo.png"}}]}e:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$3","c",{"children":[["$","$L14",null,{"toc":[{"depth":2,"url":"#what-is-pelican","title":"What is Pelican?"},{"depth":2,"url":"#what-is-wings","title":"What is Wings?"},{"depth":2,"url":"#glossary","title":"Glossary"},{"depth":2,"url":"#example-setup","title":"Example Setup"},{"depth":2,"url":"#open-source","title":"Open Source!"}],"breadcrumb":{"className":"dt-crumbs"},"footer":{"className":"dt-pager"},"children":[["$","script",null,{"type":"application/ld+json","dangerouslySetInnerHTML":{"__html":"$15"}}],["$","$L16",null,{"children":"Welcome to Pelican!"}],["$","$L17",null,{"children":"Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup."}],["$","$L18",null,{"markdownUrl":"/docs/md/index.md","githubUrl":"https://github.com/pelican/docs/blob/main/content/docs/index.mdx"}],["$","$L19",null,{"children":[["$","p",null,{"children":"This is the documentation for Pelican: how to install, update and run the Panel and Wings, set up webservers, SSL and eggs, and move over from Pterodactyl."}],"\n",["$","$L1a",null,{"as":"h2","id":"what-is-pelican","children":"What is Pelican?"}],"\n",["$","p",null,{"children":[["$","$L1b",null,{"href":"https://github.com/pelican/panel","children":["$","strong",null,{"children":"Pelican"}]}]," is a free, open-source server management panel for hosting game servers, software and applications in isolated Docker containers.\nIt started as a fork of ",["$","$L1b",null,{"href":"https://pterodactyl.io/","children":["$","strong",null,{"children":"Pterodactyl"}]}]," and has since grown well beyond it."]}],"\n",["$","p",null,{"children":"The Panel is the web interface: it shows information about your servers and sends commands to them."}],"\n",["$","$L1a",null,{"as":"h2","id":"what-is-wings","children":"What is Wings?"}],"\n",["$","p",null,{"children":[["$","$L1b",null,{"href":"https://github.com/pelican/wings","children":["$","strong",null,{"children":"Wings"}]}]," is the service that runs on each machine hosting your servers.\nIt handles the Docker containers behind the scenes (creating, starting, stopping and restarting them) on behalf of the Panel. Users never interact with Wings directly."]}],"\n",["$","$L1a",null,{"as":"h2","id":"glossary","children":"Glossary"}],"\n",["$","p",null,{"children":[["$","strong",null,{"children":"Panel"}],": web application that talks to Wings and lets you control your Servers."]}],"\n",["$","p",null,{"children":[["$","strong",null,{"children":"Wings"}],": service that manages your Servers' containers on behalf of the Panel."]}],"\n","$L1c","\n","$L1d","\n","$L1e","\n","$L1f","\n","$L20","\n","$L21","\n","$L22","\n","$L23","\n","$L24","\n","$L25","\n","$L26","\n","$L27","\n","$L28"]}],"$L29"]}],["$L2a","$L2b","$L2c"],"$L2d"]}],"p":"$@2e","v":null,"s":"$d"}}]]
+2:[["children",{"s":{"n":"slug","t":"oc","k":"","s":["llms.txt","md","og","search.json","ui"]},"h":65600,"d":{"r":["$","$3","c",{"children":[null,["$","$L9",null,{"parallelRouterKey":"children","template":["$","$La",null,{}]}]]}],"p":"$@b","v":"$c","s":"$d"},"c":"$Qe"}]]
+1:[["children",{"s":"docs","h":131072,"c":"$Q2"}]]
+0:{"t":{"t":{"s":"","h":131088,"c":"$Q1"},"h":{"r":["$","$3","h",{"children":[null,["$","$L30",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","$L32",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$33",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Pelican documentation"}],["$","meta","1",{"name":"description","content":"Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup."}],["$","meta","2",{"name":"application-name","content":"Pelican"}],["$","link","3",{"rel":"canonical","href":"https://pelican.dev/docs/"}],["$","link","4",{"rel":"alternate","type":"text/markdown","href":"https://pelican.dev/docs/index.md"}],["$","meta","5",{"property":"og:title","content":"Pelican documentation"}],["$","meta","6",{"property":"og:description","content":"Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup."}],["$","meta","7",{"property":"og:url","content":"https://pelican.dev/docs/"}],["$","meta","8",{"property":"og:site_name","content":"Pelican"}],["$","meta","9",{"property":"og:locale","content":"en_US"}],["$","meta","10",{"property":"og:image","content":"https://pelican.dev/docs/og/image.png"}],["$","meta","11",{"property":"og:image:width","content":"1200"}],["$","meta","12",{"property":"og:image:height","content":"630"}],["$","meta","13",{"property":"og:image:alt","content":"Pelican documentation"}],["$","meta","14",{"property":"og:type","content":"website"}],["$","meta","15",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","16",{"name":"twitter:title","content":"Pelican documentation"}],["$","meta","17",{"name":"twitter:description","content":"Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup."}],["$","meta","18",{"name":"twitter:image","content":"https://pelican.dev/docs/og/image.png"}],["$","link","19",{"rel":"icon","href":"/docs/img/favicon.ico"}],["$","link","20",{"rel":"apple-touch-icon","href":"/docs/img/logo.png"}],["$","$L34","21",{}]]}]}],null]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"p":"$@35","v":null,"s":"$d"}},"a":"$@36","u":"$@37","b":"YJVQustRdwgGijl8SahNe"}
+38:I[99920,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"Mermaid"]
+39:I[5014,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"default"]
+3a:I[98330,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"EditOnGitHub"]
+3b:I[98330,["$4","$5","$6","$7","$8","$f","$10","$11","$12","$13"],"PageLastUpdate"]
+3c:I[97367,["$4","$5","$6","$7","$8"],"OutletBoundary"]
+1c:["$","p",null,{"children":[["$","strong",null,{"children":"Node"}],": machine (computer or server) that runs Wings and connects to the Panel."]}]
+1d:["$","p",null,{"children":[["$","strong",null,{"children":"Server"}],": a Container managed by Wings, shown in the Panel."]}]
+1e:["$","p",null,{"children":[["$","strong",null,{"children":"Docker"}],": platform that runs Servers in isolated containers."]}]
+1f:["$","p",null,{"children":[["$","strong",null,{"children":"Docker Image"}],": file that contains the libraries, dependencies and files needed to run a Container."]}]
+20:["$","p",null,{"children":[["$","strong",null,{"children":"Container"}],": isolated environment that a Server runs in."]}]
+21:["$","p",null,{"children":[["$","strong",null,{"children":"Egg"}],": file that configures how a Server is installed and run, using a Docker Image."]}]
+22:["$","p",null,{"children":[["$","strong",null,{"children":"Yolk"}],": curated collection of Docker Images provided by Pelican for use with Eggs."]}]
+23:["$","$L1a",null,{"as":"h2","id":"example-setup","children":"Example Setup"}]
+24:["$","$L38",null,{"chart":"flowchart TD\n    A(Pelican Panel)\n    A --> B1(Basement Server)\n    A --> B2(Rented Server)\n    B1 --> W1(Wings)\n    B2 --> W2(Wings)\n    W2  ---> C5(Palworld)\n    W2  ---> C6(Discord Bot)\n    W1  ---> C7(FTB Minecraft)\n    W1  ---> C8(Factorio)\n    W1  ---> C9(GTA FiveM)\n    W1  ---> C4(Project Zomboid)"}]
+25:["$","$L1a",null,{"as":"h2","id":"open-source","children":"Open Source!"}]
+26:["$","p",null,{"children":["The Panel is released under ",["$","$L1b",null,{"href":"https://www.gnu.org/licenses/agpl-3.0.en.html","children":"AGPLv3"}]," and Wings under ",["$","$L1b",null,{"href":"https://opensource.org/license/mit","children":"MIT"}],".\nAnyone can browse the code, contribute improvements, and help identify bugs and security issues on ",["$","$L1b",null,{"href":"https://github.com/pelican","children":"GitHub"}],"."]}]
+27:["$","div",null,{"className":"flex gap-2 my-4 rounded-xl border bg-fd-card p-3 ps-1 text-sm text-fd-card-foreground","style":{"--callout-color":"var(--color-fd-warning, var(--color-fd-muted))"},"children":[["$","div",null,{"role":"none","className":"w-0.5 bg-(--callout-color)/50 rounded-sm"}],["$","$L39",null,{"icon":{"name":"triangle-alert","size":24,"node":[["path",{"d":"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3","key":"wmoenq"}],["path",{"d":"M12 9v4","key":"juzpu7"}],["path",{"d":"M12 17h.01","key":"p32p05"}]],"aliases":["alert-triangle"]},"className":"size-5 -me-0.5 fill-(--callout-color) text-fd-card"}],["$","div",null,{"className":"flex flex-col gap-2 min-w-0 flex-1","children":[["$","p",null,{"className":"font-medium my-0!","children":"🔒 Reporting Security Issues 🔒"}],["$","div",null,{"className":"text-fd-muted-foreground prose-no-margin empty:hidden","children":["$","p",null,{"children":["If you notice anything that raises a concern, please reach out directly to ",["$","strong",null,{"children":["$","$L1b",null,{"href":"mailto:team@pelican.dev","children":"team@pelican.dev"}]}],["$","br",null,{}],"\n","For security reasons, we ask that you handle security disclosures responsibly and ",["$","strong",null,{"children":"avoid posting them on GitHub."}]]}]}]]}]]}]
+28:["$","p",null,{"children":["Meet the people behind Pelican on the ",["$","$L1b",null,{"href":"/docs/contributors/","children":"Contributors"}]," page."]}]
+29:["$","div",null,{"className":"dt-pagefoot flex flex-wrap items-center justify-between gap-4 border-t pt-6","children":[["$","$L3a",null,{"className":"dt-edit","href":"https://github.com/pelican/docs/blob/main/content/docs/index.mdx"}],["$","$L3b",null,{"date":"$D2026-11-19T23:46:00.000Z"}]]}]
+2a:["$","script","script-0",{"src":"/docs/_next/static/chunks/1-4wx3o6t6jh5.js","async":true}]
+2b:["$","script","script-1",{"src":"/docs/_next/static/chunks/3dbl_q9_j689u.js","async":true}]
+2c:["$","script","script-2",{"src":"/docs/_next/static/chunks/0con8bknl3jhu.js","async":true}]
+2d:["$","$L3c",null,{"children":["$","$33",null,{"name":"Next.MetadataOutlet","children":"$@3d"}]}]
+37:true
+d:300
+3d:null
+d:C
+36:0
+b:"$undefined"
+35:"$undefined"
+2e:"$undefined"

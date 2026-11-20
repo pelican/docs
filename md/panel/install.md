@@ -1,0 +1,423 @@
+# Installing the Panel
+
+> Install the Pelican Panel with Docker: the one-command script (Swarm, Traefik and automatic HTTPS, optionally MariaDB, Redis and Wings), or Compose by hand.
+
+Source: https://pelican.dev/docs/panel/install/
+
+Pelican provides pre-built Docker images via GitHub Packages. `ghcr.io/pelican/panel:latest` is the current latest release, and `ghcr.io/pelican/panel:main` is built automatically from the current `main` branch. Docker is the recommended way to install the Panel. If you'd rather run it directly on your server, see the [standalone install](https://pelican.dev/docs/panel/standalone/getting-started/).
+
+> **Note**
+>
+> The images used to be published as `ghcr.io/pelican-dev/panel`. That path no longer gets updates, so if your `compose.yml` still uses it, change `image:` to `ghcr.io/pelican/panel:latest`.
+
+There are two ways to install it with Docker:
+
+- **[The install script](#the-install-script)** does everything with one command, HTTPS included once you give it a domain, and is the quickest way to a working Panel.
+- **[Docker Compose](#docker-compose)** is the same Panel set up by hand, if you want to see and own every step.
+
+## The install script
+
+On a fresh Linux server (see [Getting Started](https://pelican.dev/docs/getting-started/) for the requirements), run:
+
+```sh
+curl -fsSL https://pelican.dev/install.sh | sudo bash
+```
+
+It asks nothing: with no options it installs the Panel on your server's IP, with the [quick profile](#profiles) and without Wings. To choose, pass [options](#options) (a domain, a profile, Wings), or add `--interactive` to be asked. Then it:
+
+1. checks the server: Linux on x86_64 or arm64, a virtualization Docker works on, ports 80 and 443 free, and the domain pointing at this server if you gave one;
+2. installs Docker if it's missing;
+3. starts a one-node [Docker Swarm](https://docs.docker.com/engine/swarm/), on address ranges that leave room for Wings' network;
+4. deploys a stack named `pelican` from `/opt/pelican`:
+    - **Traefik** on ports 80 and 443. Without a domain it serves the Panel on `http://<your server's IP>`. With one, it sends HTTP to HTTPS and gets a Let's Encrypt certificate for the domain on the first visit, then renews it on its own.
+    - **The Panel** behind it, in the `ghcr.io/pelican/panel` image.
+    - With the production profile, **MariaDB** and **Redis** as well.
+5. with Wings, installs it [as in the Wings guide](https://pelican.dev/docs/wings/install/). With a domain, Traefik also serves Wings' own domain, so Wings gets a certificate too.
+
+When it finishes, open the address it shows (`http://<your server's IP>/installer`, or `https://<your domain>/installer`) to create your admin account.
+
+> **Warning: Before you run it**
+>
+> - Nothing else may use ports 80 or 443 (an earlier NGINX or Apache, or a Panel installed with Docker Compose).
+> - Using a domain? Point its `A` record (and Wings' domain's, if you install Wings) at the server, and wait until it resolves.
+> - With Cloudflare, keep the record **DNS only** (grey cloud) so Let's Encrypt can reach the server. You can turn the proxy on once the certificate is there.
+
+### Without a domain
+
+Run the script without `--domain` and the Panel is served on `http://<your server's IP>`, the external IPv4 address the script finds (pass `--ip` to choose another, such as a server behind NAT). It's the quickest way to try Pelican, but it's plain HTTP: logins and data cross the network unencrypted. Add a domain before you rely on it.
+
+To add one later, point its `A` record at the server and run the script again with the domain. It keeps your keys, passwords and data, switches the Panel to HTTPS and sends visitors of the old address to the new one:
+
+```sh
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --domain panel.example.com --email you@example.com
+```
+
+Or set `PANEL_DOMAIN` and `LE_EMAIL` in `/opt/pelican/pelican.env` and run `sudo /opt/pelican/deploy.sh`.
+
+### Profiles
+
+| Profile | What it runs | For |
+|:--------|:-------------|:----|
+| `quick` | Traefik and the Panel, with SQLite, file sessions and a database queue | One server and a small community; the least to run and back up |
+| `production` | Traefik, the Panel, MariaDB 11.4 and Redis 7 (cache, sessions and queue) | More users, servers and nodes; the database and passwords are set up for you |
+
+You can't switch an install from one profile to the other by running the script again: the other profile starts with an empty database.
+
+### Options
+
+The script never asks unless you pass `--interactive`: anything you don't give takes its default. Give your choices as options after `bash -s --`, or as environment variables, which suits cloud-init and other provisioning tools. That's also how to hand it to an [AI assistant](https://pelican.dev/docs/guides/ai-assistant/):
+
+```sh
+# On the server's IP, with the defaults (the quick profile, no Wings)
+curl -fsSL https://pelican.dev/install.sh | sudo bash
+
+# With a domain and HTTPS, MariaDB and Redis
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- \
+  --domain panel.example.com --email you@example.com --profile production
+
+# The same with environment variables (with sudo, put them after it)
+curl -fsSL https://pelican.dev/install.sh | sudo PELICAN_DOMAIN=panel.example.com \
+  PELICAN_EMAIL=you@example.com PELICAN_PROFILE=production bash
+
+# Asked one question at a time, with explanations
+curl -fsSL https://pelican.dev/install.sh | sudo bash -s -- --interactive
+```
+
+| Option | Variable | What it does |
+|:-------|:---------|:-------------|
+| `--domain DOMAIN` | `PELICAN_DOMAIN` | Serve the Panel at this domain with HTTPS, e.g. `panel.example.com`. Without it, the Panel is on `http://<server IP>` |
+| `--email EMAIL` | `PELICAN_EMAIL` | Your email, for Let's Encrypt's certificate notices (needed with a domain) |
+| `--ip IP` | `PELICAN_IP` | The address the Panel is served on without a domain (default: the server's external IPv4 address) |
+| `--profile quick\|production` | `PELICAN_PROFILE` | Which [profile](#profiles) to run (default `quick`) |
+| `--wings`, `--no-wings` | `PELICAN_WINGS=1` or `0` | Also install Wings on this server (default: no). Without a domain it's on `http://<server IP>:8080` |
+| `--wings-domain DOMAIN` | `PELICAN_WINGS_DOMAIN` | Wings' own domain, such as `node.example.com`: needed for Wings when the Panel has a domain |
+| `--dir PATH` | `PELICAN_DIR` | Where the stack's files go (default `/opt/pelican`) |
+| `--image IMAGE` | `PELICAN_IMAGE` | Another Panel image, e.g. a fixed version |
+| `--staging` | `PELICAN_STAGING=1` | Use Let's Encrypt's staging server: test certificates, without its rate limits |
+| `--skip-dns-check` | `PELICAN_SKIP_DNS_CHECK=1` | Don't check the domains point here (behind NAT, or DNS set up afterwards). Without it, a domain that doesn't point here stops the install |
+| `--dry-run` | `PELICAN_DRY_RUN=1` | Show what it would do and write the files to a temp folder, changing nothing. Needs no root, so you can try it anywhere |
+| `--interactive` | `PELICAN_INTERACTIVE=1` | Ask for each choice instead, with explanations |
+
+When both are set, the option wins. `PELICAN_TRAEFIK_IMAGE` runs another Traefik than the exact version the script pins.
+
+To read the script before running it, download it first:
+
+```sh
+curl -fsSL -o install.sh https://pelican.dev/install.sh
+less install.sh
+bash install.sh --dry-run --domain panel.example.com --email you@example.com
+sudo bash install.sh --domain panel.example.com --email you@example.com
+```
+
+### Your files
+
+Everything the script sets up is in `/opt/pelican`:
+
+| File | What it is |
+|:-----|:-----------|
+| `pelican.env` | Your settings, the `APP_KEY` and the database passwords. Readable by root only. |
+| `stack.yml` | The services, with every value taken from `pelican.env` |
+| `deploy.sh` | Applies `pelican.env` and `stack.yml` to the running stack |
+| `traefik/pelican.yml` | Traefik's routes, written by `deploy.sh` from `pelican.env` (add your own files next to it) |
+
+> **Danger: Back up pelican.env**
+>
+> `APP_KEY` encrypts parts of your Panel's data. Copy `pelican.env` somewhere safe, off the server: if it's lost, that data can't be recovered, **even with database backups**.
+
+### Changing settings later
+
+Change a value in `pelican.env` and apply it:
+
+```sh
+sudo nano /opt/pelican/pelican.env
+sudo /opt/pelican/deploy.sh
+```
+
+For example, a new `PANEL_DOMAIN` (with `LE_EMAIL`) switches the Panel to HTTPS and gets its certificate as soon as its DNS points at the server, and `PANEL_IMAGE=ghcr.io/pelican/panel:<version>` keeps the Panel on one version. Running the install script again also works: it keeps your keys and passwords, updates the stack and moves Traefik to the version it pins.
+
+### Updating
+
+`deploy.sh` checks the registry for each image, so running it again pulls a newer Panel when there is one:
+
+```sh
+sudo /opt/pelican/deploy.sh
+```
+
+Database migrations run when the new Panel starts. See [Updating the Panel](https://pelican.dev/docs/panel/update/) for the versions each release needs.
+
+### Wings on the same server
+
+With `--wings`, the script installs Wings and enables its service. Wings itself starts once it has a configuration from the Panel.
+
+Without a domain, Wings is reached directly on `http://<server IP>:8080`. In the Panel, create the node with the server's IP as the FQDN, **HTTP**, **Not Behind Proxy** and port `8080`; then copy its configuration to `/etc/pelican/config.yml` and start Wings. When you add a domain for the Panel later, Wings needs one too (HTTPS on the Panel means HTTPS on Wings): run the script again with `--wings-domain` and update the node.
+
+With a domain, Traefik serves Wings' domain over HTTPS:
+
+1. In the Panel, go to **Admin → Nodes → Create**. Use Wings' domain as the FQDN, choose **HTTPS** and **Behind Proxy**, and set the port the Panel connects to as `443` and the port Wings listens on as `8080`.
+2. Copy the node's configuration to `/etc/pelican/config.yml`, or run its **Auto Deploy** command. Traefik handles HTTPS, so in that file `api.port` is `8080` and `api.ssl.enabled` is `false`.
+3. Start Wings: `sudo systemctl start wings`.
+4. Open SFTP (port `2022`) and the ports you allocate to game servers in your provider's firewall. When `ufw` is active the script opens 80, 443 and 2022 in it; game server ports are yours to open.
+
+Wings on other servers is installed [the usual way](https://pelican.dev/docs/wings/install/).
+
+### When something doesn't work
+
+```sh
+docker service ls                          # each service should show 1/1
+docker service ps pelican_panel --no-trunc # why a service doesn't start
+docker service logs -f pelican_panel       # the Panel's logs
+docker service logs pelican_traefik 2>&1 | grep -i acme   # certificate problems
+```
+
+No certificate? Check that the domain points at the server, ports 80 and 443 are reachable from the internet and the record isn't proxied by a CDN. Let's Encrypt limits how often it issues certificates for one domain: test with `--staging`, then run the script again without it, which moves the install to real certificates (the test ones are kept apart and not used again).
+
+Docker's address ranges can clash with a network your server is already on. The script uses `10.203.0.0/16` for Swarm and `10.204.0.0/24` for `docker_gwbridge`; set `PELICAN_SWARM_POOL`, `PELICAN_GWBRIDGE_SUBNET` and `PELICAN_PUBLIC_SUBNET` before running it to use others.
+
+### Backups and removing it
+
+The Panel's data lives in Docker volumes: `pelican_pelican-data` (the Panel's `.env`, SQLite database and uploads), `pelican_pelican-plugins`, and with the production profile `pelican_pelican-db` (MariaDB). Back them up together with `pelican.env`. For example, for the Panel's data:
+
+```sh
+docker run --rm -v pelican_pelican-data:/data -v "$PWD":/backup alpine tar czf /backup/pelican-data.tar.gz -C /data .
+```
+
+To remove the stack, keeping its data: `docker stack rm pelican`. Removing the volumes as well (`docker volume rm pelican_pelican-data ...`) **deletes the Panel and all of its data**.
+
+## Docker Compose
+
+This guide requires Docker CE. (Docker Compose has been included in the Docker CLI since v2. Docker Compose v1 is unsupported.) For instructions on installing and configuring Docker, see [Getting Started](https://pelican.dev/docs/getting-started/).
+
+### Basics
+
+The easiest deployment method is using the standard `compose.yml` file.
+
+This configuration includes an integrated web server that will automatically obtain SSL certificates if you are serving over HTTPS. For the database, it assumes you want to use SQLite (or you have an external database server to configure using the  installer.) It also assumes you intend to use the Filesystem driver for cache, filesystem or database driver for session, and database driver for queue (or you have an external Redis server to configure using the installer.) If you want to use other options built into Docker, see [Advanced Options](#advanced-options).
+
+### Create compose.yml
+
+```yml title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+      - pelican-plugins:/var/www/html/plugins
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "http://localhost"
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+
+volumes:
+  pelican-data:
+  pelican-logs:
+  pelican-plugins:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+### Set Required Environment Variables
+
+1. Set `APP_URL` to the base URL your panel will be reachable on, including the protocol (https:// or http://) and port.
+    - Note that Caddy, the integrated webserver, will serve a 308 redirect to any requests on port 80 if the `APP_URL` begins with `https://`. If your final site will be reachable over HTTPS but TLS (SSL) will be handled and terminated by an upstream server, such as a reverse proxy, see [Reverse Proxy Configuration](#reverse-proxy-configuration).
+2. Set the `ADMIN_EMAIL` to your email address. Caddy will use this email address to generate a LetsEncrypt SSL certificate if you are serving via HTTPS.
+
+Now, close and save changes to `compose.yml`.
+
+### Starting
+
+From the directory in which the compose file is located, run:
+
+```sh
+docker compose up -d
+```
+
+### Back Up Your Encryption Key
+
+The first time the container starts, it will generate an `APP_KEY` which is used as an encryption key. This will be saved automatically, but you should save a copy in a secure place in case you need it later.
+
+```sh
+docker compose logs panel | grep 'Generated app key:'
+```
+
+### Installing
+
+Open the installer in your browser at `APP_URL/installer` to finish setting up the panel.
+
+> **Note**
+>
+> The first time the container starts after installing or updating, it will apply database migrations, which may take a few minutes. The panel will not be accessible during this process.
+
+#### Sensible Driver Defaults:
+
+* Cache Driver: Filesystem
+* Database Driver: SQLite
+* Queue Driver: Database
+* Session Driver: Filesystem
+
+For other configuration, such as UI options, CAPTCHA, email, backups and OAuth, head to the settings menu in the admin panel.
+
+### Stopping
+
+The panel will automatically restart if the container crashes or the host restarts.  If you need to non-destructively stop the panel for any reason, navigate back to the directory containing `compose.yml` and run:
+
+```sh
+docker compose down
+```
+
+### Uninstalling
+
+To uninstall the panel, navigate to the directory containing `compose.yml` and run:
+
+```sh
+docker compose down -v
+```
+
+> **Danger**
+>
+> **This will permanently delete the panel and all associated data including the SQLite database and your encryption key.**
+
+## Advanced Options
+
+### Custom Caddyfile
+
+The default Caddyfile will work for standard installations. If you need to edit the configuration of the integrated webserver, such as to place it behind a reverse proxy that terminates TLS, you can do so by bind-mounting a Caddyfile on the host to `/etc/caddy/Caddyfile` inside the container.
+
+This example assumes there is a Caddyfile in the same directory as the `compose.yml` file.
+
+```yml title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+      - pelican-plugins:/var/www/html/plugins
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "http://localhost"
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+
+volumes:
+  pelican-data:
+  pelican-logs:
+  pelican-plugins:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+An example Caddyfile for hosting the panel behind a reverse proxy is shown below. It exposes the panel on port 80 regardless of the Host header, and will not attempt to obtain a TLS certificate. `[UPSTREAM IP]` must be replaced with the IP address of the reverse proxy.
+
+```caddyfile title="Caddyfile"
+{
+    admin off
+    servers {
+        trusted_proxies static [UPSTREAM IP]
+    }
+}
+
+:80 {
+    root * /var/www/html/public
+    encode gzip
+
+    php_fastcgi 127.0.0.1:9000
+    file_server
+}
+```
+
+> **Info**
+>
+> **Note:** If the trusted directive is not set or improperly configured, file uploads will fail. Commonly, when the reverse proxy is running outside of Docker, the IP address will not match `127.0.0.1`, but will instead match a Docker bridge interface or `docker0`.
+
+#### Raising file upload limits
+
+The default file upload limit is 2MB. To raise this limit, modify the `Caddyfile` file as such:
+
+```caddyfile title="Caddyfile"
+<domain> {
+    ...
+
+    encode gzip
+
+    php_fastcgi 127.0.0.1:9000 {
+        env PHP_VALUE "upload_max_filesize = 256M
+                       post_max_size = 256M"
+    }
+    file_server
+}
+```
+
+### Reverse Proxy Configuration
+
+When running the panel behind a reverse proxy that handles TLS (SSL), set the following environment variables:
+
+1. Set `APP_URL` to the URL users will visit, e.g. `https://panel.example.com`.
+2. Set `BEHIND_PROXY` to `"true"`. This does 2 things:
+    1. The panel listens on port `80` inside the container, regardless of the `APP_URL`. Map whichever host port your proxy forwards to onto container port `80`.
+    2. The panel will not attempt to obtain a certificate from Let's Encrypt. Without this, an `https://` `APP_URL` requires the `LE_EMAIL` environment variable and the panel will exit if it is missing.
+3. Set `TRUSTED_PROXIES` to a comma-separated list of the IP addresses (or CIDR ranges) of your reverse proxy, so the panel trusts its forwarded headers.
+
+No custom Caddyfile is needed for this setup. An example `compose.yml` for hosting the panel behind a reverse proxy is shown below.
+
+```yml title="compose.yml"
+services:
+  panel:
+    image: ghcr.io/pelican/panel:latest
+    restart: always
+    networks:
+      - default
+    ports:
+      - "81:80" # Change 81 to the host port your reverse proxy forwards to
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pelican-data:/pelican-data
+      - pelican-logs:/var/www/html/storage/logs
+      - pelican-plugins:/var/www/html/plugins
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: "https://panel.example.com"
+      BEHIND_PROXY: "true"
+      TRUSTED_PROXIES: "127.0.0.1,172.17.0.1,172.20.0.1" # Change to the IP(s) of your proxy. These defaults cover a proxy on the same host
+      ADMIN_EMAIL: "USEYOUROWNEMAILHERE@example.com"
+
+volumes:
+  pelican-data:
+  pelican-logs:
+  pelican-plugins:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+> **Info**
+>
+> **Note:** If `TRUSTED_PROXIES` is not set or does not match your proxy, file uploads will fail. When the reverse proxy runs outside of Docker, its requests usually come from a Docker bridge interface (such as `docker0`, commonly `172.17.0.1`) rather than `127.0.0.1`.

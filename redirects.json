@@ -1,0 +1,92 @@
+[
+  {
+    "from": "/docs/about",
+    "to": "/docs/contributors/",
+    "status": 301
+  },
+  {
+    "from": "/docs/glossary",
+    "to": "/docs/#glossary",
+    "status": 301
+  },
+  {
+    "from": "/docs/troubleshooting",
+    "to": "/docs/guides/troubleshooting/",
+    "status": 301
+  },
+  {
+    "from": "/docs/guides/disk-quotas/btrfs",
+    "to": "/docs/guides/disk-quotas/about/",
+    "status": 301
+  },
+  {
+    "from": "/docs/guides/disk-quotas/lvm",
+    "to": "/docs/guides/disk-quotas/about/",
+    "status": 301
+  },
+  {
+    "from": "/docs/guides/disk-quotas/zfs",
+    "to": "/docs/guides/disk-quotas/about/",
+    "status": 301
+  },
+  {
+    "from": "/docs/guides/docker",
+    "to": "/docs/getting-started/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/advanced/docker",
+    "to": "/docs/panel/install/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/getting-started",
+    "to": "/docs/panel/standalone/getting-started/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/webserver-config",
+    "to": "/docs/panel/standalone/webserver-config/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/panel-setup",
+    "to": "/docs/panel/standalone/panel-setup/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/optional-config",
+    "to": "/docs/panel/standalone/optional-config/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/config",
+    "to": "/docs/panel/standalone/optional-config/",
+    "status": 301
+  },
+  {
+    "from": "/docs/eggs/creating-a-custom-docker-image",
+    "to": "/docs/eggs/creating-a-custom-yolk/",
+    "status": 301
+  },
+  {
+    "from": "/docs/panel/updating-panel",
+    "to": "/docs/panel/update/",
+    "status": 301
+  },
+  {
+    "from": "/docs/wings/installing-wings",
+    "to": "/docs/wings/install/",
+    "status": 301
+  },
+  {
+    "from": "/docs/wings/updating-wings",
+    "to": "/docs/wings/update/",
+    "status": 301
+  },
+  {
+    "from": "/docs/team",
+    "to": "/docs/contributors/",
+    "status": 301
+  }
+]

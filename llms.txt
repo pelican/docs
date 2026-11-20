@@ -1,0 +1,71 @@
+# Pelican
+
+> Pelican is a free, open-source game server control panel (AGPL-3.0). The Panel is a PHP/Laravel web app where admins and users create, configure and manage game servers; Wings is the daemon on each node that runs every server in its own Docker container. Servers are defined by "eggs" (install scripts and startup settings for each game or app). Current version: 1.0.0-rc.4.
+
+The docs cover installing and updating the Panel and Wings, webserver and SSL setup, eggs, and guides such as migrating from Pterodactyl. Each link below is the page as plain Markdown; drop the `.md` for the HTML page.
+
+## Overview
+
+- [Welcome to Pelican!](https://pelican.dev/docs/index.md): Introduction to the Pelican Panel and Wings, the service that runs game servers in Docker containers, with a glossary and an example setup.
+- [Getting Started](https://pelican.dev/docs/getting-started.md): What a Pelican server needs and the one-command install: requirements, the virtualization check, installing Docker, starting it on boot and enabling swap.
+
+## Panel
+
+- [Installing the Panel](https://pelican.dev/docs/panel/install.md): Install the Pelican Panel with Docker: the one-command script (Swarm, Traefik and automatic HTTPS, optionally MariaDB, Redis and Wings), or Compose by hand.
+- [Standalone Install](https://pelican.dev/docs/panel/standalone/getting-started.md): Install the Pelican Panel without Docker: supported operating systems, PHP and webserver dependencies, downloading the panel files and installing Composer.
+- [Webserver Configuration](https://pelican.dev/docs/panel/standalone/webserver-config.md): Set up NGINX, Apache or Caddy for the Pelican Panel installed without Docker, with or without SSL, from config files filled in with your domain and PHP version.
+- [Panel Setup](https://pelican.dev/docs/panel/standalone/panel-setup.md): Generate the Panel .env file and APP_KEY with p:environment:setup, set file permissions and finish the install in the web installer.
+- [Optional Panel Configuration](https://pelican.dev/docs/panel/standalone/optional-config.md): Configure optional Pelican Panel settings: local or S3 backups, reverse proxy setup for NGINX and Cloudflare, captcha and two-factor requirements.
+- [Updating the Panel](https://pelican.dev/docs/panel/update.md): Update the Pelican Panel with Docker, the update script or manual steps, and check which Wings and PHP versions each release needs.
+- [Using Redis with the Panel](https://pelican.dev/docs/panel/advanced/redis.md): Install Redis from its official apt repository and switch an existing Pelican Panel to Redis with the p:redis:setup command.
+- [Using MySQL or MariaDB with the Panel](https://pelican.dev/docs/panel/advanced/mysql.md): Install MariaDB, create a database and user for the Pelican Panel and switch an existing panel from SQLite to MySQL.
+- [Artisan Commands](https://pelican.dev/docs/panel/advanced/artisan.md): Reference for Pelican's php artisan commands to manage users, nodes, servers, eggs, plugins, environment settings, migrations and cache.
+- [Deploying with Podman](https://pelican.dev/docs/panel/advanced/podman.md): Run the Pelican Panel's Docker image with rootless Podman on Fedora, RHEL or Alma/Rocky Linux, using a Quadlet so systemd manages the container.
+- [Cloudflare Tunnel](https://pelican.dev/docs/panel/advanced/cloudflare-tunnel.md): Serve the Docker install of the Pelican Panel over HTTPS through a Cloudflare Tunnel, without opening any inbound ports on the host, and keep Wings reachable.
+- [Panel API documentation](https://pelican.dev/docs/panel/advanced/api-docs.md): Find the built-in API docs for your Pelican Panel at /docs/api, covering the Application API and the Client API.
+- [Panel Plugins: install, create and publish](https://pelican.dev/docs/panel/advanced/plugins.md): Install, update and uninstall Pelican Panel plugins, and create and publish your own with Filament resources, translations, settings and permissions.
+
+## Wings
+
+- [Installing Wings](https://pelican.dev/docs/wings/install.md): Install Wings on a Linux host with Docker, configure it from a node in the Panel and run it as a systemd service.
+- [Advanced Wings Configuration](https://pelican.dev/docs/wings/optional-config.md): Advanced Wings config.yml options: private registries, custom network interfaces, Cloudflare proxy, PID limits, throttles, transfer limits and Podman.
+- [Updating Wings](https://pelican.dev/docs/wings/update.md): Update Wings with the built-in self-updater or by replacing the binary manually, then restart the service. Running servers are not affected.
+
+## Eggs
+
+- [Creating a Custom Egg](https://pelican.dev/docs/eggs/creating-a-custom-egg.md): Create a custom egg in the Pelican admin panel: startup commands, Docker images, process management, egg variables and the install script.
+- [Creating a Custom Yolk](https://pelican.dev/docs/eggs/creating-a-custom-yolk.md): Build a custom yolk, a Docker image for Pelican eggs, by writing the Dockerfile and entrypoint script that Wings uses to start servers.
+
+## Guides
+
+- [Installing with an AI Assistant](https://pelican.dev/docs/guides/ai-assistant.md): Give an AI assistant the Pelican docs and a tested prompt to guide a production install of the Panel and Wings step by step, safely.
+- [Using Mounts](https://pelican.dev/docs/guides/mounts.md): Mount host directories into server containers by allowing them in the Wings config and creating mounts in the Pelican admin panel.
+- [Creating SSL Certificates](https://pelican.dev/docs/guides/ssl.md): Create SSL certificates for the Panel and Wings with Certbot for NGINX, Apache or standalone, or with acme.sh and the Cloudflare API.
+- [Upgrading PHP](https://pelican.dev/docs/guides/php-upgrade.md): Upgrade the host to PHP 8.5 for Pelican Panel and update NGINX, Apache or Caddy to use the new PHP-FPM version.
+- [Database Hosts](https://pelican.dev/docs/guides/database-hosts.md): Add a MySQL or MariaDB database host to Pelican so servers can create their own databases, and fix common connection errors.
+- [Change Panel Domain](https://pelican.dev/docs/guides/change-panel-domain.md): Move the Pelican Panel to a new domain by updating the webserver config, APP_URL in .env and the remote URL in each node's Wings config.
+- [Uninstalling](https://pelican.dev/docs/guides/uninstalling.md): Remove the Pelican Panel and Wings from a host, including panel files, webserver config, queue worker, database, Wings service and server data.
+- [Migrating from Pterodactyl](https://pelican.dev/docs/guides/migrating-from-pterodactyl.md): Upgrade a Pterodactyl install to Pelican in place, keeping users, servers, nodes and eggs, with the Panel and Wings migration scripts or Docker.
+- [Translating Pelican](https://pelican.dev/docs/guides/translating.md): Help translate the Pelican Panel on Crowdin, including how approval works, how to handle placeholders and plurals and how to request a new language.
+- [Troubleshooting](https://pelican.dev/docs/guides/troubleshooting.md): Diagnose common Pelican problems: panel 500 errors and logs, Wings connection issues, schedules not running, file uploads and plugin removal.
+- [About Quotas](https://pelican.dev/docs/guides/disk-quotas/about.md): Read the warnings and requirements before enabling filesystem disk quotas for Pelican server data, which are still a work in progress.
+- [EXT4 and XFS](https://pelican.dev/docs/guides/disk-quotas/ext4-xfs.md): Enable project quotas on a new or existing EXT4 partition for Pelican server data, then create projects and set and check quota limits.
+
+## Project
+
+- [Versioning & Releases](https://pelican.dev/docs/versioning.md): How Pelican versions the Panel and Wings with semantic versioning, what counts as a breaking change, and how deprecations, releases and support work.
+- [Pelican vs Pterodactyl and other game panels](https://pelican.dev/docs/comparison.md): Compare Pelican with Pterodactyl and other game server panels such as PufferPanel, Crafty Controller, TCAdmin, AMP and Calagopus.
+- [Contributors](https://pelican.dev/docs/contributors.md): Meet the Pelican core team and community staff, with their GitHub profiles, Discord usernames and roles in the project.
+
+## Site
+
+- [Plugins](https://pelican.dev/plugins): the Plugin Hub, with plugins and themes for the Panel
+- [Eggs](https://pelican.dev/eggs): searchable index of community eggs (games and apps Pelican can run)
+- [Support Pelican](https://pelican.dev/sponsor): how to fund the project (monthly plans, one-off donations) or help without paying
+- [FAQ](https://pelican.dev/faq): differences from Pterodactyl, migration, egg compatibility, AGPLv3 licensing and plugins
+- [Full docs in one file](https://pelican.dev/llms-full.txt): every page above, in order
+
+## Optional
+
+- [Source code](https://github.com/pelican/panel): the Panel on GitHub
+- [Hub API](https://hub.pelican.dev/docs/api): API for the plugin and egg hub
